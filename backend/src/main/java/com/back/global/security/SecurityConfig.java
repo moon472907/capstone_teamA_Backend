@@ -19,7 +19,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)   // CSRF 비활성화
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))  //CORS 설
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))  //CORS 설정
                 .authorizeHttpRequests(
                         auth -> auth
                                 .requestMatchers(

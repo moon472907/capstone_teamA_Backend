@@ -21,6 +21,7 @@ repositories {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -32,7 +33,6 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
 
     implementation("org.springframework.boot:spring-boot-starter-actuator") // 추가됨
-
     implementation("org.springframework.boot:spring-boot-starter-data-redis") // 추가됨
     implementation("org.springframework.session:spring-session-data-redis") // 추가됨
 

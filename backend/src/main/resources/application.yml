@@ -53,3 +53,8 @@ management:
       frontUrl: "${custom.dev.frontUrl}"
       backUrl: "${custom.dev.backUrl}"
       name: nutree
+custom:
+  jwt:
+    secretKey: "7f11da8036a2af0c57fe894d1a7efd0bca9d86b58ad93fe11e7a52960044e82a"
+  accessToken:
+    expirationSeconds: "#{60*20}"

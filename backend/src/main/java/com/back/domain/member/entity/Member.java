@@ -3,22 +3,25 @@ package com.back.domain.member.entity;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.SoftDelete;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder=true)
 @SoftDelete
 public class Member extends BaseEntity {
-    //회원 정보
+    // *** 회원 정보 ***
     @Column(unique = true)
     private String email;
     private String password;
@@ -26,15 +29,16 @@ public class Member extends BaseEntity {
     private int age;
     private MemberGender gender;
 
-    //상태 및 아이템 정보
+    // *** 상태 및 아이템 정보 ***
     private int level = 1;
     private int xp = 0;
     private int money = 0;
 
-    //개발자용 정보
+    // *** 개발자용 정보 ***
     private MemberRole role = MemberRole.USER;
     private String apiKey;
 
+    //생성자(회원 가입)
     public Member(String email, String password, String name, int age, MemberGender gender) {
         this.email = email;
         this.password = password;
@@ -45,31 +49,27 @@ public class Member extends BaseEntity {
         this.apiKey = UUID.randomUUID().toString();
     }
 
-    public void modifyPassword(String password) {
-        this.password = password;
+    //생성자(SecurityUser용)
+    public Member(int id, String email) {
+        setId(id);
+        this.email = email;
     }
 
-    public void modifyName(String name) {
-        this.name = name;
+    // *** 인증/인가 메서드 ***
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return getAuthoritiesAsStringList()
+                .stream()
+                .map(SimpleGrantedAuthority::new)
+                .toList();
     }
 
-    public void modifyAge(int age) {
-        this.age = age;
-    }
+    private List<String> getAuthoritiesAsStringList() {
+        List<String> authorities = new ArrayList<>();
 
-    public void modifyGender(MemberGender gender) {
-        this.gender = gender;
-    }
+        if (this.role == MemberRole.ADMIN) {
+            authorities.add("ROLE_ADMIN");
+        }
 
-    public void modifyLevel(int level) {
-        this.level = level;
-    }
-
-    public void modifyXp(int xp) {
-        this.xp = xp;
-    }
-
-    public void modifyMoney(int money) {
-        this.money = money;
+        return authorities;
     }
 }
