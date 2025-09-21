@@ -18,9 +18,8 @@ import static lombok.AccessLevel.PROTECTED;
 @Table(name= "tasks")
 public class Task extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="category_id", nullable = false)
-    private Category category;
-
+    @JoinColumn(name = "sub_goal_id", nullable = false)
+    private SubGoal subGoal;
 
     @Column(nullable = false)
     private String title;
