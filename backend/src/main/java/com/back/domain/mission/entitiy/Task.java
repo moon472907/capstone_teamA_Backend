@@ -27,9 +27,6 @@ public class Task extends BaseEntity {
     @Column(nullable = false)
     private int dayNum;     // 주차 내 며칠에 해당하는 지 ( 1 = 월, ... )
 
-    @Column(nullable = false)
-    private int orderNum;     // 같은 dayNum 안에서 순서 구분하기 위한 엔티티 ( 여러 task 안쓰면 상관 X )
-
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TaskLog> taskLogs = new ArrayList<>();
 

@@ -41,5 +41,5 @@ public class SubGoal extends BaseEntity {
 
 
     @OneToMany(mappedBy = "subGoal",cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Task> categories;
+    private List<Task> tasks;
 }

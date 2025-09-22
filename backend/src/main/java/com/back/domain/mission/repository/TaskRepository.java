@@ -2,14 +2,19 @@ package com.back.domain.mission.repository;
 
 import com.back.domain.mission.entitiy.Task;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
 import java.util.List;
 
-public interface TaskRepository extends JpaRepository<Task, Integer> {
-    //특정 Category 안의 Task 조회
-    List<Task> findByCategoryId(int categoryId);
+@Repository
+public interface TaskRepository extends JpaRepository<Task, Long> { // Integer → Long
 
-    //특정 날짜의 Task 조회(오늘 할 일)
-    List<Task> findByDueDate(LocalDate dueDate);
+    // SubGoal별 태스크 조회
+    List<Task> findBySubGoalId(Integer subGoalId);
+
+    // SubGoal별 태스크를 dayNum 순서로 조회
+    List<Task> findBySubGoalIdOrderByDayNumAscOrderNumAsc(Integer subGoalId);
+
+    // 특정 요일의 태스크들 조회
+    List<Task> findBySubGoal_MissionIdAndDayNum(Integer missionId, Integer dayNum);
 }
