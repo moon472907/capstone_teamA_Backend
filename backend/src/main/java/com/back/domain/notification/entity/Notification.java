@@ -12,10 +12,10 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Notification extends BaseEntity
 {
-    int memberId;
-    NotificationType type;
-    String message;
-    boolean isRead;
+    private int memberId;
+    private NotificationType type;
+    private String message;
+    private boolean isRead;
 
     public Notification(int memberId, NotificationType type, String message)
     {
