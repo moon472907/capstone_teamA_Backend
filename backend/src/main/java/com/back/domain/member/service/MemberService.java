@@ -66,8 +66,28 @@ public class MemberService {
     }
 
     // *** Modify 메서드 ***
-    public void modify() {
+    public void modifyInfo(
+            Member member,
+            String password,
+            String name,
+            int age,
+            MemberGender gender
+    ) {
+        member.setPassword(passwordEncoder.encode(password));
+        member.setName(name);
+        member.setAge(age);
+        member.setGender(gender);
+    }
 
+    public void modifyStatus(
+            Member member,
+            int level,
+            int xp,
+            int money
+    ) {
+        member.setLevel(level);
+        member.setXp(xp);
+        member.setMoney(money);
     }
 
     // *** 인증/인가 관련 메서드 ***
