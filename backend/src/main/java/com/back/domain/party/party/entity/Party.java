@@ -23,7 +23,7 @@ public class Party extends BaseEntity {
     @Column(nullable = false)
     private boolean isPublic;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "leader_id")
     private Member leader;
 
