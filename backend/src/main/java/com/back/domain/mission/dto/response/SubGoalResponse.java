@@ -16,8 +16,8 @@ public class SubGoalResponse {
     private Integer weekNum;
     private LocalDate startDate;
     private LocalDate endDate;
-    private boolean isEditable;
-    private boolean isCurrentWeek; // 현재 진행 주차인지
+    private boolean editable;
+    private boolean currentWeek; // 현재 진행 주차인지
     private Integer weekProgressRate; // 0~100%
 
     // 상세 조회시에만 포함

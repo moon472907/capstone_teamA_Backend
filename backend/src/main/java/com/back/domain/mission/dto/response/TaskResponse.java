@@ -19,5 +19,5 @@ public class TaskResponse  {
     // 완료 상태 정보 (상세 조회시에만)
     private TaskStatus status;
     private LocalDate lastCompletedDate;
-    private boolean isToday; // 오늘의 태스크인지
+    private boolean today; // 오늘의 태스크인지
 }
