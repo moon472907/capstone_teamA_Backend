@@ -25,20 +25,31 @@ public class MemberService {
     public Member signup(
             String email,
             String password,
-            String name,
-            int age,
-            MemberGender gender
+            String name
     ) {
-        memberRepository
-                .findByEmail(email)
+        findByEmail(email)
                 .ifPresent(_member -> {
                     throw new CustomException(ErrorCode.CONFLICT, "이미 가입된 이메일입니다.");
                 });
 
         password = passwordEncoder.encode(password);
-        Member member = new Member(email, password, name, age, gender);
+        Member member = new Member(email, password, name);
 
         return memberRepository.save(member);
+    }
+
+    //가입or로그인 (소셜 계정)
+    public Member social_login(String email, String password, String name) {
+        Member member = findByEmail(email).orElse(null);
+
+        if(member == null) {
+            member = signup(email, password, name);
+        }
+        else {
+            modifyName(member, name);
+        }
+
+        return member;
     }
 
     //로그인
@@ -52,29 +63,16 @@ public class MemberService {
         return member;
     }
 
-    // *** Find 메서드 ***
-    public Optional<Member> findById(int id) {
-        return memberRepository.findById(id);
-    }
-
-    public Optional<Member> findByEmail(String email) {
-        return memberRepository.findByEmail(email);
-    }
-
-    public Optional<Member> findByApiKey(String apiKey) {
-        return memberRepository.findByApiKey(apiKey);
-    }
-
     // *** Modify 메서드 ***
-    public void modifyInfo(
-            Member member,
-            String password,
-            String name,
-            int age,
-            MemberGender gender
-    ) {
-        member.setPassword(passwordEncoder.encode(password));
+    public void modifyName(Member member, String name) {
         member.setName(name);
+    }
+
+    public void modifyPassword(Member member, String password) {
+        member.setPassword(passwordEncoder.encode(password));
+    }
+
+    public void modifyProfile(Member member, int age, MemberGender gender) {
         member.setAge(age);
         member.setGender(gender);
     }
@@ -90,6 +88,19 @@ public class MemberService {
         member.setMoney(money);
     }
 
+    // *** Find 메서드 ***
+    public Optional<Member> findById(int id) {
+        return memberRepository.findById(id);
+    }
+
+    public Optional<Member> findByEmail(String email) {
+        return memberRepository.findByEmail(email);
+    }
+
+    public Optional<Member> findByApiKey(String apiKey) {
+        return memberRepository.findByApiKey(apiKey);
+    }
+
     // *** 인증/인가 관련 메서드 ***
     public String genAccessToken(Member member) {
         return authService.genAccessToken(member);
@@ -98,4 +109,6 @@ public class MemberService {
     public Map<String, Object> payload(String accessToken) {
         return authService.payload(accessToken);
     }
+
+
 }

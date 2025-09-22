@@ -42,18 +42,14 @@ public class BaseInitData {
             memberService.signup(
                     "user1@user.com",
                     "user123",
-                    "유저1",
-                    1,
-                    MemberGender.MALE
+                    "유저1"
             );
         }
         if(memberService.findByEmail("user2@user.com").isEmpty()) {
             memberService.signup(
                     "user2@user.com",
                     "user123",
-                    "유저2",
-                    1,
-                    MemberGender.FEMALE
+                    "유저2"
             );
         }
     }
