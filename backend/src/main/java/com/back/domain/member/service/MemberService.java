@@ -23,7 +23,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
 
-    //가입
+    //가입 (일반)
     public Member signup(
             String email,
             String password,
@@ -54,7 +54,7 @@ public class MemberService {
         return member;
     }
 
-    //로그인
+    //로그인 (일반)
     public Member login(String email, String password) {
         Member member = findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "잘못된 이메일입니다."));
@@ -72,12 +72,17 @@ public class MemberService {
 
         StringBuilder sb = new StringBuilder(6);
         do {
-            for (int i=0; i<6; i++) {
+            for(int i=0; i<6; i++) {
                 sb.append(CHAR_POOL.charAt(random.nextInt(CHAR_POOL.length())));
             }
         } while(memberRepository.existsByCode(sb.toString()));
 
         member.setCode(sb.toString());
+    }
+
+    //회원 탈퇴
+    public void delete(Member member) {
+        memberRepository.delete(member);
     }
 
     // *** Modify 메서드 ***
@@ -113,6 +118,11 @@ public class MemberService {
     public Optional<Member> findByEmail(String email) {
         return memberRepository.findByEmail(email);
     }
+
+    public Optional<Member> findByCode(String code) {
+        return memberRepository.findByCode(code);
+    }
+
     public Optional<Member> findByApiKey(String apiKey) {
         return memberRepository.findByApiKey(apiKey);
     }

@@ -182,4 +182,22 @@ public class ApiV1MemberController {
                         )
                 );
     }
+
+    @DeleteMapping("/delete")
+    @Operation(summary = "회원 탈퇴", description = "회원 탈퇴")
+    public ResponseEntity<ApiResponse<Void>> delete() {
+        Member actor = rq.getActorFromDb();
+
+        memberService.delete(actor);
+        rq.deleteCookie("apiKey");
+        rq.deleteCookie("accessToken");
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "회원 탈퇴 완료"
+                        )
+                );
+    }
 }
