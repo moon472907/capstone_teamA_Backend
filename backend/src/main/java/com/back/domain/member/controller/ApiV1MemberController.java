@@ -22,7 +22,7 @@ public class ApiV1MemberController {
     private final Rq rq;
 
     @PostMapping("/signup")
-    @Operation(summary = "회원 가입(일반)", description = "일반 계정(소셜 X) 회원 가입")
+    @Operation(summary = "회원 가입(일반 계정)", description = "일반 계정(소셜 X) 회원 가입")
     public ResponseEntity<ApiResponse<MemberDto>> signup(
             @Valid @RequestBody SignupReqDto reqBody
     ) {
@@ -39,7 +39,7 @@ public class ApiV1MemberController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "로그인(일반)", description = "일반 계정(소셜 X) 로그인")
+    @Operation(summary = "로그인(일반 계정)", description = "일반 계정(소셜 X) 로그인")
     public ResponseEntity<ApiResponse<LoginResDto>> login(
             @Valid @RequestBody LoginReqDto reqBody
     ) {
@@ -150,10 +150,11 @@ public class ApiV1MemberController {
                 );
     }
 
+    public record PasswordReqDto(String password) {}
     @PutMapping("/modify/password")
-    @Operation(summary = "비밀번호 변경", description = "비밀번호 변경")
+    @Operation(summary = "비밀번호 변경(일반 계정)", description = "비밀번호 변경")
     public ResponseEntity<ApiResponse<MemberDto>> modifyPassword(
-            @Valid @RequestBody SignupReqDto reqBody
+            @Valid @RequestBody PasswordReqDto reqBody
     ) {
         Member actor = rq.getActorFromDb();
         memberService.modifyName(actor, reqBody.password());
@@ -162,8 +163,7 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                                 "200",
-                                "회원 비밀번호 변경 성공",
-                                new MemberDto(actor)
+                                "회원 비밀번호 변경 성공"
                         )
                 );
     }
