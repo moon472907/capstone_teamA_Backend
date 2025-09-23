@@ -40,18 +40,19 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 name = ((Map<String, Object>)kakao_account.get("profile")).get("nickname").toString();
             }
             case "GOOGLE" -> {
-                oauthUserId = oAuth2User.getName();
-                name = (String) oAuth2User.getAttributes().get("name");
+                Map<String, Object> attributes = oAuth2User.getAttributes();
+
+                email = attributes.get("email").toString();
+                name = attributes.get("name").toString();
             }
             case "NAVER" -> {
                 Map<String, Object> attributes = oAuth2User.getAttributes();
                 Map<String, Object> attributesProperties = (Map<String, Object>) attributes.get("response");
 
-                oauthUserId = (String) attributesProperties.get("id");
-                name = (String) attributesProperties.get("nickname");
+                email = attributesProperties.get("email").toString();
+                name = attributesProperties.get("nickname").toString();
             }
         }
-        //email = providerTypeCode + "__%s".formatted(oauthUserId);
 
         Member member = memberService.social_login(email, password, name);
 
