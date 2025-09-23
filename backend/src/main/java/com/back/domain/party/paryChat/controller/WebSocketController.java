@@ -32,6 +32,20 @@ public class WebSocketController {
         messagingTemplate.convertAndSend("/topic/party/" + chatMessageDto.getPartyId(), chatMessageDto);
     }
 
+    @MessageMapping("/chat.updateMessage")
+    public void updateMessage(@Payload ChatMessageDto chatMessageDto) {
+        // 메시지를 업데이트하고 변경 내용을 브로드캐스트합니다.
+        chatMessageService.updateMessage(chatMessageDto.getId(), chatMessageDto.getContent(), chatMessageDto.getSenderEmail());
+        messagingTemplate.convertAndSend("/topic/party/" + chatMessageDto.getPartyId(), chatMessageDto);
+    }
+
+    @MessageMapping("/chat.deleteMessage")
+    public void deleteMessage(@Payload ChatMessageDto chatMessageDto) {
+        // 메시지를 삭제하고 변경 내용을 브로드캐스트합니다.
+        chatMessageService.deleteMessage(chatMessageDto.getId(), chatMessageDto.getSenderEmail());
+        messagingTemplate.convertAndSend("/topic/party/" + chatMessageDto.getPartyId(), chatMessageDto);
+    }
+
     // HTTP API를 통해 채팅 기록을 가져오는 엔드포인트 추가
     @GetMapping("/history")
     @Operation(summary = "채팅 기록 조회", description = "특정 파티의 채팅 기록을 조회합니다.")

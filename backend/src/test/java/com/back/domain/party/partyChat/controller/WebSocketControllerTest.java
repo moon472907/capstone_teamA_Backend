@@ -72,6 +72,41 @@ class WebSocketControllerTest {
     }
 
     @Test
+    @DisplayName("STOMP 메시지 수정 테스트")
+    void updateMessage_shouldUpdateAndBroadcast() {
+        String updatedContent = "Updated content!";
+        chatMessageDto.setContent(updatedContent);
+
+        webSocketController.updateMessage(chatMessageDto);
+
+        verify(chatMessageService, times(1)).updateMessage(
+                eq(chatMessageDto.getId()), eq(updatedContent), eq(chatMessageDto.getSenderEmail())
+        );
+        verify(messagingTemplate, times(1)).convertAndSend(
+                eq("/topic/party/" + chatMessageDto.getPartyId()), eq(chatMessageDto)
+        );
+    }
+
+    @Test
+    @DisplayName("STOMP 메시지 삭제 테스트")
+    void deleteMessage_shouldDeleteAndBroadcast() {
+        ChatMessageDto deleteDto = new ChatMessageDto();
+        Integer messageId = 101;
+        deleteDto.setId(messageId);
+        deleteDto.setPartyId(partyId);
+        deleteDto.setSenderEmail("test@example.com");
+
+        webSocketController.deleteMessage(deleteDto);
+
+        verify(chatMessageService, times(1)).deleteMessage(
+                eq(deleteDto.getId()), eq(deleteDto.getSenderEmail())
+        );
+        verify(messagingTemplate, times(1)).convertAndSend(
+                eq("/topic/party/" + deleteDto.getPartyId()), eq(deleteDto)
+        );
+    }
+
+    @Test
     @DisplayName("채팅 기록 조회 HTTP GET 요청 테스트")
     void getChatHistory_shouldReturnChatHistory() throws Exception {
 

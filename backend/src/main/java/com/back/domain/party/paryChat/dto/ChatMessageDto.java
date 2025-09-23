@@ -8,6 +8,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class ChatMessageDto {
+    private Integer id;
     private String senderEmail;
     private String content;
     private Integer partyId;
