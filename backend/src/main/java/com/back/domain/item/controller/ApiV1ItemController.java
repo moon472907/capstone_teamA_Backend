@@ -1,6 +1,7 @@
 package com.back.domain.item.controller;
 
 
+import com.back.domain.item.dto.CreateItemDto;
 import com.back.domain.item.dto.ItemDto;
 import com.back.domain.item.entity.ItemType;
 import com.back.domain.item.service.ItemService;
@@ -26,13 +27,13 @@ public class ApiV1ItemController {
     @PostMapping
     @Transactional
     @Operation(summary = "테스트용 아이템 생성 ")
-    public ApiResponse<ItemDto> CreateItem(@RequestBody ItemDto itemDto)
+    public ApiResponse<ItemDto> CreateItem(@RequestBody CreateItemDto createItemDto)
     {
-        ItemDto data = itemService.createItem(new ItemDto(
-                itemDto.name(),
-                itemDto.img(),
-                itemDto.itemType()
-        ));
+        ItemDto data = itemService.createItem(new CreateItemDto(
+                createItemDto.name(),
+                createItemDto.itemType()
+                )
+        );
         return new ApiResponse<>("200", "아이템 생성 성공", data);
     }
 

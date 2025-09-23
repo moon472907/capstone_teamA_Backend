@@ -1,6 +1,7 @@
 package com.back.domain.item.service;
 
 
+import com.back.domain.item.dto.CreateItemDto;
 import com.back.domain.item.dto.ItemDto;
 import com.back.domain.item.entity.Item;
 import com.back.domain.item.entity.ItemType;
@@ -15,12 +16,12 @@ import java.util.List;
 public class ItemService {
     private final ItemRepository itemRepository;
 
-    public ItemDto createItem(ItemDto createItemDto)
+    public ItemDto createItem(CreateItemDto createItemDto)
     {
         Item item = new Item(
                 createItemDto.itemType(),
                 createItemDto.name(),
-                createItemDto.img()
+                "localhost:8080/images/" + createItemDto.name() + ".jpg"
         );
         return new ItemDto(itemRepository.save(item));
     }
