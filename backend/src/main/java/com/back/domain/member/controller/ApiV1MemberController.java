@@ -25,16 +25,14 @@ public class ApiV1MemberController {
     private final Rq rq;
 
     @PostMapping("/signup")
-    @Operation(summary = "회원가입", description = "회원 가입 API")
+    @Operation(summary = "회원 가입", description = "회원 가입")
     public ResponseEntity<ApiResponse<MemberDto>> signup(
             @Valid @RequestBody SignupReqDto reqBody
     ) {
         Member member = memberService.signup(
                 reqBody.email(),
                 reqBody.password(),
-                reqBody.name(),
-                reqBody.age(),
-                reqBody.gender()
+                reqBody.name()
         );
 
         return ResponseEntity
@@ -48,7 +46,7 @@ public class ApiV1MemberController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "로그인", description = "회원 로그인 API")
+    @Operation(summary = "로그인", description = "로그인")
     public ResponseEntity<ApiResponse<LoginResDto>> login(
             @Valid @RequestBody LoginReqDto reqBody
     ) {
@@ -72,7 +70,7 @@ public class ApiV1MemberController {
     }
 
     @DeleteMapping("/logout")
-    @Operation(summary = "로그아웃", description = "회원 로그아웃 API")
+    @Operation(summary = "로그아웃", description = "로그아웃")
     public ResponseEntity<ApiResponse<Void>> logout() {
         rq.deleteCookie("apiKey");
         rq.deleteCookie("accessToken");
@@ -86,18 +84,71 @@ public class ApiV1MemberController {
                 );
     }
 
-    //테스트용. 삭제 예정
-    @GetMapping("/test")
-    @Operation(summary = "로그인 테스트 (삭제 예정)", description = "test API")
-    public ResponseEntity<ApiResponse<Void>> test() {
-        Member actor = rq.getActor();
+    @PutMapping("/modify/name")
+    @Operation(summary = "닉네임 변경", description = "닉네임 변경")
+    public ResponseEntity<ApiResponse<MemberDto>> modifyName(
+            @Valid @RequestBody SignupReqDto reqBody
+    ) {
+        Member actor = rq.getActorFromDb();
+        memberService.modifyName(actor, reqBody.name());
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "회원 닉네임 변경 성공",
+                                new MemberDto(actor)
+                        )
+                );
+    }
+
+    @PutMapping("/modify/password")
+    @Operation(summary = "비밀번호 변경", description = "비밀번호 변경")
+    public ResponseEntity<ApiResponse<MemberDto>> modifyPassword(
+            @Valid @RequestBody SignupReqDto reqBody
+    ) {
+        Member actor = rq.getActorFromDb();
+        memberService.modifyName(actor, reqBody.password());
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "회원 비밀번호 변경 성공",
+                                new MemberDto(actor)
+                        )
+                );
+    }
+
+    @PutMapping("/modify/profile")
+    @Operation(summary = "회원 정보 수정", description = "생년월일, 성별 수정")
+    public ResponseEntity<ApiResponse<MemberDto>> modifyProfile(
+            @Valid @RequestBody SignupReqDto reqBody
+    ) {
+        Member actor = rq.getActorFromDb();
+        memberService.modifyProfile(actor, reqBody.age(), reqBody.gender());
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                        "200",
+                        "회원 정보 수정 성공",
+                        new MemberDto(actor)
+                        )
+                );
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "회원 정보 확인", description = "현재 로그인된 사용자 정보 확인")
+    public ResponseEntity<ApiResponse<MemberDto>> me() {
+        Member actor = rq.getActorFromDb();
 
         if (actor == null) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
                     .body(new ApiResponse<>(
                             "404",
-                            "로그인 실패"
+                            "로그인 정보 없음"
                             )
                     );
         }
@@ -106,7 +157,8 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                         "200",
-                        "로그인 된 유저: %s".formatted(actor.getEmail())
+                        "로그인된 사용자: %s".formatted(actor.getName()),
+                        new MemberDto(actor)
                         )
                 );
     }

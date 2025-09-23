@@ -26,8 +26,8 @@ public class Member extends BaseEntity {
     private String email;
     private String password;
     private String name;
-    private int age;
-    private MemberGender gender;
+    private int age = 0;
+    private MemberGender gender = MemberGender.NONE;
 
     // *** 상태 및 아이템 정보 ***
     private int level = 1;
@@ -36,15 +36,13 @@ public class Member extends BaseEntity {
 
     // *** 개발자용 정보 ***
     private MemberRole role = MemberRole.USER;
-    private String apiKey;
+    private String apiKey = null;
 
     //생성자(회원 가입)
-    public Member(String email, String password, String name, int age, MemberGender gender) {
+    public Member(String email, String password, String name) {
         this.email = email;
         this.password = password;
         this.name = name;
-        this.age = age;
-        this.gender = gender;
 
         this.apiKey = UUID.randomUUID().toString();
     }
