@@ -10,6 +10,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
 
@@ -21,7 +23,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
 
-    //가입
+    //가입 (일반)
     public Member signup(
             String email,
             String password,
@@ -29,7 +31,7 @@ public class MemberService {
     ) {
         findByEmail(email)
                 .ifPresent(_member -> {
-                    throw new CustomException(ErrorCode.CONFLICT, "이미 가입된 이메일입니다.");
+                    throw new CustomException(ErrorCode.CONFLICT, "이미 가입된 계정입니다.");
                 });
 
         password = passwordEncoder.encode(password);
@@ -52,7 +54,7 @@ public class MemberService {
         return member;
     }
 
-    //로그인
+    //로그인 (일반)
     public Member login(String email, String password) {
         Member member = findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "잘못된 이메일입니다."));
@@ -61,6 +63,26 @@ public class MemberService {
         }
 
         return member;
+    }
+
+    //식별코드 생성
+    public void genCode(Member member) {
+        final String CHAR_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        final SecureRandom random = new SecureRandom();
+
+        StringBuilder sb = new StringBuilder(6);
+        do {
+            for(int i=0; i<6; i++) {
+                sb.append(CHAR_POOL.charAt(random.nextInt(CHAR_POOL.length())));
+            }
+        } while(memberRepository.existsByCode(sb.toString()));
+
+        member.setCode(sb.toString());
+    }
+
+    //회원 탈퇴
+    public void delete(Member member) {
+        memberRepository.delete(member);
     }
 
     // *** Modify 메서드 ***
@@ -72,8 +94,8 @@ public class MemberService {
         member.setPassword(passwordEncoder.encode(password));
     }
 
-    public void modifyProfile(Member member, int age, MemberGender gender) {
-        member.setAge(age);
+    public void modifyProfile(Member member, LocalDate age, MemberGender gender) {
+        member.setBirth(age);
         member.setGender(gender);
     }
 
@@ -97,6 +119,10 @@ public class MemberService {
         return memberRepository.findByEmail(email);
     }
 
+    public Optional<Member> findByCode(String code) {
+        return memberRepository.findByCode(code);
+    }
+
     public Optional<Member> findByApiKey(String apiKey) {
         return memberRepository.findByApiKey(apiKey);
     }
@@ -109,6 +135,4 @@ public class MemberService {
     public Map<String, Object> payload(String accessToken) {
         return authService.payload(accessToken);
     }
-
-
 }
