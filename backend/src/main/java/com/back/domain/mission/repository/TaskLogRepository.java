@@ -8,8 +8,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface TaskLogRepository extends JpaRepository<TaskLog, Long> { // Integer → Long
-
+public interface TaskLogRepository extends JpaRepository<TaskLog, Integer> { // Integer → Long
+    boolean existsByTaskIdAndMemberIdAndDate(Integer taskId, Integer memberId, LocalDate date);
     List<TaskLog> findByTaskId(Integer taskId);
     List<TaskLog> findByMemberId(Integer memberId);
 

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface TaskRepository extends JpaRepository<Task, Long> { // Integer → Long
+public interface TaskRepository extends JpaRepository<Task, Integer> { // Integer → Long
 
     // SubGoal별 태스크 조회
     List<Task> findBySubGoalId(Integer subGoalId);

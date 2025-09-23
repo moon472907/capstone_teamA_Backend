@@ -6,6 +6,9 @@ import com.back.domain.mission.dto.ai.AiMissionResult;
 import com.back.domain.mission.dto.ai.DailyTask;
 import com.back.domain.mission.dto.ai.WeeklyPlan;
 import com.back.domain.mission.dto.request.MissionCreateRequest;
+import com.back.domain.mission.dto.request.MissionUpdateRequest;
+import com.back.domain.mission.dto.request.TaskUpdateRequest;
+import com.back.domain.mission.dto.response.MissionOverviewResponse;
 import com.back.domain.mission.dto.response.MissionResponse;
 import com.back.domain.mission.dto.response.SubGoalResponse;
 import com.back.domain.mission.dto.response.TaskResponse;
@@ -73,12 +76,88 @@ public class MissionService {
 
     }
 
+    //미션 목록 조회
+    @Transactional(readOnly = true)
+    public MissionOverviewResponse getMissions(Integer memberId){
+        List<Mission> activceMissions = missionRepository.findByMemberIdAndIsCompleted(memberId, false);
+        List<MissionResponse> activeSummaries = activceMissions.stream()
+                .map(mission -> convertToMissionResponse(mission, false))
+                .collect(Collectors.toList());
+
+        List<Mission> completeMissions = missionRepository.findByMemberIdAndIsCompleted(memberId,true);
+        List<MissionResponse> completedSummaries = completeMissions.stream()
+                .map(mission -> convertToMissionResponse(mission, false))
+                .collect(Collectors.toList());
+
+        return MissionOverviewResponse.builder()
+                .activeMissions(activeSummaries) // 진행중인 미션 목록
+                .completedMissions(completedSummaries) // 완료된 미션 목록
+                .activeMissionCount(activeSummaries.size()) // 진행중인 미션 개수
+                .remainingSlots(MAX_MISSIONS_PER_USER - activeSummaries.size()) //남은 슬롯 계싼
+                .build();
+    }
+
+
+    // 미션 상세 조회
+    @Transactional(readOnly = true)
+    public MissionResponse getMissionDetail(Integer memberId, Integer missionId){
+        Mission mission = findMissionWithPermissionCheck(memberId, missionId);
+        return convertToMissionResponse(mission, true);
+
+    }
+
+
+    //미선 수정
+    public MissionResponse updateMission(Integer memberId, MissionUpdateRequest request){
+        Mission mission = findMissionWithPermissionCheck(memberId, request.getMissionId());
+        if(!mission.isEditable()) {
+            throw new MissionException(MissionErrorCode.MISSION_NOT_EDITABLE);
+        }
+
+        if(!request.getConfirmUpdate()) {
+            throw new MissionException(MissionErrorCode.UPDATE_CONFIRMATION_REQUIRED);
+        }
+
+        updateTasks(mission, request.getTaskUpdates());
+
+        mission.setEditable(false);
+
+        return convertToMissionResponse(mission,true);
+    }
+
 
 
     private void validateMissionLimit(Integer memberId) {
         Long activeMissionCount = missionRepository.countByMemberIdAndIsCompleted(memberId, false);
         if (activeMissionCount >= MAX_MISSIONS_PER_USER) {
             throw new MissionException(MissionErrorCode.MISSION_LIMIT_EXCEEDED);
+        }
+    }
+
+
+    // 사용자가 자신의 미션만 접근 가능
+    private Mission findMissionWithPermissionCheck(Integer memberId, Integer missionId){
+        Mission mission = missionRepository.findById(missionId)
+                .orElseThrow(() -> new MissionException(MissionErrorCode.MISSION_NOT_FOUND));
+
+        if (!mission.getMember().getId().equals(memberId)) {
+            throw new MissionException(MissionErrorCode.MEMBER_FORBIDDEN);
+        }
+
+        return mission;
+    }
+
+
+    private void updateTasks(Mission mission, List<TaskUpdateRequest> taskUpdates) {
+        for (TaskUpdateRequest taskUpdate : taskUpdates) {
+            Task task = taskRepository.findById(taskUpdate.getTaskId())
+                    .orElseThrow(() -> new MissionException(MissionErrorCode.TASK_NOT_FOUND));
+
+            if (!task.getSubGoal().getMission().getId().equals(mission.getId())) {
+                throw new MissionException(MissionErrorCode.TASK_NOT_BELONGS_TO_MISSION);
+            }
+
+            task.setTitle(taskUpdate.getTitle());
         }
     }
 
@@ -222,8 +301,8 @@ public class MissionService {
                 .weekNum(subGoal.getOrderNum())
                 .startDate(subGoal.getStartDate())
                 .endDate(subGoal.getEndDate())
-                .editable(subGoal.isEditable())
-                .currentWeek(missionCalculateService.isCurrentWeek(subGoal))
+                .isEditable(subGoal.isEditable())
+                .isCurrentWeek(missionCalculateService.isCurrentWeek(subGoal))
                 .weekProgressRate(missionCalculateService.calculateWeekProgress(subGoal))
                 .tasks(taskResponses)
                 .build();
@@ -236,7 +315,7 @@ public class MissionService {
                 .dayNum(task.getDayNum())
                 .status(TaskStatus.PENDING) // TODO: 실제 상태 조회
                 .lastCompletedDate(null) // TODO: 실제 완료일 조회
-                .today(missionCalculateService.today(task))
+                .isToday(missionCalculateService.isToday(task))
                 .build();
     }
 

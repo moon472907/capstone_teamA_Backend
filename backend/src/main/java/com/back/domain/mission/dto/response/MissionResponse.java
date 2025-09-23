@@ -22,8 +22,8 @@ public class MissionResponse { //미션 응답 목록, 상세, 생성
     private LocalDate endDate;
     private Integer totalWeeks;
     private Integer currentWeek;
-    private boolean completed;
-    private boolean editable;
+    private boolean isCompleted;
+    private boolean isEditable;
     private Integer progressRate;
 
     // 상세 조회시에만 포함 (목록 조회시에는 null)

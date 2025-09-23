@@ -10,5 +10,5 @@ import java.util.List;
 public interface MissionRepository extends JpaRepository<Mission, Integer> {
     List<Mission> findByMemberId(Integer memberId);
     Long countByMemberIdAndIsCompleted(Integer memberId, boolean isCompleted);
-
+    List<Mission> findByMemberIdAndIsCompleted(Integer memberId, boolean isCompleted);
 }
