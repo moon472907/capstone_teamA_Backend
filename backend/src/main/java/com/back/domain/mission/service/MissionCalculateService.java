@@ -1,10 +1,12 @@
 package com.back.domain.mission.service;
 
+import com.back.domain.mission.entitiy.Mission;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -33,5 +35,17 @@ public class MissionCalculateService {
         return startDate.plusWeeks(weeks).minusDays(1);
     }
 
+    //현재 주차 계산
+    public Integer calculateCurrentWeek(Mission mission){
+        LocalDate today = LocalDate.now();
+        if(today.isBefore(mission.getStartDate())){
+            return 0; //시작전
+        }
+        if(today.isAfter(mission.getEndDate())){
+            return null;
+        }
 
+        long daysPassed = ChronoUnit.DAYS.between(mission.getStartDate(), today);
+        return (int) (daysPassed / 7) + 1;
+    }
 }

@@ -7,10 +7,13 @@ import com.back.domain.mission.dto.ai.DailyTask;
 import com.back.domain.mission.dto.ai.WeeklyPlan;
 import com.back.domain.mission.dto.request.MissionCreateRequest;
 import com.back.domain.mission.dto.response.MissionResponse;
+import com.back.domain.mission.dto.response.SubGoalResponse;
+import com.back.domain.mission.dto.response.TaskResponse;
 import com.back.domain.mission.entitiy.Mission;
 import com.back.domain.mission.entitiy.SubGoal;
 import com.back.domain.mission.entitiy.Task;
 import com.back.domain.mission.enums.MissionType;
+import com.back.domain.mission.enums.TaskStatus;
 import com.back.domain.mission.exception.MissionErrorCode;
 import com.back.domain.mission.exception.MissionException;
 import com.back.domain.mission.repository.MissionRepository;
@@ -22,8 +25,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -158,15 +163,81 @@ public class MissionService {
 
     // 커스텀 시 subgoal
     private void createBasicSubGoalsForCustom(Mission mission, Integer weeks, LocalDate startDate){
+        for (int week = 1; week <= weeks; week ++ ){
+            LocalDate weekStartDate = startDate.plusWeeks(week -1);
+            LocalDate weekEndDate = weekStartDate.plusDays(6);
 
+            SubGoal subGoal = SubGoal.builder()
+                    .mission(mission)
+                    .title(week + "주차")
+                    .orderNum(week)
+                    .startDate(weekStartDate)
+                    .endDate(weekEndDate)
+                    .isEditable(true)
+                    .tasks(new ArrayList<>())
+                    .build();
+            mission.getSubGoals().add(subGoal);
+        }
     }
 
     //mission 엔티티 -> missionResponse DTO 변환
-    private MissionResponse convertToMissionResponse(Mission savedMission, boolean b) {
-        return null;
+    private MissionResponse convertToMissionResponse(Mission mission, boolean includeSubGoals) {
+        Integer totalWeeks = (int) ChronoUnit.WEEKS.between(
+                mission.getStartDate(), mission.getEndDate().plusDays(1));
 
+        List<SubGoalResponse> subGoalResponses = null;
+        if (includeSubGoals) {
+            subGoalResponses = mission.getSubGoals().stream()
+                    .map(subGoal -> convertToSubGoalResponse(subGoal, includeSubGoals))
+                    .collect(Collectors.toList());
+        }
+
+        return MissionResponse.builder()
+                .missionId(mission.getId())
+                .title(mission.getTitle())
+                .category(mission.getCategory())
+                .type(mission.getType())
+                .startDate(mission.getStartDate())
+                .endDate(mission.getEndDate())
+                .totalWeeks(totalWeeks)
+                .currentWeek(missionCalculateService.calculateCurrentWeek(mission))
+                .isCompleted(mission.isCompleted())
+                .isEditable(mission.isEditable())
+                .progressRate(missionCalculateService.calculateMissionProgress(mission))
+                .subGoals(subGoalResponses)
+                .build();
     }
 
+    private SubGoalResponse convertToSubGoalResponse(SubGoal subGoal, boolean includeTasks) {
+        List<TaskResponse> taskResponses = null;
+        if (includeTasks) {
+            taskResponses = subGoal.getTasks().stream()
+                    .map(this::convertToTaskResponse)
+                    .collect(Collectors.toList());
+        }
 
+        return SubGoalResponse.builder()
+                .subGoalId(subGoal.getId())
+                .title(subGoal.getTitle())
+                .weekNum(subGoal.getOrderNum())
+                .startDate(subGoal.getStartDate())
+                .endDate(subGoal.getEndDate())
+                .editable(subGoal.isEditable())
+                .currentWeek(missionCalculateService.isCurrentWeek(subGoal))
+                .weekProgressRate(missionCalculateService.calculateWeekProgress(subGoal))
+                .tasks(taskResponses)
+                .build();
+    }
+
+    private TaskResponse convertToTaskResponse(Task task) {
+        return TaskResponse.builder()
+                .taskId(task.getId())
+                .title(task.getTitle())
+                .dayNum(task.getDayNum())
+                .status(TaskStatus.PENDING) // TODO: 실제 상태 조회
+                .lastCompletedDate(null) // TODO: 실제 완료일 조회
+                .today(missionCalculateService.today(task))
+                .build();
+    }
 
 }
