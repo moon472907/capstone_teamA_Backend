@@ -67,8 +67,9 @@ class ApiV1PartyControllerTest {
                 .email(uniqueEmailPrefix + "leader@test.com")
                 .password("password")
                 .name("리더")
-                .birth(LocalDate.of(1995, 1, 1)) // Changed from .age(30)
+                .birth(LocalDate.of(1995, 1, 1))
                 .gender(MemberGender.MALE)
+                .code(UUID.randomUUID().toString().substring(0, 8))
                 .build();
         memberRepository.save(leader);
 
@@ -76,8 +77,9 @@ class ApiV1PartyControllerTest {
                 .email(uniqueEmailPrefix + "member1@test.com")
                 .password("password")
                 .name("멤버1")
-                .birth(LocalDate.of(2000, 5, 10)) // Changed from .age(25)
+                .birth(LocalDate.of(2000, 5, 10))
                 .gender(MemberGender.FEMALE)
+                .code(UUID.randomUUID().toString().substring(0, 8))
                 .build();
         memberRepository.save(member1);
 
@@ -85,8 +87,9 @@ class ApiV1PartyControllerTest {
                 .email(uniqueEmailPrefix + "invited@test.com")
                 .password("password")
                 .name("초대받은사람")
-                .birth(LocalDate.of(1997, 3, 22)) // Changed from .age(28)
+                .birth(LocalDate.of(1997, 3, 22))
                 .gender(MemberGender.MALE)
+                .code(UUID.randomUUID().toString().substring(0, 8))
                 .build();
         memberRepository.save(invitedMember);
     }
@@ -250,7 +253,7 @@ class ApiV1PartyControllerTest {
         partyRepository.save(party);
 
         InvitationDto invitationDto = new InvitationDto();
-        invitationDto.setInvitedMemberEmail(invitedMember.getEmail());
+        invitationDto.setInvitedMemberCode(invitedMember.getCode());
 
         mockMvc.perform(post("/api/v1/parties/{partyId}/invite", party.getId())
                         .param("leaderId", String.valueOf(leader.getId()))

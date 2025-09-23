@@ -165,7 +165,7 @@ public class PartyService {
     }
 
     @Transactional
-    public void inviteMember(Integer partyId, Integer leaderId, String invitedMemberEmail) {
+    public void inviteMember(Integer partyId, Integer leaderId, String invitedMemberCode) {
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
 
@@ -177,9 +177,9 @@ public class PartyService {
             throw new CustomException(ErrorCode.CONFLICT, "파티의 정원이 가득 찼습니다.");
         }
 
-        // 이메일로 멤버를 조회합니다.
-        Member invitedMember = memberRepository.findByEmail(invitedMemberEmail)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "해당 이메일을 가진 멤버를 찾을 수 없습니다."));
+        // 코드로 멤버를 조회합니다.
+        Member invitedMember = memberRepository.findByCode(invitedMemberCode)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "해당 코드를 가진 멤버를 찾을 수 없습니다."));
 
         if (partyMemberRepository.findByParty_IdAndMember_Id(partyId, invitedMember.getId()).isPresent()) {
             throw new CustomException(ErrorCode.CONFLICT, "이미 파티에 가입되어 있거나 초대 대기 중인 멤버입니다.");

@@ -116,13 +116,13 @@ public class ApiV1PartyController {
     }
 
     @PostMapping("/{partyId}/invite")
-    @Operation(summary = "파티 초대 (이메일)", description = "파티장이 다른 멤버를 이메일 주소로 파티에 초대하는 API")
+    @Operation(summary = "파티 초대 (코드)", description = "파티장이 다른 멤버를 코드를 사용하여 파티에 초대하는 API")
     public ResponseEntity<ApiResponse<Void>> inviteMember(
             @PathVariable Integer partyId,
             @RequestParam("leaderId") Integer leaderId,
             @RequestBody @Valid InvitationDto invitationDto
     ) {
-        partyService.inviteMember(partyId, leaderId, invitationDto.getInvitedMemberEmail());
+        partyService.inviteMember(partyId, leaderId, invitationDto.getInvitedMemberCode());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
