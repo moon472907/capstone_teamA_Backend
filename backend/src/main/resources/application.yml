@@ -8,6 +8,9 @@ spring:
       - org.springframework.boot.autoconfigure.data.session.SessionAutoConfiguration
   application:
     name: back
+  web:
+    resources:
+      static-locations: classpath:/static/
   config:
     import: optional:file:.env[.properties]
   profiles:
