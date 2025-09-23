@@ -177,7 +177,7 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                         "200",
-                        "로그인된 사용자: %s".formatted(actor.getName()),
+                        "로그인된 사용자: %s".formatted(actor.getEmail()),
                         new MemberDto(actor)
                         )
                 );
