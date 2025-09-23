@@ -23,6 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -66,7 +67,7 @@ class ApiV1PartyControllerTest {
                 .email(uniqueEmailPrefix + "leader@test.com")
                 .password("password")
                 .name("리더")
-                .age(30)
+                .birth(LocalDate.of(1995, 1, 1)) // Changed from .age(30)
                 .gender(MemberGender.MALE)
                 .build();
         memberRepository.save(leader);
@@ -75,7 +76,7 @@ class ApiV1PartyControllerTest {
                 .email(uniqueEmailPrefix + "member1@test.com")
                 .password("password")
                 .name("멤버1")
-                .age(25)
+                .birth(LocalDate.of(2000, 5, 10)) // Changed from .age(25)
                 .gender(MemberGender.FEMALE)
                 .build();
         memberRepository.save(member1);
@@ -84,7 +85,7 @@ class ApiV1PartyControllerTest {
                 .email(uniqueEmailPrefix + "invited@test.com")
                 .password("password")
                 .name("초대받은사람")
-                .age(28)
+                .birth(LocalDate.of(1997, 3, 22)) // Changed from .age(28)
                 .gender(MemberGender.MALE)
                 .build();
         memberRepository.save(invitedMember);
