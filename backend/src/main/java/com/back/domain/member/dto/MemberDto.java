@@ -3,10 +3,12 @@ package com.back.domain.member.dto;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.entity.MemberGender;
 
+import java.time.LocalDate;
+
 public record MemberDto(
-        String email,
         String name,
-        int age,
+        String code,
+        LocalDate birth,
         MemberGender gender,
         int level,
         int xp,
@@ -14,9 +16,9 @@ public record MemberDto(
 ) {
     public MemberDto(Member member) {
         this(
-                member.getEmail(),
                 member.getName(),
-                member.getAge(),
+                member.getCode(),
+                member.getBirth(),
                 member.getGender(),
                 member.getLevel(),
                 member.getXp(),

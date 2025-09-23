@@ -2,6 +2,8 @@ package com.back.global.rq;
 
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.service.MemberService;
+import com.back.global.exception.CustomException;
+import com.back.global.exception.ErrorCode;
 import com.back.global.security.SecurityUser;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,17 +34,14 @@ public class Rq {
                 .filter(principal -> principal instanceof SecurityUser)
                 .map(principal -> (SecurityUser) principal)
                 .map(securityUser -> new Member(securityUser.getId(), securityUser.getUsername()))
-                .orElse(null);
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "로그인된 사용자를 찾을 수 없습니다."));
     }
 
     public Member getActorFromDb() {
         Member actor = getActor();
 
-        if (actor == null) {
-            return null;
-        }
-
-        return memberService.findById(actor.getId()).get();
+        return memberService.findById(actor.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "로그인된 사용자를 찾을 수 없습니다."));
     }
 
     public String getHeader(String name, String defaultValue) {

@@ -10,6 +10,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
 
@@ -29,7 +31,7 @@ public class MemberService {
     ) {
         findByEmail(email)
                 .ifPresent(_member -> {
-                    throw new CustomException(ErrorCode.CONFLICT, "이미 가입된 이메일입니다.");
+                    throw new CustomException(ErrorCode.CONFLICT, "이미 가입된 계정입니다.");
                 });
 
         password = passwordEncoder.encode(password);
@@ -63,6 +65,21 @@ public class MemberService {
         return member;
     }
 
+    //식별코드 생성
+    public void genCode(Member member) {
+        final String CHAR_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        final SecureRandom random = new SecureRandom();
+
+        StringBuilder sb = new StringBuilder(6);
+        do {
+            for (int i=0; i<6; i++) {
+                sb.append(CHAR_POOL.charAt(random.nextInt(CHAR_POOL.length())));
+            }
+        } while(memberRepository.existsByCode(sb.toString()));
+
+        member.setCode(sb.toString());
+    }
+
     // *** Modify 메서드 ***
     public void modifyName(Member member, String name) {
         member.setName(name);
@@ -72,8 +89,8 @@ public class MemberService {
         member.setPassword(passwordEncoder.encode(password));
     }
 
-    public void modifyProfile(Member member, int age, MemberGender gender) {
-        member.setAge(age);
+    public void modifyProfile(Member member, LocalDate age, MemberGender gender) {
+        member.setBirth(age);
         member.setGender(gender);
     }
 
@@ -109,6 +126,4 @@ public class MemberService {
     public Map<String, Object> payload(String accessToken) {
         return authService.payload(accessToken);
     }
-
-
 }

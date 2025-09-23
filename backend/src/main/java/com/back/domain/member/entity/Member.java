@@ -8,6 +8,7 @@ import org.hibernate.annotations.SoftDelete;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -26,7 +27,8 @@ public class Member extends BaseEntity {
     private String email;
     private String password;
     private String name;
-    private int age = 0;
+    private String code = null;
+    private LocalDate birth = LocalDate.of(1, 1, 1);
     private MemberGender gender = MemberGender.NONE;
 
     // *** 상태 및 아이템 정보 ***
