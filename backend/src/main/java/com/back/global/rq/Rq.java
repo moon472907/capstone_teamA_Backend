@@ -34,14 +34,14 @@ public class Rq {
                 .filter(principal -> principal instanceof SecurityUser)
                 .map(principal -> (SecurityUser) principal)
                 .map(securityUser -> new Member(securityUser.getId(), securityUser.getUsername()))
-                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "로그인된 사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "[Rq] Fail: 로그인된 사용자를 찾을 수 없음"));
     }
 
     public Member getActorFromDb() {
         Member actor = getActor();
 
         return memberService.findById(actor.getId())
-                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "로그인된 사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "[Rq] Fail: 로그인된 사용자를 찾을 수 없음"));
     }
 
     public String getHeader(String name, String defaultValue) {

@@ -59,7 +59,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
         if (!headerAuthorization.isBlank()) {
             if (!headerAuthorization.startsWith("Bearer "))
-                throw new CustomException(ErrorCode.UNAUTHORIZED, "Authorization 헤더가 Bearer 형식이 아닙니다.");
+                throw new CustomException(ErrorCode.UNAUTHORIZED, "[Security] Fail: Authorization 헤더가 Bearer 형식이 아님");
 
             String[] headerAuthorizationBits = headerAuthorization.split(" ", 3);
 
@@ -99,7 +99,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         if (member == null) {
             member = memberService
                     .findByApiKey(apiKey)
-                    .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "API 키가 유효하지 않습니다."));
+                    .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "[Security] Fail: API 키 유효하지 않음"));
         }
 
         if (isAccessTokenExists && !isAccessTokenValid) {

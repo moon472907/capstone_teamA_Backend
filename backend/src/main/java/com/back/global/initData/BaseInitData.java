@@ -36,7 +36,7 @@ public class BaseInitData {
             createMember();
             createItem();
         } catch (Exception e) {
-            throw new RuntimeException("initData 생성 실패", e);
+            throw new RuntimeException("[initData] Fail: 초기 데이터 생성 실패", e);
         }
     }
 

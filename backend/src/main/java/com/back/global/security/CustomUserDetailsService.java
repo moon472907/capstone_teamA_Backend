@@ -17,7 +17,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws CustomException {
         Member member = memberService.findByEmail(username)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "[Security] Fail: 사용자를 찾을 수 없음"));
 
         return new SecurityUser(
                 member.getId(),
