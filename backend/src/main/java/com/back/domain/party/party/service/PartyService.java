@@ -31,6 +31,14 @@ public class PartyService {
     private final MemberRepository memberRepository;
     private final PartyMemberRepository partyMemberRepository;
 
+    // 파티 정원 확인 메서드
+    private void checkPartyCapacity(Party party) {
+        long acceptedMembers = partyMemberRepository.countByParty_IdAndStatus(party.getId(), PartyMemberStatus.ACCEPTED);
+        if (acceptedMembers >= party.getMaxMembers()) {
+            throw new CustomException(ErrorCode.CONFLICT, "파티의 정원이 가득 찼습니다.");
+        }
+    }
+
     @Transactional
     @CacheEvict(value = {"partyList", "partyDetails"}, allEntries = true)
     public Party createParty(PartyRequestDto requestDto, Integer memberId) {
@@ -73,10 +81,7 @@ public class PartyService {
         }
 
         // 3. 파티의 정원이 가득 찼는지 확인
-        long acceptedMembers = partyMemberRepository.countByParty_IdAndStatus(partyId, PartyMemberStatus.ACCEPTED);
-        if (acceptedMembers >= party.getMaxMembers()) {
-            throw new CustomException(ErrorCode.CONFLICT, "파티의 정원이 가득 찼습니다.");
-        }
+        checkPartyCapacity(party);
 
         // 4. PartyMember 객체 생성 및 상태를 PENDING으로 설정
         PartyMember partyMember = new PartyMember();
@@ -106,14 +111,16 @@ public class PartyService {
             if (!otherMembers.isEmpty()) {
                 PartyMember newLeaderMember = otherMembers.getFirst();
                 party.setLeader(newLeaderMember.getMember());
+                // 파티원 목록에서 탈퇴 멤버 삭제
+                partyMemberRepository.delete(leavingMember);
             } else {
                 // 남은 멤버가 없다면 파티 삭제
-                partyRepository.delete(party);
+                deleteParty(partyId, memberId);
             }
+        } else {
+            // 파티 멤버 목록에서 탈퇴 멤버 삭제
+            partyMemberRepository.delete(leavingMember);
         }
-
-        // 파티 멤버 목록에서 탈퇴 멤버 삭제
-        partyMemberRepository.delete(leavingMember);
     }
 
     @Transactional
@@ -154,12 +161,7 @@ public class PartyService {
             throw new CustomException(ErrorCode.UNAUTHORIZED, "파티 삭제 권한이 없습니다.");
         }
 
-        // 파티에 속한 모든 멤버 관계를 먼저 삭제
-        List<PartyMember> partyMembers = partyMemberRepository.findByParty_Id(partyId);
-        partyMemberRepository.deleteAll(partyMembers);
-
-        // 파티 삭제
-        partyRepository.deleteById(partyId);
+        partyRepository.delete(party);
     }
 
     @Cacheable(value = "partyList", key = "'all'")
@@ -185,11 +187,8 @@ public class PartyService {
             throw new CustomException(ErrorCode.UNAUTHORIZED, "파티 초대 권한이 없습니다.");
         }
 
-        // 정원 확인 로직을 개선된 쿼리로 변경
-        long acceptedMembers = partyMemberRepository.countByParty_IdAndStatus(partyId, PartyMemberStatus.ACCEPTED);
-        if (acceptedMembers >= party.getMaxMembers()) {
-            throw new CustomException(ErrorCode.CONFLICT, "파티의 정원이 가득 찼습니다.");
-        }
+        // 정원 확인
+        checkPartyCapacity(party);
 
         // 코드로 멤버를 조회합니다.
         Member invitedMember = memberRepository.findByCode(invitedMemberCode)

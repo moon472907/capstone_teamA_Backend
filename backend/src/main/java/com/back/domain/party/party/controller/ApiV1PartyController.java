@@ -5,12 +5,15 @@ import com.back.domain.party.party.entity.Party;
 import com.back.domain.party.party.entity.PartyMember;
 import com.back.domain.party.party.service.PartyService;
 import com.back.global.common.ApiResponse;
+import com.back.global.exception.CustomException;
+import com.back.global.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,12 +27,25 @@ public class ApiV1PartyController {
 
     private final PartyService partyService;
 
+    // Authentication 객체로부터 사용자 ID를 안전하게 가져오는 헬퍼 메서드
+    private Integer getMemberIdFromAuthentication(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new IllegalArgumentException("인증 정보가 없습니다.");
+        }
+        try {
+            return Integer.parseInt(authentication.getName());
+        } catch (NumberFormatException e) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED, "유효하지 않은 인증 정보입니다.");
+        }
+    }
+
     @PostMapping
     @Operation(summary = "파티 생성", description = "파티를 생성하는 API")
     public ResponseEntity<ApiResponse<PartyDto>> createParty(
             @Valid @RequestBody PartyRequestDto requestDto,
-            @RequestParam("memberId") Integer memberId
+            Authentication authentication
     ) {
+        Integer memberId = getMemberIdFromAuthentication(authentication);
         Party createdParty = partyService.createParty(requestDto, memberId);
         PartyDto partyDto = new PartyDto(createdParty);
 
@@ -42,8 +58,9 @@ public class ApiV1PartyController {
     @Operation(summary = "공개 파티 가입 신청", description = "공개 파티에 가입을 신청하는 API. 파티장이 수락해야 가입 완료됩니다.")
     public ResponseEntity<ApiResponse<Void>> joinParty(
             @PathVariable Integer partyId,
-            @RequestParam("memberId") Integer memberId
+            Authentication authentication
     ) {
+        Integer memberId = getMemberIdFromAuthentication(authentication);
         partyService.joinParty(partyId, memberId);
 
         return ResponseEntity
@@ -55,8 +72,9 @@ public class ApiV1PartyController {
     @Operation(summary = "파티 탈퇴", description = "가입된 파티를 탈퇴하는 API")
     public ResponseEntity<ApiResponse<Void>> leaveParty(
             @PathVariable Integer partyId,
-            @RequestParam("memberId") Integer memberId
+            Authentication authentication
     ) {
+        Integer memberId = getMemberIdFromAuthentication(authentication);
         partyService.leaveParty(partyId, memberId);
 
         return ResponseEntity
@@ -69,8 +87,9 @@ public class ApiV1PartyController {
     public ResponseEntity<ApiResponse<Void>> updateParty(
             @PathVariable Integer partyId,
             @Valid @RequestBody PartyUpdateRequestDto requestDto,
-            @RequestParam("memberId") Integer memberId
+            Authentication authentication
     ) {
+        Integer memberId = getMemberIdFromAuthentication(authentication);
         partyService.updateParty(partyId, requestDto, memberId);
 
         return ResponseEntity
@@ -82,8 +101,9 @@ public class ApiV1PartyController {
     @Operation(summary = "파티 삭제", description = "파티를 삭제하는 API")
     public ResponseEntity<ApiResponse<Void>> deleteParty(
             @PathVariable Integer partyId,
-            @RequestParam("memberId") Integer memberId
+            Authentication authentication
     ) {
+        Integer memberId = getMemberIdFromAuthentication(authentication);
         partyService.deleteParty(partyId, memberId);
 
         return ResponseEntity
@@ -119,9 +139,10 @@ public class ApiV1PartyController {
     @Operation(summary = "파티 초대 (코드)", description = "파티장이 다른 멤버를 코드를 사용하여 파티에 초대하는 API")
     public ResponseEntity<ApiResponse<Void>> inviteMember(
             @PathVariable Integer partyId,
-            @RequestParam("leaderId") Integer leaderId,
-            @RequestBody @Valid InvitationDto invitationDto
+            @RequestBody @Valid InvitationDto invitationDto,
+            Authentication authentication
     ) {
+        Integer leaderId = getMemberIdFromAuthentication(authentication);
         partyService.inviteMember(partyId, leaderId, invitationDto.getInvitedMemberCode());
 
         return ResponseEntity
@@ -133,8 +154,9 @@ public class ApiV1PartyController {
     @Operation(summary = "초대/신청 수락", description = "초대/신청 대기 중인 멤버를 파티원이 되도록 수락하는 API")
     public ResponseEntity<ApiResponse<Void>> acceptInvitation(
             @PathVariable Integer partyId,
-            @RequestParam("memberId") Integer memberId
+            Authentication authentication
     ) {
+        Integer memberId = getMemberIdFromAuthentication(authentication);
         partyService.acceptInvitation(partyId, memberId);
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -145,8 +167,9 @@ public class ApiV1PartyController {
     @Operation(summary = "초대/신청 거절", description = "초대/신청 대기 중인 멤버를 거절하는 API")
     public ResponseEntity<ApiResponse<Void>> rejectInvitation(
             @PathVariable Integer partyId,
-            @RequestParam("memberId") Integer memberId
+            Authentication authentication
     ) {
+        Integer memberId = getMemberIdFromAuthentication(authentication);
         partyService.rejectInvitation(partyId, memberId);
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -157,9 +180,10 @@ public class ApiV1PartyController {
     @Operation(summary = "파티원 추방", description = "파티장이 특정 파티원을 추방하는 API")
     public ResponseEntity<ApiResponse<Void>> kickMember(
             @PathVariable Integer partyId,
-            @RequestParam("leaderId") Integer leaderId,
+            Authentication authentication,
             @PathVariable Integer kickedMemberId
     ) {
+        Integer leaderId = getMemberIdFromAuthentication(authentication);
         partyService.kickMember(partyId, leaderId, kickedMemberId);
 
         return ResponseEntity
@@ -171,8 +195,9 @@ public class ApiV1PartyController {
     @Operation(summary = "파티 가입 신청/초대 목록 조회", description = "파티장이 가입 신청 또는 초대 대기 중인 멤버 목록을 조회하는 API")
     public ResponseEntity<ApiResponse<List<PartyMemberDto>>> getPendingJoinRequests(
             @PathVariable Integer partyId,
-            @RequestParam("leaderId") Integer leaderId
+            Authentication authentication
     ) {
+        Integer leaderId = getMemberIdFromAuthentication(authentication);
         List<PartyMember> pendingRequests = partyService.getPendingJoinRequests(partyId, leaderId);
         List<PartyMemberDto> requestDtos = pendingRequests.stream()
                 .map(pm -> new PartyMemberDto(pm.getMember()))

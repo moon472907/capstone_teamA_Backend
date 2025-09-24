@@ -20,6 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -27,6 +29,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -69,7 +72,7 @@ class ApiV1PartyControllerTest {
                 .name("리더")
                 .birth(LocalDate.of(1995, 1, 1))
                 .gender(MemberGender.MALE)
-                .code(UUID.randomUUID().toString().substring(0, 8))
+                .code(UUID.randomUUID().toString().substring(0, 6))
                 .build();
         memberRepository.save(leader);
 
@@ -79,7 +82,7 @@ class ApiV1PartyControllerTest {
                 .name("멤버1")
                 .birth(LocalDate.of(2000, 5, 10))
                 .gender(MemberGender.FEMALE)
-                .code(UUID.randomUUID().toString().substring(0, 8))
+                .code(UUID.randomUUID().toString().substring(0, 6))
                 .build();
         memberRepository.save(member1);
 
@@ -89,7 +92,7 @@ class ApiV1PartyControllerTest {
                 .name("초대받은사람")
                 .birth(LocalDate.of(1997, 3, 22))
                 .gender(MemberGender.MALE)
-                .code(UUID.randomUUID().toString().substring(0, 8))
+                .code(UUID.randomUUID().toString().substring(0, 6))
                 .build();
         memberRepository.save(invitedMember);
     }
@@ -101,6 +104,11 @@ class ApiV1PartyControllerTest {
         memberRepository.deleteAllInBatch();
     }
 
+    // Authentication 객체를 생성하는 헬퍼 메서드
+    private Authentication createAuthentication(Integer memberId) {
+        return new UsernamePasswordAuthenticationToken(String.valueOf(memberId), null, null);
+    }
+
     @Test
     @DisplayName("파티 생성 통합 테스트 성공")
     void createParty_success_integration() throws Exception {
@@ -110,9 +118,9 @@ class ApiV1PartyControllerTest {
         requestDto.setIsPublicStatus(true);
 
         mockMvc.perform(post("/api/v1/parties")
+                        .with(authentication(createAuthentication(leader.getId())))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto))
-                        .param("memberId", String.valueOf(leader.getId())))
+                        .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.content.name").value("통합 테스트 파티"))
                 .andExpect(jsonPath("$.code").value("201"))
@@ -130,7 +138,7 @@ class ApiV1PartyControllerTest {
         partyRepository.save(party);
 
         mockMvc.perform(post("/api/v1/parties/{partyId}/join", party.getId())
-                        .param("memberId", String.valueOf(member1.getId())))
+                        .with(authentication(createAuthentication(member1.getId()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("파티 가입 신청 성공"));
@@ -154,7 +162,7 @@ class ApiV1PartyControllerTest {
         partyMemberRepository.save(partyMember);
 
         mockMvc.perform(delete("/api/v1/parties/{partyId}/leave", party.getId())
-                        .param("memberId", String.valueOf(member1.getId())))
+                        .with(authentication(createAuthentication(member1.getId()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("파티 탈퇴 성공"));
@@ -176,9 +184,9 @@ class ApiV1PartyControllerTest {
         requestDto.setIsPublicStatus(false);
 
         mockMvc.perform(patch("/api/v1/parties/{partyId}", party.getId())
+                        .with(authentication(createAuthentication(leader.getId())))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto))
-                        .param("memberId", String.valueOf(leader.getId())))
+                        .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("파티 수정 성공"));
@@ -195,7 +203,7 @@ class ApiV1PartyControllerTest {
         partyRepository.save(party);
 
         mockMvc.perform(delete("/api/v1/parties/{partyId}", party.getId())
-                        .param("memberId", String.valueOf(leader.getId())))
+                        .with(authentication(createAuthentication(leader.getId()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("파티 삭제 성공"));
@@ -256,7 +264,7 @@ class ApiV1PartyControllerTest {
         invitationDto.setInvitedMemberCode(invitedMember.getCode());
 
         mockMvc.perform(post("/api/v1/parties/{partyId}/invite", party.getId())
-                        .param("leaderId", String.valueOf(leader.getId()))
+                        .with(authentication(createAuthentication(leader.getId())))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invitationDto)))
                 .andExpect(status().isOk())
@@ -282,7 +290,7 @@ class ApiV1PartyControllerTest {
         partyMemberRepository.save(partyMember);
 
         mockMvc.perform(post("/api/v1/parties/{partyId}/accept", party.getId())
-                        .param("memberId", String.valueOf(member1.getId())))
+                        .with(authentication(createAuthentication(member1.getId()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("초대/신청 수락 성공"));
@@ -306,7 +314,7 @@ class ApiV1PartyControllerTest {
         partyMemberRepository.save(partyMember);
 
         mockMvc.perform(post("/api/v1/parties/{partyId}/reject", party.getId())
-                        .param("memberId", String.valueOf(member1.getId())))
+                        .with(authentication(createAuthentication(member1.getId()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("초대/신청 거절 성공"));
@@ -330,7 +338,7 @@ class ApiV1PartyControllerTest {
         partyMemberRepository.save(partyMember);
 
         mockMvc.perform(delete("/api/v1/parties/{partyId}/members/{kickedMemberId}", party.getId(), member1.getId())
-                        .param("leaderId", String.valueOf(leader.getId())))
+                        .with(authentication(createAuthentication(leader.getId()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("파티원 추방 성공"));
@@ -354,7 +362,7 @@ class ApiV1PartyControllerTest {
         partyMemberRepository.save(partyMember);
 
         mockMvc.perform(get("/api/v1/parties/{partyId}/requests", party.getId())
-                        .param("leaderId", String.valueOf(leader.getId())))
+                        .with(authentication(createAuthentication(leader.getId()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.size()").value(1))
                 .andExpect(jsonPath("$.content[0].name").value("멤버1"))

@@ -6,6 +6,7 @@ import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SoftDelete;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Getter
@@ -17,6 +18,7 @@ import org.hibernate.annotations.SoftDelete;
 @Table(name = "chat_message", indexes = {
         @Index(name = "idx_partyId_createDate", columnList = "party_id, create_date DESC")
 })
+@Where(clause = "deleted_at IS NULL")
 public class ChatMessage extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

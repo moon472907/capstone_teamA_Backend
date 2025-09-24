@@ -19,12 +19,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -50,30 +53,34 @@ class WebSocketControllerTest {
     private ChatMessage chatMessage2;
     private Party party;
     private Member sender;
+    private User user;
     private final Integer partyId = 1;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(webSocketController).build();
 
+        // Mock 객체 생성
         party = mock(Party.class);
         sender = mock(Member.class);
+        user = new User("test@example.com", "password", Collections.emptyList());
 
+        // Mock 객체 동작 설정
         lenient().when(party.getId()).thenReturn(partyId);
         lenient().when(sender.getEmail()).thenReturn("test@example.com");
-        lenient().when(sender.getId()).thenReturn(101);
 
+        // DTO 객체 생성 (setter 사용)
         chatMessageDto = new ChatMessageDto();
         chatMessageDto.setPartyId(partyId);
         chatMessageDto.setSenderEmail(sender.getEmail());
         chatMessageDto.setContent("Hello, world!");
 
+        // ChatMessage 객체 빌더 패턴으로 생성
         chatMessage1 = ChatMessage.builder()
                 .content("첫 번째 메시지")
                 .party(party)
                 .sender(sender)
                 .build();
-
         chatMessage2 = ChatMessage.builder()
                 .content("두 번째 메시지")
                 .party(party)
@@ -84,7 +91,7 @@ class WebSocketControllerTest {
     @Test
     @DisplayName("STOMP 메시지 전송 테스트")
     void sendMessage_shouldSaveAndSendMessage() {
-        webSocketController.sendMessage(chatMessageDto);
+        webSocketController.sendMessage(chatMessageDto, user);
 
         verify(chatMessageService, times(1)).saveMessage(chatMessageDto);
         verify(messagingTemplate, times(1)).convertAndSend(
@@ -104,14 +111,12 @@ class WebSocketControllerTest {
                 .party(party)
                 .sender(sender)
                 .build();
-        when(chatMessageService.updateMessage(
-                eq(chatMessageDto.getId()), eq(updatedContent), eq(chatMessageDto.getSenderEmail())
-        )).thenReturn(updatedChatMessage);
+        when(chatMessageService.updateMessage(any(ChatMessageDto.class))).thenReturn(updatedChatMessage);
 
-        webSocketController.updateMessage(chatMessageDto);
+        webSocketController.updateMessage(chatMessageDto, user);
 
         verify(chatMessageService, times(1)).updateMessage(
-                eq(chatMessageDto.getId()), eq(updatedContent), eq(chatMessageDto.getSenderEmail())
+                eq(chatMessageDto)
         );
         verify(messagingTemplate, times(1)).convertAndSend(
                 eq("/topic/party/" + chatMessageDto.getPartyId()), any(ChatMessageDto.class)
@@ -121,31 +126,28 @@ class WebSocketControllerTest {
     @Test
     @DisplayName("STOMP 메시지 삭제 테스트")
     void deleteMessage_shouldDeleteAndBroadcast() {
+        Integer partyId = 1;
+        Integer messageId = 10;
+        String senderEmail = "test@example.com";
+
         ChatMessageDto deleteDto = new ChatMessageDto();
-        Integer messageId = 101;
         deleteDto.setId(messageId);
         deleteDto.setPartyId(partyId);
-        deleteDto.setSenderEmail("test@example.com");
 
-        ChatMessage deletedChatMessage = ChatMessage.builder()
-                .content("content")
-                .party(party)
-                .sender(sender)
-                .build();
-        when(chatMessageService.deleteMessage(
-                eq(deleteDto.getId()), eq(deleteDto.getSenderEmail())
-        )).thenReturn(deletedChatMessage);
+        User user = new User(senderEmail, "", Collections.emptyList());
 
-        webSocketController.deleteMessage(deleteDto);
+        doNothing().when(chatMessageService).deleteMessage(eq(deleteDto.getId()), eq(senderEmail));
+
+        webSocketController.deleteMessage(deleteDto, user);
 
         verify(chatMessageService, times(1)).deleteMessage(
-                eq(deleteDto.getId()), eq(deleteDto.getSenderEmail())
+                eq(deleteDto.getId()), eq(senderEmail)
         );
+
         verify(messagingTemplate, times(1)).convertAndSend(
                 eq("/topic/party/" + deleteDto.getPartyId()), any(ChatMessageDto.class)
         );
     }
-
 
     @Test
     @DisplayName("채팅 기록 조회 HTTP GET 요청 테스트 (페이지네이션)")
