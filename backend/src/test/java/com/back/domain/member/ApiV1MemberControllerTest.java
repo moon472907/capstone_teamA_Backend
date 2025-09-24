@@ -11,13 +11,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -33,6 +37,8 @@ public class ApiV1MemberControllerTest {
     private MemberService memberService;
     @Autowired
     private MockMvc mvc;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private Member user1;
 
@@ -46,7 +52,7 @@ public class ApiV1MemberControllerTest {
     }
 
     @Test
-    @DisplayName("회원 가입")
+    @DisplayName("회원 가입(일반 계정)")
     void signup() throws Exception {
         ResultActions resultActions = mvc
                 .perform(
@@ -75,7 +81,7 @@ public class ApiV1MemberControllerTest {
     }
 
     @Test
-    @DisplayName("로그인")
+    @DisplayName("로그인(일반 계정)")
     void login() throws Exception {
         ResultActions resultActions = mvc
                 .perform(
@@ -115,5 +121,212 @@ public class ApiV1MemberControllerTest {
                     assertThat(accessTokenCookie.getAttribute("HttpOnly")).isEqualTo("true");
                 }
         );
+    }
+
+    @Test
+    @DisplayName("로그아웃")
+    void logout() throws Exception {
+        ResultActions resultActions = mvc
+                .perform(
+                        delete(baseUrl+ "/logout")
+                                .cookie(new Cookie("apiKey", user1.getApiKey()))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("logout"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("[Member] Success: 로그아웃"))
+                .andExpect(result -> {
+                    Cookie apiKeyCookie = result.getResponse().getCookie("apiKey");
+                    assertThat(apiKeyCookie.getValue()).isEmpty();
+                    assertThat(apiKeyCookie.getMaxAge()).isEqualTo(0);
+                    assertThat(apiKeyCookie.getPath()).isEqualTo("/");
+                    assertThat(apiKeyCookie.isHttpOnly()).isTrue();
+
+                    Cookie accessTokenCookie = result.getResponse().getCookie("accessToken");
+                    assertThat(accessTokenCookie.getValue()).isEmpty();
+                    assertThat(accessTokenCookie.getMaxAge()).isEqualTo(0);
+                    assertThat(accessTokenCookie.getPath()).isEqualTo("/");
+                    assertThat(accessTokenCookie.isHttpOnly()).isTrue();
+                });
+    }
+
+    @Test
+    @DisplayName("가입 완료 검사")
+    void valid_check() throws Exception {
+        ResultActions resultActions = mvc
+                .perform(
+                        get(baseUrl + "/valid")
+                                .cookie(new Cookie("apiKey", user1.getApiKey()))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("valid_check"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("[Member] Success: 가입 완료 검사"))
+                .andExpect(jsonPath("$.content").exists())
+                .andExpect(jsonPath("$.content.valid").value(false));
+    }
+
+    @Test
+    @DisplayName("가입 완료 처리")
+    void valid_set() throws Exception {
+        ResultActions resultActions = mvc
+                .perform(
+                        put(baseUrl + "/valid")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "name": "유저1완료",
+                                            "birth": "2050-10-20",
+                                            "gender": "FEMALE"
+                                        }
+                                        """.stripIndent())
+                                .cookie(new Cookie("apiKey", user1.getApiKey()))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("valid_set"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("[Member] Success: 가입 완료 처리"))
+                .andExpect(jsonPath("$.content").exists())
+                .andExpect(jsonPath("$.content.name").value(user1.getName()))
+                .andExpect(jsonPath("$.content.birth").value(user1.getBirth().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")).substring(0, 10)))
+                .andExpect(jsonPath("$.content.gender").value(user1.getGender().name()))
+                .andExpect(jsonPath("$.content.code").value(notNullValue()));
+    }
+
+    @Test
+    @DisplayName("닉네임 변경")
+    void modifyName() throws Exception {
+        ResultActions resultActions = mvc
+                .perform(
+                        put(baseUrl + "/modify/name")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "name": "유저1변경"
+                                        }
+                                        """.stripIndent())
+                                .cookie(new Cookie("apiKey", user1.getApiKey()))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("modifyName"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("[Member] Success: 닉네임 변경"))
+                .andExpect(jsonPath("$.content").exists())
+                .andExpect(jsonPath("$.content.name").value(user1.getName()));
+    }
+
+    @Test
+    @DisplayName("회원 정보 수정")
+    void modifyProfile() throws Exception {
+        ResultActions resultActions = mvc
+                .perform(
+                        put(baseUrl + "/modify/profile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "birth": "2050-10-20",
+                                            "gender": "FEMALE"
+                                        }
+                                        """.stripIndent())
+                                .cookie(new Cookie("apiKey", user1.getApiKey()))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("modifyProfile"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("[Member] Success: 회원 정보 수정"))
+                .andExpect(jsonPath("$.content").exists())
+                .andExpect(jsonPath("$.content.name").value(user1.getName()))
+                .andExpect(jsonPath("$.content.birth").value(user1.getBirth().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")).substring(0, 10)))
+                .andExpect(jsonPath("$.content.gender").value(user1.getGender().name()));
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경(일반 계정)")
+    void modifyPassword() throws Exception {
+        ResultActions resultActions = mvc
+                .perform(
+                        put(baseUrl + "/modify/password")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "password": "test123mod"
+                                        }
+                                        """.stripIndent())
+                                .cookie(new Cookie("apiKey", user1.getApiKey()))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("modifyPassword"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("[Member] Success: 비밀번호 변경"));
+
+        resultActions.andExpect(
+                result -> {
+                    assertThat(passwordEncoder.matches("test123mod", user1.getPassword())).isTrue();
+                }
+        );
+    }
+
+    @Test
+    @DisplayName("회원 정보 확인")
+    void me() throws Exception {
+        ResultActions resultActions = mvc
+                .perform(
+                        get(baseUrl + "/me")
+                                .cookie(new Cookie("apiKey", user1.getApiKey()))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("[Member] Success: 사용자 정보 확인 (%s)".formatted(user1.getEmail())))
+                .andExpect(jsonPath("$.content").exists())
+                .andExpect(jsonPath("$.content.name").value(user1.getName()));
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴")
+    void del() throws Exception {
+        String email = user1.getEmail();
+
+        ResultActions resultActions = mvc
+                .perform(
+                        delete(baseUrl + "/delete")
+                                .cookie(new Cookie("apiKey", user1.getApiKey()))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("delete"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("[Member] Success: 회원 탈퇴 (%s)".formatted(email)));
     }
 }

@@ -77,9 +77,10 @@ public class ApiV1MemberController {
                 );
     }
 
+    public record ValidResDto(boolean valid) {}
     @GetMapping("/valid")
     @Operation(summary = "가입 완료 검사", description = "가입 절차가 완료된 계정인지 확인")
-    public ResponseEntity<ApiResponse<Boolean>> valid_check() {
+    public ResponseEntity<ApiResponse<ValidResDto>> valid_check() {
         Member actor = rq.getActorFromDb();
 
         boolean valid = (actor.getCode() != null);
@@ -89,7 +90,7 @@ public class ApiV1MemberController {
                 .body(new ApiResponse<>(
                                 "200",
                                 "[Member] Success: 가입 완료 검사",
-                                valid
+                                new ValidResDto(valid)
                         )
                 );
     }
@@ -144,7 +145,7 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                         "200",
-                        "[Member] Success: 정보 수정",
+                        "[Member] Success: 회원 정보 수정",
                         new MemberDto(actor)
                         )
                 );
@@ -153,7 +154,7 @@ public class ApiV1MemberController {
     public record PasswordReqDto(String password) {}
     @PutMapping("/modify/password")
     @Operation(summary = "비밀번호 변경(일반 계정)", description = "비밀번호 변경")
-    public ResponseEntity<ApiResponse<MemberDto>> modifyPassword(
+    public ResponseEntity<ApiResponse<Void>> modifyPassword(
             @Valid @RequestBody PasswordReqDto reqBody
     ) {
         Member actor = rq.getActorFromDb();
@@ -187,6 +188,7 @@ public class ApiV1MemberController {
     @Operation(summary = "회원 탈퇴", description = "회원 탈퇴")
     public ResponseEntity<ApiResponse<Void>> delete() {
         Member actor = rq.getActorFromDb();
+        String email = actor.getEmail();
 
         memberService.delete(actor);
         rq.deleteCookie("apiKey");
@@ -196,7 +198,7 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                                 "200",
-                                "[Member] Success: 회원 탈퇴"
+                                "[Member] Success: 회원 탈퇴 (%s)".formatted(email)
                         )
                 );
     }
