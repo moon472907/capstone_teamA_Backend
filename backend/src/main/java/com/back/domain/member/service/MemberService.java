@@ -40,15 +40,13 @@ public class MemberService {
         return memberRepository.save(member);
     }
 
-    //가입or로그인 (소셜 계정)
-    public Member social_login(String email, String password, String name) {
+    //로그인 (소셜 계정)
+    public Member social_signup(String email, String password, String name) {
         Member member = findByEmail(email).orElse(null);
 
+        //최초 로그인일 경우 가입 처리
         if(member == null) {
             member = signup(email, password, name);
-        }
-        else {
-            modifyName(member, name);
         }
 
         return member;

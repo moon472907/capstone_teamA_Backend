@@ -157,7 +157,7 @@ public class ApiV1MemberController {
             @Valid @RequestBody PasswordReqDto reqBody
     ) {
         Member actor = rq.getActorFromDb();
-        memberService.modifyName(actor, reqBody.password());
+        memberService.modifyPassword(actor, reqBody.password());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
