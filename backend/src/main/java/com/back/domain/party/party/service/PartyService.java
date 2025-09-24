@@ -12,12 +12,15 @@ import com.back.domain.party.party.repository.PartyRepository;
 import com.back.global.exception.CustomException;
 import com.back.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +32,7 @@ public class PartyService {
     private final PartyMemberRepository partyMemberRepository;
 
     @Transactional
+    @CacheEvict(value = {"partyList", "partyDetails"}, allEntries = true)
     public Party createParty(PartyRequestDto requestDto, Integer memberId) {
         Member leader = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
@@ -51,6 +55,7 @@ public class PartyService {
     }
 
     @Transactional
+    @CacheEvict(value = {"partyList", "partyDetails"}, allEntries = true)
     public void joinParty(Integer partyId, Integer memberId) {
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
@@ -68,7 +73,8 @@ public class PartyService {
         }
 
         // 3. 파티의 정원이 가득 찼는지 확인
-        if (party.getPartyMembers().stream().filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED).count() >= party.getMaxMembers()) {
+        long acceptedMembers = partyMemberRepository.countByParty_IdAndStatus(partyId, PartyMemberStatus.ACCEPTED);
+        if (acceptedMembers >= party.getMaxMembers()) {
             throw new CustomException(ErrorCode.CONFLICT, "파티의 정원이 가득 찼습니다.");
         }
 
@@ -82,6 +88,7 @@ public class PartyService {
     }
 
     @Transactional
+    @CacheEvict(value = {"partyList", "partyDetails"}, key = "#partyId")
     public void leaveParty(Integer partyId, Integer memberId) {
         PartyMember leavingMember = partyMemberRepository.findByParty_IdAndMember_Id(partyId, memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
@@ -89,10 +96,10 @@ public class PartyService {
         Party party = leavingMember.getParty();
 
         // 파티장인지 확인
-        if (party.getLeader().getId() == memberId) {
+        if (Objects.equals(party.getLeader().getId(), memberId)) {
             // 본인을 제외한 모든 멤버를 가입일 순으로 정렬하여 조회
             List<PartyMember> otherMembers = partyMemberRepository.findByParty_Id(partyId);
-            otherMembers.removeIf(pm -> pm.getMember().getId() == memberId);
+            otherMembers.removeIf(pm -> Objects.equals(pm.getMember().getId(), memberId));
             otherMembers.sort(Comparator.comparing(PartyMember::getJoinedAt));
 
             // 남은 멤버가 있다면 새로운 파티장 위임
@@ -110,12 +117,13 @@ public class PartyService {
     }
 
     @Transactional
+    @CacheEvict(value = {"partyList", "partyDetails"}, key = "#partyId")
     public void updateParty(Integer partyId, PartyUpdateRequestDto requestDto, Integer memberId) {
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
 
         // 요청한 멤버가 파티장이 맞는지 확인
-        if (party.getLeader().getId() != memberId) {
+        if (!Objects.equals(party.getLeader().getId(), memberId)) {
             throw new CustomException(ErrorCode.UNAUTHORIZED, "파티 수정 권한이 없습니다.");
         }
 
@@ -136,12 +144,13 @@ public class PartyService {
     }
 
     @Transactional
+    @CacheEvict(value = {"partyList", "partyDetails"}, allEntries = true)
     public void deleteParty(Integer partyId, Integer memberId) {
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
 
         // 요청한 멤버가 파티장이 맞는지 확인
-        if (party.getLeader().getId() != memberId) {
+        if (!Objects.equals(party.getLeader().getId(), memberId)) {
             throw new CustomException(ErrorCode.UNAUTHORIZED, "파티 삭제 권한이 없습니다.");
         }
 
@@ -153,11 +162,13 @@ public class PartyService {
         partyRepository.deleteById(partyId);
     }
 
+    @Cacheable(value = "partyList", key = "'all'")
     @Transactional(readOnly = true)
     public List<Party> getPartyList() {
         return partyRepository.findByIsPublic(true);
     }
 
+    @Cacheable(value = "partyDetails", key = "#partyId")
     @Transactional(readOnly = true)
     public Party getPartyDetails(Integer partyId) {
         return partyRepository.findById(partyId)
@@ -165,15 +176,18 @@ public class PartyService {
     }
 
     @Transactional
+    @CacheEvict(value = {"partyList", "partyDetails"}, key = "#partyId")
     public void inviteMember(Integer partyId, Integer leaderId, String invitedMemberCode) {
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
 
-        if (party.getLeader().getId() != leaderId) {
+        if (!Objects.equals(party.getLeader().getId(), leaderId)) {
             throw new CustomException(ErrorCode.UNAUTHORIZED, "파티 초대 권한이 없습니다.");
         }
 
-        if (party.getPartyMembers().stream().filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED).count() >= party.getMaxMembers()) {
+        // 정원 확인 로직을 개선된 쿼리로 변경
+        long acceptedMembers = partyMemberRepository.countByParty_IdAndStatus(partyId, PartyMemberStatus.ACCEPTED);
+        if (acceptedMembers >= party.getMaxMembers()) {
             throw new CustomException(ErrorCode.CONFLICT, "파티의 정원이 가득 찼습니다.");
         }
 
@@ -194,6 +208,7 @@ public class PartyService {
     }
 
     @Transactional
+    @CacheEvict(value = {"partyList", "partyDetails"}, key = "#partyId")
     public void acceptInvitation(Integer partyId, Integer memberId) {
         PartyMember partyMember = partyMemberRepository.findByParty_IdAndMember_Id(partyId, memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "초대 정보를 찾을 수 없습니다."));
@@ -203,9 +218,8 @@ public class PartyService {
         }
 
         // 파티 정원 확인
-        if (partyMember.getParty().getPartyMembers().stream()
-                .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
-                .count() >= partyMember.getParty().getMaxMembers()) {
+        long acceptedMembers = partyMemberRepository.countByParty_IdAndStatus(partyMember.getParty().getId(), PartyMemberStatus.ACCEPTED);
+        if (acceptedMembers >= partyMember.getParty().getMaxMembers()) {
             throw new CustomException(ErrorCode.CONFLICT, "파티의 정원이 가득 찼습니다.");
         }
 
@@ -213,6 +227,7 @@ public class PartyService {
     }
 
     @Transactional
+    @CacheEvict(value = {"partyList", "partyDetails"}, key = "#partyId")
     public void rejectInvitation(Integer partyId, Integer memberId) {
         PartyMember partyMember = partyMemberRepository.findByParty_IdAndMember_Id(partyId, memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "초대 정보를 찾을 수 없습니다."));
@@ -225,12 +240,13 @@ public class PartyService {
     }
 
     @Transactional
+    @CacheEvict(value = {"partyList", "partyDetails"}, key = "#partyId")
     public void kickMember(Integer partyId, Integer leaderId, Integer kickedMemberId) {
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "파티를 찾을 수 없습니다."));
 
         // 1. 추방을 요청한 멤버가 파티장인지 확인
-        if (party.getLeader().getId() != leaderId) {
+        if (!Objects.equals(party.getLeader().getId(), leaderId)) {
             throw new CustomException(ErrorCode.UNAUTHORIZED, "파티원 추방 권한이 없습니다.");
         }
 
@@ -252,12 +268,13 @@ public class PartyService {
         partyMemberRepository.delete(kickedMember);
     }
 
+    @Cacheable(value = "pendingRequests", key = "#partyId")
     @Transactional(readOnly = true)
     public List<PartyMember> getPendingJoinRequests(Integer partyId, Integer leaderId) {
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "파티를 찾을 수 없습니다."));
 
-        if (party.getLeader().getId() != leaderId) {
+        if (!Objects.equals(party.getLeader().getId(), leaderId)) {
             throw new CustomException(ErrorCode.UNAUTHORIZED, "권한이 없습니다.");
         }
 

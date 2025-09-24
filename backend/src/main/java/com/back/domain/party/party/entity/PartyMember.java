@@ -10,6 +10,10 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @IdClass(PartyMemberId.class)
+@Table(name = "party_member", indexes = {
+        @Index(name = "idx_party_member_composite", columnList = "party_id, member_id"),
+        @Index(name = "idx_party_status", columnList = "party_id, status")
+})
 public class PartyMember {
 
     @Id
