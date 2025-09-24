@@ -31,7 +31,7 @@ public class MemberService {
     ) {
         findByEmail(email)
                 .ifPresent(_member -> {
-                    throw new CustomException(ErrorCode.CONFLICT, "이미 가입된 계정입니다.");
+                    throw new CustomException(ErrorCode.CONFLICT, "[Member] Fail: 이미 가입된 계정");
                 });
 
         password = passwordEncoder.encode(password);
@@ -40,15 +40,13 @@ public class MemberService {
         return memberRepository.save(member);
     }
 
-    //가입or로그인 (소셜 계정)
-    public Member social_login(String email, String password, String name) {
+    //로그인 (소셜 계정)
+    public Member social_signup(String email, String password, String name) {
         Member member = findByEmail(email).orElse(null);
 
+        //최초 로그인일 경우 가입 처리
         if(member == null) {
             member = signup(email, password, name);
-        }
-        else {
-            modifyName(member, name);
         }
 
         return member;
@@ -57,9 +55,9 @@ public class MemberService {
     //로그인 (일반)
     public Member login(String email, String password) {
         Member member = findByEmail(email)
-                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "잘못된 이메일입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "[Member] Fail: 잘못된 이메일"));
         if(!passwordEncoder.matches(password, member.getPassword())) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED, "잘못된 비밀번호입니다.");
+            throw new CustomException(ErrorCode.UNAUTHORIZED, "[Member] Fail: 잘못된 비밀번호");
         }
 
         return member;

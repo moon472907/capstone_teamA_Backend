@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record ModifyNotificationDto (
+
         @NotNull int memberId,
         @NotBlank String message,
         @NotNull NotificationType type

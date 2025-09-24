@@ -32,7 +32,7 @@ public class ApiV1MemberController {
                 .status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(
                         "201",
-                        "회원가입 성공",
+                        "[Member] Success: 회원 가입",
                         new MemberDto(member)
                         )
                 );
@@ -53,7 +53,7 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                         "200",
-                        "로그인 성공",
+                        "[Member] Success: 로그인",
                         new LoginResDto(
                                 new MemberDto(member),
                                 member.getApiKey(),
@@ -72,7 +72,7 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                         "200",
-                        "로그아웃 성공"
+                        "[Member] Success: 로그아웃"
                         )
                 );
     }
@@ -88,7 +88,7 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                                 "200",
-                                "가입 완료 검사",
+                                "[Member] Success: 가입 완료 검사",
                                 valid
                         )
                 );
@@ -108,7 +108,7 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                                 "200",
-                                "가입 완료 처리",
+                                "[Member] Success: 가입 완료 처리",
                                 new MemberDto(actor)
                         )
                 );
@@ -126,7 +126,7 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                                 "200",
-                                "회원 닉네임 변경 성공",
+                                "[Member] Success: 닉네임 변경",
                                 new MemberDto(actor)
                         )
                 );
@@ -144,7 +144,7 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                         "200",
-                        "회원 정보 수정 성공",
+                        "[Member] Success: 정보 수정",
                         new MemberDto(actor)
                         )
                 );
@@ -157,13 +157,13 @@ public class ApiV1MemberController {
             @Valid @RequestBody PasswordReqDto reqBody
     ) {
         Member actor = rq.getActorFromDb();
-        memberService.modifyName(actor, reqBody.password());
+        memberService.modifyPassword(actor, reqBody.password());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                                 "200",
-                                "회원 비밀번호 변경 성공"
+                                "[Member] Success: 비밀번호 변경"
                         )
                 );
     }
@@ -177,7 +177,7 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                         "200",
-                        "로그인된 사용자: %s".formatted(actor.getEmail()),
+                        "[Member] Success: 사용자 정보 확인 (%s)".formatted(actor.getEmail()),
                         new MemberDto(actor)
                         )
                 );
@@ -196,7 +196,7 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                                 "200",
-                                "회원 탈퇴 완료"
+                                "[Member] Success: 회원 탈퇴"
                         )
                 );
     }

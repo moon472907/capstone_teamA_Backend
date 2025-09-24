@@ -26,4 +26,8 @@ public interface PartyMemberRepository extends JpaRepository<PartyMember, PartyM
 
     // 특정 파티에서 가장 오래된 가입자를 찾는 메서드
     Optional<PartyMember> findFirstByParty_IdOrderByJoinedAtAsc(Integer partyId);
+
+    // 파티원 수 조회용 메서드 추가
+    long countByParty_IdAndStatus(Integer partyId, PartyMemberStatus status);
+
 }

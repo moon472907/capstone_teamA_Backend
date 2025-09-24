@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 public class PartyMemberId implements Serializable {
     private int party;
     private int member;

@@ -1,6 +1,7 @@
 package com.back.domain.party.party.repository;
 
 import com.back.domain.party.party.entity.Party;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,7 +18,12 @@ public interface PartyRepository extends JpaRepository<Party, Integer> {
     Optional<Party> findByLeader_Id(Integer leaderId);
 
     // 공개 파티를 조회하는 메서드
+    @EntityGraph(attributePaths = "leader")
     List<Party> findByIsPublic(boolean isPublic);
+
+    @Override
+    @EntityGraph(attributePaths = {"leader", "partyMembers.member"})
+    Optional<Party> findById(Integer partyId);
 
     // 특정 미션을 진행하는 파티를 찾는 메서드 (미션 도메인 완성 시 사용)
     // Optional<Party> findByMission_Id(Integer missionId);
