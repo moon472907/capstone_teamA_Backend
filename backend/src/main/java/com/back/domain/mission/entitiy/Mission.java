@@ -26,9 +26,9 @@ public class Mission extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private Member member;
 
-    /*@ManyToOne(fetch = FetchType.LAZY)
+    /* @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "party_id", nullable = false)
-    private Party party;*/
+    private Party party; */
 
     @Column(nullable = false)
     private String title;

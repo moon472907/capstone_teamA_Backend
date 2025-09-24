@@ -63,8 +63,7 @@ public class ApiV1TaskController {
 
         Member actor = rq.getActorFromDb();
 
-        // TODO: TaskService에 getTasksByDate 메서드 추가 필요
-        // List<TaskResponse> tasks = taskService.getTasksByDate(actor.getId(), date);
+        List<TaskResponse> tasks = taskService.getTasksByDate(actor.getId(), date);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -79,8 +78,7 @@ public class ApiV1TaskController {
 
         Member actor = rq.getActorFromDb();
 
-        // TODO: TaskService에 getWeekTasks 메서드 추가 필요
-        // List<TaskResponse> tasks = taskService.getWeekTasks(actor.getId(), missionId, weekNum);
+         List<TaskResponse> tasks = taskService.getWeekTasks(actor.getId(), missionId, weekNum);
 
         return ResponseEntity
                 .status(HttpStatus.OK)

@@ -84,7 +84,7 @@ public class MissionService {
                 .map(mission -> convertToMissionResponse(mission, false))
                 .collect(Collectors.toList());
 
-        List<Mission> completeMissions = missionRepository.findByMemberIdAndIsCompleted(memberId,true);
+        List<Mission> completeMissions = missionRepository.findByMemberIdAndIsCompleted(memberId,false);
         List<MissionResponse> completedSummaries = completeMissions.stream()
                 .map(mission -> convertToMissionResponse(mission, false))
                 .collect(Collectors.toList());
