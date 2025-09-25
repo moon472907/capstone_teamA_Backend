@@ -78,14 +78,16 @@ public class MemberService {
         final String CHAR_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         final SecureRandom random = new SecureRandom();
 
-        StringBuilder sb = new StringBuilder(6);
+        String code;
         do {
+            StringBuilder sb = new StringBuilder(6);
             for(int i=0; i<6; i++) {
                 sb.append(CHAR_POOL.charAt(random.nextInt(CHAR_POOL.length())));
             }
-        } while(memberRepository.existsByCode(sb.toString()));
+            code = sb.toString();
+        } while(memberRepository.existsByCode(code));
 
-        member.setCode(sb.toString());
+        member.setCode(code);
     }
 
     //회원 탈퇴
