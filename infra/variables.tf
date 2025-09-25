@@ -5,7 +5,7 @@ variable "region" {
 
 variable "prefix" {
   description = "Prefix for all resources"
-  default     = "terra"
+  default     = "team08"
 }
 
 variable "app_1_domain" {
