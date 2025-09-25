@@ -43,12 +43,11 @@ public class ApiV1ItemController {
     @Operation(summary = "아이템 전체 조회")
     public ApiResponse<List<ItemDto>> findAllItems()
     {
-        List<ItemDto> data =itemService.ReadAllItem();
-        if (data == null || data.isEmpty()) {
+        try {
+            List<ItemDto> data =itemService.ReadAllItem();
+            return new ApiResponse<>("200", "아이템 단건 조회 성공", data);
+        } catch (IllegalArgumentException e) {
             return new ApiResponse<>("404", "아이템이 존재하지 않습니다.", null);
-        }
-        else {
-            return new ApiResponse<>("200", "아이템 전체 조회 성공", data);
         }
     }
 
@@ -57,13 +56,13 @@ public class ApiV1ItemController {
     @Operation(summary = "아이템 단건  조회")
     public ApiResponse<ItemDto> findItemById(@PathVariable int id)
     {
-        ItemDto data = itemService.ReadItemById(id);
-        if (data == null) {
-            return new ApiResponse<>("404", "아이템이 존재하지 않습니다.", null);
-        }
-        else {
-            return new ApiResponse<>("200", "아이템 단건 조회 성공", data);
-        }
+       try {
+           ItemDto data = itemService.ReadItemById(id);
+           return new ApiResponse<>("200", "아이템 단건 조회 성공", data);
+       } catch (IllegalArgumentException e) {
+           return new ApiResponse<>("404", "아이템이 존재하지 않습니다.", null);
+       }
+
     }
 
     @GetMapping("/ItemType/{category}")
@@ -71,13 +70,14 @@ public class ApiV1ItemController {
     @Operation(summary = "아이템 종류별 조회")
     public ApiResponse<List<ItemDto>> findAllItems(@PathVariable ItemType category)
     {
-        List<ItemDto> data =itemService.ReadItemByItemType(category);
-        if (data == null || data.isEmpty()) {
+
+        try {
+            List<ItemDto> data =itemService.ReadItemByItemType(category);
+            return new ApiResponse<>("200", "아이템 단건 조회 성공", data);
+        } catch (IllegalArgumentException e) {
             return new ApiResponse<>("404", "아이템이 존재하지 않습니다.", null);
         }
-        else {
-            return new ApiResponse<>("200", "아이템 전체 조회 성공", data);
-        }
+
     }
 
 
@@ -86,12 +86,11 @@ public class ApiV1ItemController {
     @Operation(summary = "아이템 수정")
     public ApiResponse<ItemDto> UpdateItem(@PathVariable int id, @RequestBody ItemDto itemDto)
     {
-        ItemDto data = itemService.UpdateItem(id, itemDto);
-        if (data == null) {
+        try {
+            ItemDto data = itemService.UpdateItem(id, itemDto);
+            return new ApiResponse<>("200", "아이템 단건 조회 성공", data);
+        } catch (IllegalArgumentException e) {
             return new ApiResponse<>("404", "아이템이 존재하지 않습니다.", null);
-        }
-        else{
-            return new ApiResponse<>("200", "아이템 수정 성공", data);
         }
     }
 
