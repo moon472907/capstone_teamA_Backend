@@ -1,18 +1,17 @@
 package com.back.domain.member.entity;
 
+import com.back.domain.item.entity.Item;
+import com.back.domain.item.entity.ItemType;
+import com.back.domain.title.entity.Title;
 import com.back.global.jpa.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SoftDelete;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 @Getter
@@ -29,12 +28,20 @@ public class Member extends BaseEntity {
     private String name;
     private String code = null;
     private LocalDate birth = LocalDate.of(1, 1, 1);
+    @Enumerated(EnumType.STRING)
     private MemberGender gender = MemberGender.NONE;
 
-    // *** 상태 및 아이템 정보 ***
+    // *** 상태 및 장착한 아이템 정보 ***
     private int level = 1;
     private int xp = 0;
     private int money = 0;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Title title;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @MapKey(name = "type")
+    private Map<ItemType, Item> items;
 
     // *** 개발자용 정보 ***
     private MemberRole role = MemberRole.USER;
@@ -45,6 +52,12 @@ public class Member extends BaseEntity {
         this.email = email;
         this.password = password;
         this.name = name;
+
+        this.title = null;
+        this.items = new HashMap<>();
+        for(ItemType type : ItemType.values()) {
+            this.items.put(type, null);
+        }
 
         this.apiKey = UUID.randomUUID().toString();
     }
