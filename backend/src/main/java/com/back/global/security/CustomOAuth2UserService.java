@@ -28,6 +28,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         String email = "[%s]".formatted(providerTypeCode);
         String name = "";
+        String socialAccessToken = userRequest.getAccessToken().getTokenValue();
 
         switch (providerTypeCode) {
             case "KAKAO" -> {
@@ -52,7 +53,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             }
         }
 
-        Member member = memberService.social_signup(email, "", name);
+        Member member = memberService.social_login(email, name, socialAccessToken);
 
         return new SecurityUser(
                 member.getId(),
