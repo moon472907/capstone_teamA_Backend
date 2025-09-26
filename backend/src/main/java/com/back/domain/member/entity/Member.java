@@ -38,7 +38,6 @@ public class Member extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Title title;
-
     @OneToMany(fetch = FetchType.LAZY)
     @MapKey(name = "type")
     private Map<ItemType, Item> items;
@@ -54,7 +53,7 @@ public class Member extends BaseEntity {
         this.name = name;
 
         this.title = null;
-        this.items = new HashMap<>();
+        this.items = new EnumMap<>(ItemType.class);
         for(ItemType type : ItemType.values()) {
             this.items.put(type, null);
         }
