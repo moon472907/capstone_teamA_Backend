@@ -37,8 +37,7 @@ public class ItemService {
 
     public List<ItemDto> ReadItemByItemType(ItemType type)
     {
-        //ItemType itemType =ItemType.valueOf(type.toUpperCase());
-        //System.out.println(type);
+
         return itemRepository.findByType(type).stream().map(ItemDto::new).toList();
     }
 

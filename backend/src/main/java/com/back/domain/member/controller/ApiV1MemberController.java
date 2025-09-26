@@ -65,8 +65,13 @@ public class ApiV1MemberController {
     @DeleteMapping("/logout")
     @Operation(summary = "로그아웃", description = "로그아웃")
     public ResponseEntity<ApiResponse<Void>> logout() {
+        Member actor = rq.getActorFromDb();
+
         rq.deleteCookie("apiKey");
         rq.deleteCookie("accessToken");
+        if(actor.getSocialAccessToken() != null) {
+            memberService.social_logout(actor);
+        }
 
         return ResponseEntity
                 .status(HttpStatus.OK)

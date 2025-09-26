@@ -40,18 +40,6 @@ public class MemberService {
         return memberRepository.save(member);
     }
 
-    //로그인 (소셜 계정)
-    public Member social_signup(String email, String password, String name) {
-        Member member = findByEmail(email).orElse(null);
-
-        //최초 로그인일 경우 가입 처리
-        if(member == null) {
-            member = signup(email, password, name);
-        }
-
-        return member;
-    }
-
     //로그인 (일반)
     public Member login(String email, String password) {
         Member member = findByEmail(email)
@@ -63,19 +51,43 @@ public class MemberService {
         return member;
     }
 
+    //로그인 (소셜 계정)
+    public Member social_login(String email, String name, String socialAccessToken) {
+        Member member = findByEmail(email).orElse(null);
+
+        //최초 로그인일 경우 가입 처리
+        if(member == null) {
+            member = signup(email, "", name);
+        }
+
+        member.setSocialAccessToken(socialAccessToken);
+
+        return member;
+    }
+
+    //로그아웃 (소셜 계정)
+    public void social_logout(Member member) {
+        String provider = member.getEmail().substring(1, member.getEmail().indexOf("]"));
+
+        //authService.social_logout(provider, member.getSocialAccessToken());
+        member.setSocialAccessToken(null);
+    }
+
     //식별코드 생성
     public void genCode(Member member) {
         final String CHAR_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         final SecureRandom random = new SecureRandom();
 
-        StringBuilder sb = new StringBuilder(6);
+        String code;
         do {
+            StringBuilder sb = new StringBuilder(6);
             for(int i=0; i<6; i++) {
                 sb.append(CHAR_POOL.charAt(random.nextInt(CHAR_POOL.length())));
             }
-        } while(memberRepository.existsByCode(sb.toString()));
+            code = sb.toString();
+        } while(memberRepository.existsByCode(code));
 
-        member.setCode(sb.toString());
+        member.setCode(code);
     }
 
     //회원 탈퇴

@@ -46,6 +46,7 @@ public class Member extends BaseEntity {
     // *** 개발자용 정보 ***
     private MemberRole role = MemberRole.USER;
     private String apiKey = null;
+    private String socialAccessToken = null;
 
     //생성자(회원 가입)
     public Member(String email, String password, String name) {
