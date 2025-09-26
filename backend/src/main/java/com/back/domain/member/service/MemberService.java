@@ -52,7 +52,7 @@ public class MemberService {
     }
 
     //로그인 (소셜 계정)
-    public Member social_login(String email, String name, String socialAccessToken) {
+    public Member social_login(String email, String name) {
         Member member = findByEmail(email).orElse(null);
 
         //최초 로그인일 경우 가입 처리
@@ -60,17 +60,7 @@ public class MemberService {
             member = signup(email, "", name);
         }
 
-        member.setSocialAccessToken(socialAccessToken);
-
         return member;
-    }
-
-    //로그아웃 (소셜 계정)
-    public void social_logout(Member member) {
-        String provider = member.getEmail().substring(1, member.getEmail().indexOf("]"));
-
-        //authService.social_logout(provider, member.getSocialAccessToken());
-        member.setSocialAccessToken(null);
     }
 
     //식별코드 생성

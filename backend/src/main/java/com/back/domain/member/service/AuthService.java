@@ -5,10 +5,6 @@ import com.back.standard.util.Ut;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.Map;
 
 @Service
@@ -18,36 +14,6 @@ public class AuthService {
 
     @Value("${custom.accessToken.expirationSeconds}")
     private int accessTokenExpirationSeconds;
-
-    private final String kakaoURL = "https://kapi.kakao.com/v1/user/logout";
-
-    void social_logout(String provider, String accessToken){
-        HttpClient client= HttpClient.newHttpClient();
-        try {
-            switch (provider) {
-                case "KAKAO" -> {
-                    HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create(kakaoURL))
-                            .header("Authorization", "Bearer " + accessToken)
-                            .POST(HttpRequest.BodyPublishers.noBody())
-                            .build();
-
-                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-                    System.out.println("responseCode : " + response.statusCode());
-                    System.out.println("responseBody : " + response.body());
-                }
-                case "GOOGLE" -> {
-
-                }
-                case "NAVER" -> {
-
-                }
-            }
-        } catch (Exception e) {
-
-        }
-    }
 
     String genAccessToken(Member member) {
         long id = member.getId();

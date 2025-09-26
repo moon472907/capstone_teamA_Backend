@@ -8,15 +8,12 @@ import com.back.domain.party.paryChat.repository.ChatMessageRepository;
 import com.back.global.exception.CustomException;
 import com.back.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -26,9 +23,9 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final PartyRepository partyRepository;
     private final MemberRepository memberRepository;
-    private final CacheManager cacheManager;
 
     @Transactional
+    @CacheEvict(value = "chatHistory", key = "#chatMessageDto.partyId")
     public void saveMessage(ChatMessageDto chatMessageDto) {
         // 엔티티를 가져와 메시지를 생성
         ChatMessage chatMessage = ChatMessage.builder()
@@ -52,19 +49,12 @@ public class ChatMessageService {
     }
 
     @Transactional
+    @CacheEvict(value = "chatHistory", key = "#partyId")
     public void deleteMessage(Integer messageId, String senderEmail) {
         ChatMessage chatMessage = getAuthorizedChatMessage(messageId, senderEmail, "삭제");
 
-        // 캐시 무효화 키로 사용할 partyId를 미리 저장
-        Integer partyId = chatMessage.getParty().getId();
-
         // 메시지 삭제
         chatMessageRepository.delete(chatMessage);
-
-        // 캐시를 명시적으로 무효화합니다.
-        if (cacheManager.getCache("chatHistory") != null) {
-            Objects.requireNonNull(cacheManager.getCache("chatHistory")).evict(partyId);
-        }
     }
 
     private ChatMessage getAuthorizedChatMessage(Integer messageId, String senderEmail, String operation) {
@@ -81,7 +71,8 @@ public class ChatMessageService {
     }
 
     @Cacheable(value = "chatHistory", key = "#partyId")
-    public Page<ChatMessage> getChatHistory(Integer partyId, Pageable pageable) {
-        return chatMessageRepository.findByPartyIdOrderByCreateDateDesc(partyId, pageable);
+    public Page<ChatMessageDto> getChatHistory(Integer partyId, Pageable pageable) {
+        Page<ChatMessage> chatMessages = chatMessageRepository.findByPartyIdOrderByCreateDateDesc(partyId, pageable);
+        return chatMessages.map(ChatMessageDto::new);
     }
 }
