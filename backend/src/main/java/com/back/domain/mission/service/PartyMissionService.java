@@ -39,6 +39,7 @@ public class PartyMissionService {
     private final TaskService taskService;
     private static final int MAX_MISSIONS_PER_USER = 5;
 
+    // 파티 미션 생성
     public MissionResponse createPartyMission(Integer memberId, PartyMissionCreateRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MissionException(MissionErrorCode.MEMBER_NOT_FOUND));
@@ -55,7 +56,6 @@ public class PartyMissionService {
             PartyRequestDto partyRequest = new PartyRequestDto();
             partyRequest.setName(request.getTitle());
             partyRequest.setMaxMembers(request.getMaxMembers());
-            // setPublic 대신 setIsPublic 사용 (또는 PartyRequestDto 확인 필요)
             partyRequest.setIsPublicStatus(request.isPublic());
             party = partyService.createParty(partyRequest, memberId);
         }
@@ -76,6 +76,7 @@ public class PartyMissionService {
                 .subGoals(new ArrayList<>())
                 .build();
 
+
         if (request.getType() == MissionType.AI) {
             generateAiSubGoals(mission, request);
         } else {
@@ -86,6 +87,29 @@ public class PartyMissionService {
         return convertToResponse(savedMission, true);
     }
 
+    @Transactional(readOnly = true)
+    public List<MissionResponse> getPartyMissions(Integer partyId) {
+        List<Mission> missions = missionRepository.findByPartyId(partyId);
+
+        return missions.stream()
+                .map(mission -> convertToResponse(mission, false)) // 목록 조회니까 false
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public MissionResponse getPartyMissionDetail(Integer partyId, Integer missionId) {
+        Mission mission = missionRepository.findById(missionId)
+                .orElseThrow(() -> new MissionException(MissionErrorCode.MISSION_NOT_FOUND));
+
+        if (mission.getParty() == null || !mission.getParty().getId().equals(partyId)) {
+            throw new MissionException(MissionErrorCode.MEMBER_FORBIDDEN); // 파티 불일치 시 예외
+        }
+
+        return convertToResponse(mission, true); // 상세니까 subGoals까지 포함
+    }
+
+
+    // AI 기반으로 주차별  subgoal + task 생성
     private void generateAiSubGoals(Mission mission, PartyMissionCreateRequest request) {
         AiMissionResult aiResult = aiGeneratorService.generateMission(
                 request.getTitle(),
@@ -124,6 +148,7 @@ public class PartyMissionService {
         }
     }
 
+    // 단순 기본 생성 로직 ( AI 아닐 경우)
     private void generateBasicSubGoals(Mission mission, Integer weeks) {
         String[] dayNames = {"", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"};
 
@@ -156,6 +181,8 @@ public class PartyMissionService {
         }
     }
 
+    // Mission 엔티티 -> MissionResponse  변환
+    //includeSubGoals=true면 주차별(SubGoal, Task)까지 전부 포함
     public MissionResponse convertToResponse(Mission mission, boolean includeSubGoals) {
         Integer totalWeeks = (int) ChronoUnit.WEEKS.between(
                 mission.getStartDate(),
@@ -171,7 +198,6 @@ public class PartyMissionService {
                             .weekNum(sg.getOrderNum())
                             .startDate(sg.getStartDate())
                             .endDate(sg.getEndDate())
-                            // getHasBeenEdited() 대신 isHasBeenEdited() 또는 getHasBeenEdited() 직접 접근
                             .hasBeenEdited(sg.getHasBeenEdited())  // Boolean 타입이므로 바로 접근
                             .editableUntil(sg.getEditableUntil())
                             .weekProgressRate(calculateService.calculateWeekProgress(sg))
@@ -184,20 +210,21 @@ public class PartyMissionService {
                     .collect(Collectors.toList());
         }
 
-        MissionResponse build = MissionResponse.builder()
-                .missionId(mission.getId())
-                .title(mission.getTitle())
-                .category(mission.getCategory())
-                .type(mission.getType())
-                .startDate(mission.getStartDate())
-                .endDate(mission.getEndDate())
-                .totalWeeks(totalWeeks)
-                .currentWeek(calculateService.calculateCurrentWeek(mission))
-                .isCompleted(mission.isCompleted())
-                .isPartyMission(mission.isPartyMission())
-                .partyId(mission.getParty() != null ? mission.getParty().getId() : null)
-                .progressRate(calculateService.calculateMissionProgress(mission))
-                .subGoals(subGoalResponses)
+        MissionResponse.MissionResponseBuilder builder = MissionResponse.builder();
+        builder.missionId(mission.getId());
+        builder.title(mission.getTitle());
+        builder.category(mission.getCategory());
+        builder.type(mission.getType());
+        builder.startDate(mission.getStartDate());
+        builder.endDate(mission.getEndDate());
+        builder.totalWeeks(totalWeeks);
+        builder.currentWeek(calculateService.calculateCurrentWeek(mission));
+        builder.isCompleted(mission.isCompleted());
+        builder.isPartyMission(mission.isPartyMission());
+        builder.partyId(mission.getParty() != null ? mission.getParty().getId() : null);
+        builder.progressRate(calculateService.calculateMissionProgress(mission));
+        builder.subGoals(subGoalResponses);
+        MissionResponse build = builder
                 .build();
         return build;
     }

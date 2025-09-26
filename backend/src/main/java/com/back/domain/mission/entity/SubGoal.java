@@ -45,8 +45,6 @@ public class SubGoal {
     @Builder.Default
     private List<Task> tasks = new ArrayList<>();
 
-    // Lombok @Getter가 Boolean 타입에 대해 getHasBeenEdited() 생성
-    // 필요시 명시적으로 추가
     public Boolean getHasBeenEdited() {
         return hasBeenEdited;
     }

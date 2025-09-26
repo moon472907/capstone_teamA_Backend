@@ -27,12 +27,17 @@ public class TaskService {
     private final MissionRepository missionRepository;
     private final MissionCalculateService calculateService;
 
+
+    // 특정 task 완료 처리
     public TaskCompleteResponse completeTask(Integer memberId, TaskCompleteRequest request) {
+        //task 찾기
         Task task = taskRepository.findById(request.getTaskId())
                 .orElseThrow(() -> new MissionException(MissionErrorCode.TASK_NOT_FOUND));
 
+        // 완료 날짜 ( 없을 시 오늘 )
         LocalDate completedDate = request.getDate() != null ? request.getDate() : LocalDate.now();
 
+        // 이미 완료한 기록이 있다면 예외처리
         if (taskLogRepository.existsByTaskIdAndMemberIdAndDate(
                 request.getTaskId(), memberId, completedDate)) {
             throw new MissionException(MissionErrorCode.TASK_ALREADY_COMPLETED);
@@ -40,6 +45,7 @@ public class TaskService {
 
         Mission mission = task.getSubGoal().getMission();
 
+        //tasklog에 기록처리
         TaskLog taskLog = TaskLog.builder()
                 .task(task)
                 .memberId(memberId)
@@ -50,6 +56,7 @@ public class TaskService {
 
         taskLogRepository.save(taskLog);
 
+        // 완료 응답 반환 ( 포인트/경험치 + 진행률 포함 )
         return TaskCompleteResponse.builder()
                 .taskId(task.getId())
                 .status(request.getStatus())
@@ -62,6 +69,7 @@ public class TaskService {
                 .build();
     }
 
+    //ㅅㅁ
     @Transactional(readOnly = true)
     public List<TaskResponse> getTodayTasks(Integer memberId) {
         LocalDate today = LocalDate.now();
