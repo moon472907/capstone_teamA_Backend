@@ -53,7 +53,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             }
         }
 
-        Member member = memberService.social_login(email, name, socialAccessToken);
+        Member member = memberService.social_login(email, name);
 
         return new SecurityUser(
                 member.getId(),
