@@ -210,17 +210,23 @@ public class PartyService {
         partyRepository.delete(party);
     }
 
-    @Cacheable(value = "partyList", key = "'all'")
-    @Transactional(readOnly = true)
-    public List<Party> getPartyList() {
-        return partyRepository.findByIsPublic(true);
+    @Cacheable(value = "partyDetails", key = "#partyId")
+    @Transactional
+    public Party getPartyDetails(Integer partyId) {
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "파티를 찾을 수 없습니다."));
+
+        party.incrementViews();
+
+        return party;
     }
 
-    @Cacheable(value = "partyDetails", key = "#partyId")
+    @Cacheable(value = "missionByParty", key = "#partyId")
     @Transactional(readOnly = true)
-    public Party getPartyDetails(Integer partyId) {
-        return partyRepository.findById(partyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "해당 파티를 찾을 수 없습니다."));
+    public Mission getMissionByPartyId(Integer partyId) {
+        return missionRepository.findByPartyId(partyId).stream()
+                .findFirst()
+                .orElse(null);
     }
 
     @Transactional

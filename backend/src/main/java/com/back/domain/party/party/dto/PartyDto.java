@@ -23,6 +23,7 @@ public class PartyDto {
     private Integer maxMembers;
     private Boolean isPublic;
     private List<PartyMemberDto> members;
+    private Integer missionId;
     private MissionCategory category;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -45,6 +46,8 @@ public class PartyDto {
         this.createDate = party.getCreateDate().toLocalDate();
 
         this.views = party.getViews();
+
+        this.missionId = mission != null ? mission.getId() : null;
 
         if (mission != null) {
             this.category = mission.getCategory();
