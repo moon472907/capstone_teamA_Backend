@@ -11,7 +11,8 @@ spring:
     password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
   kafka:
-      bootstrap-servers: redpanda-0:9092
+    #bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:broker-1.prod-kafka.com:19092}
+    bootstrap-servers: redpanda-0:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
