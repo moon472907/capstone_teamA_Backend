@@ -30,9 +30,7 @@ public class WeeklyMissionUpdateService {
     private final SubGoalRepository subGoalRepository;
     private final MissionCalculateService missionCalculateService;
 
-    /**
-     * 현재 수정 가능한 주차 목록 조회
-     */
+    // 현재 수정 가능한 주차 목록 조회
     @Transactional(readOnly = true)
     public List<SubGoalResponse> getEditableWeeks(Integer memberId, Integer missionId) {
         Mission mission = validateMissionAccess(memberId, missionId);
@@ -48,9 +46,7 @@ public class WeeklyMissionUpdateService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 특정 주차 수정
-     */
+    // 특정 주차 수정ㄴ
     public SubGoalResponse updateWeekly(Integer memberId, WeeklyUpdateRequest request) {
         // 1. 권한 확인
         Mission mission = validateMissionAccess(memberId, request.getMissionId());
@@ -74,9 +70,7 @@ public class WeeklyMissionUpdateService {
         return convertToSubGoalResponse(subGoal);
     }
 
-    /**
-     * 미션 시작 시 수정 가능 기한 설정
-     */
+    // 미션 시작 시 수정 가능 기한 설정
     public void initializeEditablePeriods(Integer missionId) {
         Mission mission = missionRepository.findById(missionId)
                 .orElseThrow(() -> new MissionException(MissionErrorCode.MISSION_NOT_FOUND));
@@ -93,9 +87,6 @@ public class WeeklyMissionUpdateService {
         log.info("미션 수정 기한 초기화 완료 - missionId: {}", missionId);
     }
 
-    // ================================
-    // Private 헬퍼 메서드들
-    // ================================
 
     private Mission validateMissionAccess(Integer memberId, Integer missionId) {
         Mission mission = missionRepository.findById(missionId)

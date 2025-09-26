@@ -28,8 +28,8 @@ public class Mission extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private Member member;  // 미션 생성자
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "party_id", nullable = true)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "party_id", unique = true, nullable = true)
     private Party party; // null == 개인미션
 
     @Column(nullable = false)

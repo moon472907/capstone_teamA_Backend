@@ -4,6 +4,7 @@ import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,8 +28,14 @@ public class Task extends BaseEntity {
     @Column(nullable = false)
     private int dayNum;     // 주차 내 며칠에 해당하는 지 ( 1 = 월, ... )
 
+    @Column(nullable = false)
+    private Boolean hasBeenEdited = false;
+
+    private LocalDate editableUntil;
+
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<TaskLog> taskLogs = new ArrayList<>();
+
 
 }

@@ -69,7 +69,7 @@ public class TaskService {
                 .build();
     }
 
-    //ㅅㅁ
+    // 멤버 id 기준 오늘 할 일 조회
     @Transactional(readOnly = true)
     public List<TaskResponse> getTodayTasks(Integer memberId) {
         LocalDate today = LocalDate.now();
@@ -82,6 +82,7 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+    //특정 날짜에 해당하는 task
     @Transactional(readOnly = true)
     public List<TaskResponse> getTasksByDate(Integer memberId, LocalDate date) {
         int dayNum = date.getDayOfWeek().getValue();
@@ -93,6 +94,7 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+    // 특정 미션의 특정 주차에 해당하는 task 조회
     @Transactional(readOnly = true)
     public List<TaskResponse> getWeekTasks(Integer memberId, Integer missionId, Integer weekNum) {
         Mission mission = missionRepository.findById(missionId)
@@ -117,7 +119,7 @@ public class TaskService {
         return convertToTaskResponse(task, memberId, date);
     }
 
-
+    // task 엔티티 -> taskResponse DTO 변환
     private TaskResponse convertToTaskResponse(Task task, Integer memberId, LocalDate date) {
         Optional<TaskLog> taskLog = taskLogRepository.findByTaskIdAndMemberIdAndDate(
                 task.getId(), memberId, date);
