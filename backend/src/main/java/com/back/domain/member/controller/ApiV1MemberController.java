@@ -191,9 +191,13 @@ public class ApiV1MemberController {
         Member actor = rq.getActorFromDb();
         String email = actor.getEmail();
 
+        if(actor.getSocialAccessToken() != null) {
+            memberService.delete_social(actor);
+        }
         memberService.delete(actor);
         rq.deleteCookie("apiKey");
         rq.deleteCookie("accessToken");
+        rq.deleteCookie("JSESSIONID");
 
         return ResponseEntity
                 .status(HttpStatus.OK)
