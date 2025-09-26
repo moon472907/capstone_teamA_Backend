@@ -1,8 +1,8 @@
 package com.back.domain.mission.service;
 
-import com.back.domain.mission.entitiy.Mission;
-import com.back.domain.mission.entitiy.SubGoal;
-import com.back.domain.mission.entitiy.Task;
+import com.back.domain.mission.entity.*;
+import com.back.domain.mission.enums.TaskStatus;
+import com.back.domain.mission.repository.TaskLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,74 +14,103 @@ import java.time.temporal.ChronoUnit;
 @RequiredArgsConstructor
 public class MissionCalculateService {
 
-    //시작일 계산
+    private final TaskLogRepository taskLogRepository;
+
     public LocalDate calculateStartDate() {
         LocalDate today = LocalDate.now();
         DayOfWeek todayDayOfWeek = today.getDayOfWeek();
 
-        if(todayDayOfWeek == DayOfWeek.MONDAY){
+        if (todayDayOfWeek == DayOfWeek.MONDAY) {
             return today;
         }
 
         int daysUntilMonday = DayOfWeek.MONDAY.getValue() - todayDayOfWeek.getValue();
-        if(daysUntilMonday <0 ) {
+        if (daysUntilMonday < 0) {
             daysUntilMonday += 7;
         }
 
         return today.plusDays(daysUntilMonday);
     }
 
-
-    // 종료일 계산
-    public LocalDate calculateEndDate(LocalDate startDate, Integer weeks){
+    public LocalDate calculateEndDate(LocalDate startDate, Integer weeks) {
         return startDate.plusWeeks(weeks).minusDays(1);
     }
 
-    //현재 주차 계산
-    public Integer calculateCurrentWeek(Mission mission){
+    public Integer calculateCurrentWeek(Mission mission) {
         LocalDate today = LocalDate.now();
-        if(today.isBefore(mission.getStartDate())){
-            return 0; //시작전
+        if (today.isBefore(mission.getStartDate())) {
+            return 0;
         }
-        if(today.isAfter(mission.getEndDate())){
-            return null; //시작후
+        if (today.isAfter(mission.getEndDate())) {
+            return null;
         }
 
         long daysPassed = ChronoUnit.DAYS.between(mission.getStartDate(), today);
         return (int) (daysPassed / 7) + 1;
     }
 
-    public boolean isCurrentWeek(SubGoal subGoal) {
-        LocalDate today = LocalDate.now();
-        return !today.isBefore(subGoal.getStartDate()) && !today.isAfter(subGoal.getEndDate());
-    }
-
-    public boolean isToday(Task task){
+    public boolean isToday(Task task) {
         LocalDate today = LocalDate.now();
         DayOfWeek todayDayOfWeek = today.getDayOfWeek();
         int todayDayNum = todayDayOfWeek.getValue();
 
-        return task.getDayNum() == todayDayNum && isCurrentWeek(task.getSubGoal());
+        SubGoal subGoal = task.getSubGoal();
+        return task.getDayNum() == todayDayNum &&
+                !today.isBefore(subGoal.getStartDate()) &&
+                !today.isAfter(subGoal.getEndDate());
     }
 
+    public Integer calculateDailyProgress(Integer memberId, LocalDate date) {
+        int dayOfWeek = date.getDayOfWeek().getValue();
 
-    //일일 진행률 계산
-    public Integer calculateDailyProgress(Integer memberId, LocalDate Date){
-        return 0;
+        Long totalTasks = taskLogRepository.countDailyTasks(memberId, date, dayOfWeek);
+        if (totalTasks == 0) {
+            return 0;
+        }
+
+        Long completedTasks = taskLogRepository.countByMemberIdAndDateAndStatus(
+                memberId, date, TaskStatus.COMPLETED);
+
+        return (int) (completedTasks * 100 / totalTasks);
     }
 
-    //주간 질행률 계신
-    public Integer calculateWeeklyProgress(Integer memberId, Mission mission, LocalDate date){
-        return 0;
+    public Integer calculateWeeklyProgress(Integer memberId, Mission mission, LocalDate date) {
+        SubGoal currentSubGoal = mission.getSubGoals().stream()
+                .filter(sg -> !date.isBefore(sg.getStartDate()) && !date.isAfter(sg.getEndDate()))
+                .findFirst()
+                .orElse(null);
+
+        if (currentSubGoal == null) {
+            return 0;
+        }
+
+        return calculateWeekProgress(currentSubGoal);
     }
 
-    //미션 전체 진행률 계산
-    public Integer calculateMissionProgress(Mission mission){
-        return 0;
+    public Integer calculateMissionProgress(Mission mission) {
+        if (mission.getSubGoals().isEmpty()) {
+            return 0;
+        }
+
+        long totalTasks = mission.getSubGoals().stream()
+                .mapToLong(sg -> sg.getTasks().size())
+                .sum();
+
+        if (totalTasks == 0) return 0;
+
+        long completedTasks = taskLogRepository.countCompletedTasksByMission(
+                mission.getId(), TaskStatus.COMPLETED);
+
+        return (int) Math.min(completedTasks * 100 / totalTasks, 100);
     }
 
-    //주차별 진행률 계산
-    public Integer calculateWeekProgress(SubGoal subGoal){
-        return 0;
+    public Integer calculateWeekProgress(SubGoal subGoal) {
+        if (subGoal.getTasks().isEmpty()) return 0;
+
+        long totalTasks = subGoal.getTasks().size();
+        long completedTasks = taskLogRepository.countCompletedTasksBySubGoal(
+                subGoal.getId(), TaskStatus.COMPLETED);
+
+        return (int) (completedTasks * 100 / totalTasks);
     }
 }

@@ -18,5 +18,5 @@ public class TaskCompleteRequest {
     @NotNull(message = "완료 상태는 필수입니다.")
     private TaskStatus status;
 
-    private LocalDate date;
+    private LocalDate date; //  null이면 오늘
 }

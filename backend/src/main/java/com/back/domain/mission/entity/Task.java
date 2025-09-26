@@ -1,4 +1,4 @@
-package com.back.domain.mission.entitiy;
+package com.back.domain.mission.entity;
 
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -28,6 +28,7 @@ public class Task extends BaseEntity {
     private int dayNum;     // 주차 내 며칠에 해당하는 지 ( 1 = 월, ... )
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<TaskLog> taskLogs = new ArrayList<>();
 
 }

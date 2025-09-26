@@ -1,24 +1,47 @@
 package com.back.domain.mission.repository;
 
-import com.back.domain.mission.entitiy.TaskLog;
+import com.back.domain.mission.entity.TaskLog;
+import com.back.domain.mission.enums.TaskStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface TaskLogRepository extends JpaRepository<TaskLog, Integer> { // Integer → Long
+public interface TaskLogRepository extends JpaRepository<TaskLog, Integer> {
+
     boolean existsByTaskIdAndMemberIdAndDate(Integer taskId, Integer memberId, LocalDate date);
-    List<TaskLog> findByTaskId(Integer taskId);
-    List<TaskLog> findByMemberId(Integer memberId);
 
-    // 수정: 메서드명과 매개변수 타입 수정
-    List<TaskLog> findByTaskIdAndMemberId(Integer taskId, Integer memberId);
+    Optional<TaskLog> findByTaskIdAndMemberIdAndDate(Integer taskId, Integer memberId, LocalDate date);
 
-    // 특정 날짜의 완료 기록 조회
-    List<TaskLog> findByMemberIdAndDate(Integer memberId, LocalDate date);
+    Optional<TaskLog> findTopByTaskIdAndMemberIdOrderByDateDesc(Integer taskId, Integer memberId);
 
-    // 특정 기간의 완료 기록 조회
-    List<TaskLog> findByMemberIdAndDateBetween(Integer memberId, LocalDate startDate, LocalDate endDate);
+    Long countByMemberIdAndDateAndStatus(Integer memberId, LocalDate date, TaskStatus status);
+
+    @Query("SELECT COUNT(DISTINCT tl.task.id) FROM TaskLog tl " +
+            "JOIN tl.task t " +
+            "JOIN t.subGoal sg " +
+            "WHERE sg.mission.id = :missionId " +
+            "AND tl.status = :status")
+    Long countCompletedTasksByMission(@Param("missionId") Integer missionId,
+                                      @Param("status") TaskStatus status);
+
+    @Query("SELECT COUNT(DISTINCT tl.task.id) FROM TaskLog tl " +
+            "WHERE tl.task.subGoal.id = :subGoalId " +
+            "AND tl.status = :status")
+    Long countCompletedTasksBySubGoal(@Param("subGoalId") Integer subGoalId,
+                                      @Param("status") TaskStatus status);
+
+    @Query("SELECT COUNT(t) FROM Task t " +
+            "JOIN t.subGoal sg " +
+            "JOIN sg.mission m " +
+            "WHERE m.member.id = :memberId " +
+            "AND :date BETWEEN sg.startDate AND sg.endDate " +
+            "AND t.dayNum = :dayOfWeek")
+    Long countDailyTasks(@Param("memberId") Integer memberId,
+                         @Param("date") LocalDate date,
+                         @Param("dayOfWeek") Integer dayOfWeek);
 }
