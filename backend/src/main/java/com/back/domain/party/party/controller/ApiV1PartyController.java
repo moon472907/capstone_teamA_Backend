@@ -1,5 +1,6 @@
 package com.back.domain.party.party.controller;
 
+import com.back.domain.mission.enums.MissionCategory;
 import com.back.domain.party.party.dto.*;
 import com.back.domain.party.party.entity.Party;
 import com.back.domain.party.party.entity.PartyMember;
@@ -11,11 +12,16 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -112,16 +118,17 @@ public class ApiV1PartyController {
     }
 
     @GetMapping
-    @Operation(summary = "파티 목록 조회", description = "공개 파티 목록을 조회하는 API")
-    public ResponseEntity<ApiResponse<List<PartyDto>>> getPartyList() {
-        List<Party> parties = partyService.getPartyList();
-        List<PartyDto> partyDtos = parties.stream()
-                .map(PartyDto::new)
-                .collect(Collectors.toList());
+    @Operation(summary = "파티 목록 조회", description = "공개 파티 목록을 조회하고, 정렬(최신순/조회순) 및 필터링(카테고리/시작일)을 지원합니다.")
+    public ResponseEntity<ApiResponse<Page<PartyDto>>> getPublicParties(
+            @ParameterObject Pageable pageable,
+            @RequestParam(required = false) MissionCategory category,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate
+    ) {
+        Page<PartyDto> partyPage = partyService.getPublicPartyList(pageable, category, startDate);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.success("200", "파티 목록 조회 성공", partyDtos));
+                .body(ApiResponse.success("200", "파티 목록 조회 성공", partyPage));
     }
 
     @GetMapping("/{partyId}")

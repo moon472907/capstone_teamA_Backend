@@ -1,8 +1,11 @@
 package com.back.domain.party.party.repository;
 
 import com.back.domain.party.party.entity.Party;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -25,6 +28,11 @@ public interface PartyRepository extends JpaRepository<Party, Integer> {
     @EntityGraph(attributePaths = {"leader", "partyMembers.member"})
     Optional<Party> findById(Integer partyId);
 
-    // 특정 미션을 진행하는 파티를 찾는 메서드 (미션 도메인 완성 시 사용)
-    // Optional<Party> findByMission_Id(Integer missionId);
+    @Query(value = "SELECT DISTINCT p FROM Party p " +
+            "LEFT JOIN FETCH p.leader l " +
+            "LEFT JOIN p.partyMembers pm " +
+            "LEFT JOIN Mission m ON m.party = p " +
+            "WHERE p.isPublic = true",
+            countQuery = "SELECT COUNT(p) FROM Party p WHERE p.isPublic = true")
+    Page<Party> findPublicPartiesWithMissionAndMembers(Pageable pageable);
 }

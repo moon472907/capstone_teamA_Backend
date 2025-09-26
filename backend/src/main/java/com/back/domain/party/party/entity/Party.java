@@ -27,9 +27,12 @@ public class Party extends BaseEntity {
     @JoinColumn(name = "leader_id")
     private Member leader;
 
-// @ManyToOne(fetch = FetchType.LAZY)
-// @JoinColumn(name = "mission_id")
-// private Mission mission;
+    @Column(nullable = false)
+    private Integer views = 0;
+
+    public void incrementViews() {
+        this.views++;
+    }
 
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyMember> partyMembers = new ArrayList<>();

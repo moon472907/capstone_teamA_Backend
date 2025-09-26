@@ -2,6 +2,10 @@ package com.back.domain.party.party.service;
 
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
+import com.back.domain.mission.entity.Mission;
+import com.back.domain.mission.enums.MissionCategory;
+import com.back.domain.mission.repository.MissionRepository;
+import com.back.domain.party.party.dto.PartyDto;
 import com.back.domain.party.party.dto.PartyRequestDto;
 import com.back.domain.party.party.dto.PartyUpdateRequestDto;
 import com.back.domain.party.party.entity.Party;
@@ -14,13 +18,19 @@ import com.back.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +40,42 @@ public class PartyService {
     private final PartyRepository partyRepository;
     private final MemberRepository memberRepository;
     private final PartyMemberRepository partyMemberRepository;
+    private final MissionRepository missionRepository;
+
+    public Page<PartyDto> getPublicPartyList(
+            Pageable pageable,
+            MissionCategory categoryFilter,
+            LocalDate startDateFilter
+    ) {
+        // 1. Repository를 사용하여 페이징 및 정렬된 Party 리스트 조회 (Mission, Leader, Members 포함)
+        Page<Party> partyPage = partyRepository.findPublicPartiesWithMissionAndMembers(pageable);
+        List<Party> parties = partyPage.getContent();
+
+        // 2. 파티 목록을 PartyDto로 변환하면서 Mission 정보를 매핑하고 필터링
+        List<PartyDto> dtoList = parties.stream()
+                .map(party -> {
+                    // MissionRepository를 사용하여 파티에 연결된 Mission을 조회 (파티당 하나의 미션만 있다고 가정)
+                    Optional<Mission> missionOptional = missionRepository.findByPartyId(party.getId()).stream().findFirst();
+
+                    // Mission 정보를 포함하는 생성자로 DTO 생성
+                    PartyDto dto = new PartyDto(party, missionOptional.orElse(null));
+
+                    // 3. Service에서 필터링 조건 확인 (DB 쿼리로 처리할 수 없는 동적 필터링을 여기서 처리)
+                    if (categoryFilter != null && (dto.getCategory() == null || !dto.getCategory().equals(categoryFilter))) {
+                        return null; // 카테고리 필터 불일치
+                    }
+                    if (startDateFilter != null && (dto.getStartDate() == null || !dto.getStartDate().isEqual(startDateFilter))) {
+                        return null; // 시작일 필터 불일치
+                    }
+                    return dto;
+                })
+                .filter(Objects::nonNull) // 필터링 조건에 맞지 않아 null이 된 항목 제거
+                .collect(Collectors.toList());
+
+
+        // 4. 필터링된 리스트를 Page 객체로 다시 변환하여 반환
+        return new PageImpl<>(dtoList, pageable, partyPage.getTotalElements());
+    }
 
     // 파티 정원 확인 메서드
     private void checkPartyCapacity(Party party) {
