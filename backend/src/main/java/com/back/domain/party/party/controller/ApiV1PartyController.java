@@ -1,5 +1,7 @@
 package com.back.domain.party.party.controller;
 
+import com.back.domain.member.entity.Member;
+import com.back.domain.member.service.MemberService;
 import com.back.domain.mission.entity.Mission;
 import com.back.domain.mission.enums.MissionCategory;
 import com.back.domain.party.party.dto.*;
@@ -33,16 +35,24 @@ import java.util.stream.Collectors;
 public class ApiV1PartyController {
 
     private final PartyService partyService;
+    private final MemberService memberService;
+
 
     // Authentication 객체로부터 사용자 ID를 안전하게 가져오는 헬퍼 메서드
     private Integer getMemberIdFromAuthentication(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
+            // 이전에 발생했던 IllegalArgumentException은 그대로 유지합니다.
             throw new IllegalArgumentException("인증 정보가 없습니다.");
         }
+
+        String principalName = authentication.getName();
+
         try {
-            return Integer.parseInt(authentication.getName());
+            return Integer.parseInt(principalName);
         } catch (NumberFormatException e) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED, "유효하지 않은 인증 정보입니다.");
+            Member member = memberService.findByEmail(principalName)
+                    .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "유효하지 않은 인증 정보입니다."));
+            return member.getId();
         }
     }
 
