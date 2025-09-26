@@ -19,6 +19,4 @@ public class PartyRequestDto {
     @NotNull(message = "공개 여부는 필수 입력 항목입니다.")
     private Boolean isPublicStatus;
 
-    // 미션 도메인 완성 시 사용
-    // private Integer missionId;
 }
