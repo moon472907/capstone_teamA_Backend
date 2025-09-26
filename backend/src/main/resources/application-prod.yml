@@ -34,3 +34,8 @@ custom:
     frontUrl: "${custom.prod.frontUrl}"
     backUrl: "${custom.prod.backUrl}"
     name: nutree
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
