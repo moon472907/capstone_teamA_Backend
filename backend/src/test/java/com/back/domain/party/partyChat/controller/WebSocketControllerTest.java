@@ -6,6 +6,7 @@ import com.back.domain.party.paryChat.controller.WebSocketController;
 import com.back.domain.party.paryChat.dto.ChatMessageDto;
 import com.back.domain.party.paryChat.entity.ChatMessage;
 import com.back.domain.party.paryChat.service.ChatMessageService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.test.web.servlet.MockMvc;
@@ -44,6 +46,12 @@ class WebSocketControllerTest {
 
     @Mock
     private ChatMessageService chatMessageService;
+
+    @Mock
+    private KafkaTemplate<String, String> kafkaTemplate;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private WebSocketController webSocketController;
@@ -90,13 +98,25 @@ class WebSocketControllerTest {
 
     @Test
     @DisplayName("STOMP 메시지 전송 테스트")
-    void sendMessage_shouldSaveAndSendMessage() {
+    void sendMessage_shouldSaveAndSendMessage() throws Exception {
+        // Kafka 전송을 위해 JSON 직렬화 Mock 설정
+        String messageJson = "{\"id\":null,\"senderEmail\":\"test@example.com\",\"content\":\"Hello, world!\",\"partyId\":1}";
+        when(objectMapper.writeValueAsString(any(ChatMessageDto.class))).thenReturn(messageJson);
+
         webSocketController.sendMessage(chatMessageDto, user);
 
-        verify(chatMessageService, times(1)).saveMessage(chatMessageDto);
+        // 1. 메시지 브로드캐스트 검증
         verify(messagingTemplate, times(1)).convertAndSend(
                 eq("/topic/party/" + partyId), eq(chatMessageDto)
         );
+
+        // 2. ChatMessageService.saveMessage 호출 대신 KafkaTemplate.send 호출 검증
+        verify(kafkaTemplate, times(1)).send(
+                eq("chat-messages"), // 토픽 이름
+                eq(partyId.toString()), // 키 (파티 ID)
+                eq(messageJson) // 메시지 내용
+        );
+        verify(chatMessageService, never()).saveMessage(any(ChatMessageDto.class)); // saveMessage가 호출되지 않았는지 확인
     }
 
     @Test
@@ -152,9 +172,11 @@ class WebSocketControllerTest {
     @Test
     @DisplayName("채팅 기록 조회 HTTP GET 요청 테스트 (페이지네이션)")
     void getChatHistory_shouldReturnPagedChatHistory() throws Exception {
-        List<ChatMessage> chatHistory = Arrays.asList(chatMessage2, chatMessage1);
+        ChatMessageDto chatMessageDto1 = new ChatMessageDto(chatMessage1);
+        ChatMessageDto chatMessageDto2 = new ChatMessageDto(chatMessage2);
+        List<ChatMessageDto> chatHistoryDtos = Arrays.asList(chatMessageDto2, chatMessageDto1);
         Pageable pageable = PageRequest.of(0, 20);
-        Page<ChatMessage> pagedChatHistory = new PageImpl<>(chatHistory, pageable, chatHistory.size());
+        Page<ChatMessageDto> pagedChatHistory = new PageImpl<>(chatHistoryDtos, pageable, chatHistoryDtos.size());
 
         when(chatMessageService.getChatHistory(eq(partyId), any(Pageable.class)))
                 .thenReturn(pagedChatHistory);
