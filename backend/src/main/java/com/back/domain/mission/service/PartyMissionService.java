@@ -119,6 +119,10 @@ public class PartyMissionService {
 
         mission.setCategory(aiResult.getCategory());
 
+        if (aiResult.getGoal() != null && !aiResult.getGoal().isBlank()) {
+            mission.setTitle(aiResult.getGoal());
+        }
+
         for (WeeklyPlan weekPlan : aiResult.getWeeklyPlans()) {
             LocalDate weekStart = mission.getStartDate().plusWeeks(weekPlan.getWeekNum() - 1);
             LocalDate weekEnd = weekStart.plusDays(6);

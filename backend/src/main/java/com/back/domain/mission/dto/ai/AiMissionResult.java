@@ -11,6 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class AiMissionResult {
+    private String goal;
     private MissionCategory category;
     private List<WeeklyPlan> weeklyPlans;
 }
