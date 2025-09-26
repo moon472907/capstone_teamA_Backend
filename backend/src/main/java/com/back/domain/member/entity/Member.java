@@ -31,21 +31,28 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private MemberGender gender = MemberGender.NONE;
 
-    // *** 상태 및 장착한 아이템 정보 ***
+    // *** 상태 정보 ***
     private int level = 1;
     private int xp = 0;
     private int money = 0;
 
+    // *** 장착한 칭호/아이템 정보 ***
     @ManyToOne(fetch = FetchType.LAZY)
     private Title title;
-
     @OneToMany(fetch = FetchType.LAZY)
     @MapKey(name = "type")
     private Map<ItemType, Item> items;
 
+    // *** 보유한 칭호/아이템 정보 ***
+    @ManyToMany
+    private Set<Title> ownedTitles;
+    @ManyToMany
+    private Set<Item> ownedItems;
+
     // *** 개발자용 정보 ***
     private MemberRole role = MemberRole.USER;
     private String apiKey = null;
+    private String socialAccessToken = null;
 
     //생성자(회원 가입)
     public Member(String email, String password, String name) {
@@ -54,10 +61,12 @@ public class Member extends BaseEntity {
         this.name = name;
 
         this.title = null;
-        this.items = new HashMap<>();
+        this.items = new EnumMap<>(ItemType.class);
         for(ItemType type : ItemType.values()) {
             this.items.put(type, null);
         }
+        this.ownedTitles = new HashSet<>();
+        this.ownedItems = new HashSet<>();
 
         this.apiKey = UUID.randomUUID().toString();
     }
@@ -66,6 +75,21 @@ public class Member extends BaseEntity {
     public Member(int id, String email) {
         setId(id);
         this.email = email;
+    }
+
+    //아이템 장착
+    public void setItem(Item item) {
+        this.items.put(item.getType(), item);
+    }
+
+    //칭호 획득
+    public void addTitle(Title title) {
+        this.ownedTitles.add(title);
+    }
+
+    //아이템 획득
+    public void addItem(Item item) {
+        this.ownedItems.add(item);
     }
 
     // *** 인증/인가 메서드 ***

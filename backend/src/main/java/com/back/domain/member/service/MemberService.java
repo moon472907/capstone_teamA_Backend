@@ -52,13 +52,15 @@ public class MemberService {
     }
 
     //로그인 (소셜 계정)
-    public Member social_login(String email, String name) {
+    public Member social_login(String email, String name, String socialAccessToken) {
         Member member = findByEmail(email).orElse(null);
 
         //최초 로그인일 경우 가입 처리
         if(member == null) {
             member = signup(email, "", name);
         }
+
+        member.setSocialAccessToken(socialAccessToken);
 
         return member;
     }
@@ -83,6 +85,11 @@ public class MemberService {
     //회원 탈퇴
     public void delete(Member member) {
         memberRepository.delete(member);
+    }
+
+    public void delete_social(Member member) {
+        String provider = member.getEmail().substring(1, member.getEmail().indexOf("]"));
+        authService.delete_social(provider, member.getSocialAccessToken());
     }
 
     // *** Modify 메서드 ***

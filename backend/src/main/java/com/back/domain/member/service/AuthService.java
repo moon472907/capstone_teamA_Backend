@@ -5,6 +5,7 @@ import com.back.standard.util.Ut;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.net.http.HttpClient;
 import java.util.Map;
 
 @Service
@@ -14,6 +15,25 @@ public class AuthService {
 
     @Value("${custom.accessToken.expirationSeconds}")
     private int accessTokenExpirationSeconds;
+
+    public void delete_social(String provider, String accessToken) {
+        HttpClient client= HttpClient.newHttpClient();
+        try {
+            switch (provider) {
+                case "KAKAO" -> {
+
+                }
+                case "GOOGLE" -> {
+
+                }
+                case "NAVER" -> {
+
+                }
+            }
+        } catch (Exception e) {
+
+        }
+    }
 
     String genAccessToken(Member member) {
         long id = member.getId();
