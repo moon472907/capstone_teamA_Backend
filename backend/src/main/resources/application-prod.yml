@@ -28,14 +28,15 @@ logging:
     org.hibernate.orm.jdbc.extract: INFO
     org.springframework.transaction.interceptor: INFO
     com.back: INFO
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
 custom:
   site:
     cookieDomain: "${custom.prod.cookieDomain}"
     frontUrl: "${custom.prod.frontUrl}"
     backUrl: "${custom.prod.backUrl}"
     name: nutree
-  jpa:
-    show-sql: true
-    hibernate:
-      ddl-auto: update
+
 
