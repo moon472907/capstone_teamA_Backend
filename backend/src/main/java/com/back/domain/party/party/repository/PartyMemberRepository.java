@@ -30,4 +30,9 @@ public interface PartyMemberRepository extends JpaRepository<PartyMember, PartyM
     // 파티원 수 조회용 메서드 추가
     long countByParty_IdAndStatus(Integer partyId, PartyMemberStatus status);
 
+    // 파티원인지 확인
+    boolean existsByMemberIdAndPartyId(Integer memberId, Integer partyId);
+
+    boolean existsByPartyIdAndMemberIdAndStatus(Integer partyId, Integer memberId, PartyMemberStatus status);
+
 }

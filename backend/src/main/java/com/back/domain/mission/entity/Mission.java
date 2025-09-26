@@ -1,14 +1,16 @@
-package com.back.domain.mission.entitiy;
+package com.back.domain.mission.entity;
 
 
 import com.back.domain.member.entity.Member;
 import com.back.domain.mission.enums.MissionCategory;
 import com.back.domain.mission.enums.MissionType;
+import com.back.domain.party.party.entity.Party;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import static lombok.AccessLevel.PROTECTED;
@@ -22,13 +24,13 @@ import static lombok.AccessLevel.PROTECTED;
 @Table(name="missions")
 public class Mission extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
-    private Member member;
+    private Member member;  // 미션 생성자
 
-    /* @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "party_id", nullable = false)
-    private Party party; */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "party_id", nullable = true)
+    private Party party; // null == 개인미션
 
     @Column(nullable = false)
     private String title;
@@ -45,16 +47,17 @@ public class Mission extends BaseEntity {
     private boolean isCompleted = false;
 
     @Column(nullable = false)
-    private boolean isEditable = true;
-
-    @Column(nullable = false)
     private LocalDate startDate;
 
     @Column(nullable = false)
     private LocalDate endDate;
 
     @OneToMany(mappedBy = "mission", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<SubGoal> subGoals;
+    @Builder.Default
+    private List<SubGoal> subGoals = new ArrayList<>();
 
+    public boolean isPartyMission() {
+        return party != null;
+    }
 
 }

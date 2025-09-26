@@ -5,10 +5,10 @@ import lombok.*;
 import java.time.LocalDate;
 import java.util.List;
 
-@Setter
 @Getter
-@AllArgsConstructor
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class SubGoalResponse {
     private Integer subGoalId;
@@ -16,11 +16,9 @@ public class SubGoalResponse {
     private Integer weekNum;
     private LocalDate startDate;
     private LocalDate endDate;
-    private boolean isEditable;
-    private boolean isCurrentWeek; // 현재 진행 주차인지
-    private Integer weekProgressRate; // 0~100%
-
-    // 상세 조회시에만 포함
+    private boolean hasBeenEdited;
+    private LocalDate editableUntil;
+    private String editStatus;
+    private Integer weekProgressRate;
     private List<TaskResponse> tasks;
-
 }

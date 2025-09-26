@@ -5,8 +5,8 @@ import lombok.*;
 
 import java.time.LocalDate;
 
-@Setter
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -14,13 +14,9 @@ public class TaskCompleteResponse {
     private Integer taskId;
     private TaskStatus status;
     private LocalDate completedDate;
-
-    // 보상 정보
-    private Integer earnedPoints;
-    private Integer earnedExp;
-
-    // 진행률 정보
-    private Integer dailyProgressRate;   // 0~100%
-    private Integer weeklyProgressRate;  // 0~100%
-    private Integer missionProgressRate; // 0~100%
+    private Integer earnedPoints; //task로 획득한 포인트
+    private Integer earnedExp; //task로 획득한 경험치
+    private Integer dailyProgressRate; //일일 진행률
+    private Integer weeklyProgressRate; //주차별 진행률
+    private Integer missionProgressRate; //전체 미션 진행률
 }

@@ -1,35 +1,36 @@
-package com.back.domain.mission.entitiy;
+package com.back.domain.mission.entity;
 
 import com.back.domain.mission.enums.TaskStatus;
-import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
 
-import static lombok.AccessLevel.PROTECTED;
-
-
+@Entity
 @Getter
 @Setter
-@NoArgsConstructor(access = PROTECTED)
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Entity
-@Table(name= "tasks_logs")
-public class TaskLog extends BaseEntity {
+public class TaskLog {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id", nullable = false)
     private Task task;
 
-    @Column(nullable = false)
-    private int memberId;
+    // 파티와 멤버 정보 모두 필요
+    @Column(nullable = true)
+    private Integer partyId;  // 어떤 파티
 
-    // 수행한 날짜
+    @Column(nullable = false)
+    private Integer memberId;  // 어떤 멤버가 완료했는지
+
     @Column(nullable = false)
     private LocalDate date;
-
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

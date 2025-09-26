@@ -7,13 +7,12 @@ import lombok.*;
 import java.time.LocalDate;
 import java.util.List;
 
-@Setter
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class MissionResponse { //미션 응답 목록, 상세, 생성
-
+public class MissionResponse {
     private Integer missionId;
     private String title;
     private MissionCategory category;
@@ -23,11 +22,8 @@ public class MissionResponse { //미션 응답 목록, 상세, 생성
     private Integer totalWeeks;
     private Integer currentWeek;
     private boolean isCompleted;
-    private boolean isEditable;
+    private boolean isPartyMission;
+    private Integer partyId;
     private Integer progressRate;
-
-    // 상세 조회시에만 포함 (목록 조회시에는 null)
     private List<SubGoalResponse> subGoals;
-
-
 }

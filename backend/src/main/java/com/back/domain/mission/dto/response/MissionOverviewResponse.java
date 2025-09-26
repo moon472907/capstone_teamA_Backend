@@ -4,14 +4,14 @@ import lombok.*;
 
 import java.util.List;
 
-@Setter
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class MissionOverviewResponse { //미션 현황 응답
+public class MissionOverviewResponse {
     private List<MissionResponse> activeMissions;
     private List<MissionResponse> completedMissions;
     private Integer activeMissionCount;
-    private Integer remainingSlots; // 5 - 활성 미션 수
+    private Integer remainingSlots;
 }
