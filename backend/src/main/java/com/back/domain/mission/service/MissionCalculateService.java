@@ -15,7 +15,7 @@ import java.time.temporal.ChronoUnit;
 public class MissionCalculateService {
 
     private final TaskLogRepository taskLogRepository;
-
+    //시작일 계산 ( 오늘이 월요일 = 당일 시작 ) 아니면 무조건 다음주 월
     public LocalDate calculateStartDate() {
         LocalDate today = LocalDate.now();
         DayOfWeek todayDayOfWeek = today.getDayOfWeek();
@@ -32,10 +32,12 @@ public class MissionCalculateService {
         return today.plusDays(daysUntilMonday);
     }
 
+    // 종료일 계산
     public LocalDate calculateEndDate(LocalDate startDate, Integer weeks) {
         return startDate.plusWeeks(weeks).minusDays(1);
     }
 
+    // 특정 날짜 기준으로 현재 주차 계산 ( 기준일이 시작 전이면 0, 종료일 이후면 null)
     public Integer calculateCurrentWeek(Mission mission) {
         LocalDate today = LocalDate.now();
         if (today.isBefore(mission.getStartDate())) {
@@ -49,6 +51,7 @@ public class MissionCalculateService {
         return (int) (daysPassed / 7) + 1;
     }
 
+    // 주어진 task가 오늘 해야 하는 일인지 판단
     public boolean isToday(Task task) {
         LocalDate today = LocalDate.now();
         DayOfWeek todayDayOfWeek = today.getDayOfWeek();
@@ -60,6 +63,7 @@ public class MissionCalculateService {
                 !today.isAfter(subGoal.getEndDate());
     }
 
+    // 하루 진행률(개인)
     public Integer calculateDailyProgress(Integer memberId, LocalDate date) {
         int dayOfWeek = date.getDayOfWeek().getValue();
 
@@ -74,6 +78,7 @@ public class MissionCalculateService {
         return (int) (completedTasks * 100 / totalTasks);
     }
 
+    // 주간 진행률(개인)
     public Integer calculateWeeklyProgress(Integer memberId, Mission mission, LocalDate date) {
         SubGoal currentSubGoal = mission.getSubGoals().stream()
                 .filter(sg -> !date.isBefore(sg.getStartDate()) && !date.isAfter(sg.getEndDate()))
@@ -87,6 +92,7 @@ public class MissionCalculateService {
         return calculateWeekProgress(currentSubGoal);
     }
 
+    //미션 전체 진행률
     public Integer calculateMissionProgress(Mission mission) {
         if (mission.getSubGoals().isEmpty()) {
             return 0;
@@ -104,6 +110,7 @@ public class MissionCalculateService {
         return (int) Math.min(completedTasks * 100 / totalTasks, 100);
     }
 
+    // 특정 주차 진행률
     public Integer calculateWeekProgress(SubGoal subGoal) {
         if (subGoal.getTasks().isEmpty()) return 0;
 
@@ -113,4 +120,6 @@ public class MissionCalculateService {
 
         return (int) (completedTasks * 100 / totalTasks);
     }
+
+
 }
