@@ -13,7 +13,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableCaching
 @EnableAsync
 public class BackApplication {
-
     @Value("${GOOGLE_APPLICATION_CREDENTIALS}")
     private String googleCredentialsPath;
 
@@ -23,8 +22,7 @@ public class BackApplication {
 
     @PostConstruct
     public void setGoogleCredentialsEnv() {
-        // 구글 SDK가 인식할 수 있도록 시스템 속성에 넣어줌
+        // Google SDK가 사용할 수 있도록 환경변수 세팅
         System.setProperty("GOOGLE_APPLICATION_CREDENTIALS", googleCredentialsPath);
     }
-
 }
