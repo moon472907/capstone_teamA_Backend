@@ -5,7 +5,7 @@ spring:
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.session.SessionAutoConfiguration
+      - org.springframework.boot.autoconfigure.session.SessionAutoConfiguration
   application:
     name: back
   web:
@@ -33,6 +33,15 @@ spring:
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
+  ai:
+    vertex:
+      ai:
+        gemini:
+          project-id: "gen-lang-client-0512103591"
+          location: "us-central1"
+          chat:
+            options:
+              model: "gemini-2.5-flash"
   security:
     oauth2:
       client:
