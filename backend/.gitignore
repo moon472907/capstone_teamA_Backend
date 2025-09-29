@@ -42,4 +42,4 @@ db_dev.trace.db
 
 .env
 
-keys/*.json
+key/*.json
