@@ -88,13 +88,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       # 빌드 컨텍스트에 .env 생성 (비어있어도 실패하지 않게)
-      - name: .env 파일 생성
+      - name: .env 파일,key.json 생성
         env:
           DOT_ENV: ${{ secrets.DOT_ENV }}
+        key:  
+          KEY_JSON:${secrets.KEY_JSON}
         run: |
           # .env가 없으면 빌드 캐시가 매번 깨질 수 있으므로 항상 생성
           mkdir -p "${{ env.BACKEND_DIR }}"
           printf "%s" "${DOT_ENV}" > "${{ env.BACKEND_DIR }}/.env"
+          
+          mkdir -p"${{env.BACKEND_DIR}}/key"
+           printf "%s" "${KEY_JSON}" > "${{ env.BACKEND_DIR }}/key/key.json"
 
       - name: Docker Buildx 설치
         uses: docker/setup-buildx-action@v3
