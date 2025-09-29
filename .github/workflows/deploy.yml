@@ -97,8 +97,8 @@ jobs:
           mkdir -p "${{ env.BACKEND_DIR }}"
           printf "%s" "${DOT_ENV}" > "${{ env.BACKEND_DIR }}/.env"
           
-          mkdir -p"${{env.BACKEND_DIR}}/key"
-           printf "%s" "${KEY_JSON}" > "${{ env.BACKEND_DIR }}/key/key.json"
+          mkdir -p "${{env.BACKEND_DIR}}/key"
+          printf "%s" "${KEY_JSON}" > "${{ env.BACKEND_DIR }}/key/key.json"
 
       - name: Docker Buildx 설치
         uses: docker/setup-buildx-action@v3
