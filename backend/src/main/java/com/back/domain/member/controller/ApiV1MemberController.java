@@ -166,6 +166,40 @@ public class ApiV1MemberController {
                 );
     }
 
+    @PutMapping("/equip/item/{id}")
+    @Operation(summary = "아이템 장착", description = "보유한 아이템 장착")
+    public ResponseEntity<ApiResponse<Void>> equipItem(
+            @PathVariable String id
+    ) {
+        Member actor = rq.getActorFromDb();
+        memberService.modifyItem(actor, Integer.parseInt(id));
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 아이템 장착"
+                        )
+                );
+    }
+
+    @PutMapping("/equip/title/{id}")
+    @Operation(summary = "칭호 장착", description = "보유한 칭호 장착")
+    public ResponseEntity<ApiResponse<Void>> equipTitle(
+            @PathVariable String id
+    ) {
+        Member actor = rq.getActorFromDb();
+        memberService.modifyTitle(actor, Integer.parseInt(id));
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 칭호 장착"
+                        )
+                );
+    }
+
     @DeleteMapping("/delete")
     @Operation(summary = "회원 탈퇴", description = "회원 탈퇴")
     public ResponseEntity<ApiResponse<Void>> delete() {
