@@ -45,7 +45,7 @@ public class ApiV1ItemController {
     {
         try {
             List<ItemDto> data =itemService.ReadAllItem();
-            return new ApiResponse<>("200", "아이템 단건 조회 성공", data);
+            return new ApiResponse<>("200", "아이템 전체 조회 성공", data);
         } catch (IllegalArgumentException e) {
             return new ApiResponse<>("404", "아이템이 존재하지 않습니다.", null);
         }
@@ -99,8 +99,12 @@ public class ApiV1ItemController {
     @Operation(summary = "아이템 삭제")
     public ApiResponse<ItemDto> DeleteItem(@PathVariable int id)
     {
-        itemService.DeleteItem(id);
-        return new ApiResponse<>("200", "아이템 삭제 성공", null);
+        try {
+            itemService.DeleteItem(id);
+            return new ApiResponse<>("200", "아이템 삭제 성공", null);
+        } catch (IllegalArgumentException e) {
+            return new ApiResponse<>("404", "아이템이 존재하지 않습니다.", null);
+        }
     }
 
 //    @PostMapping()

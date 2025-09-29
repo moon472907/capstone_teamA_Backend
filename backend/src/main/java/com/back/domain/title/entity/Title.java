@@ -12,6 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Title extends BaseEntity {
     String content;
+    int level;
 
 
     public Title(String content) {
