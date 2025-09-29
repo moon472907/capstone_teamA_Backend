@@ -168,7 +168,7 @@ public class ApiV1MemberController {
 
     @PutMapping("/equip/item/{id}")
     @Operation(summary = "아이템 장착", description = "보유한 아이템 장착")
-    public ResponseEntity<ApiResponse<Void>> equipItem(
+    public ResponseEntity<ApiResponse<MemberDto>> equipItem(
             @PathVariable String id
     ) {
         Member actor = rq.getActorFromDb();
@@ -178,14 +178,15 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                                 "200",
-                                "[Member] Success: 아이템 장착"
+                                "[Member] Success: 아이템 장착",
+                                new MemberDto(actor)
                         )
                 );
     }
 
     @PutMapping("/equip/title/{id}")
     @Operation(summary = "칭호 장착", description = "보유한 칭호 장착")
-    public ResponseEntity<ApiResponse<Void>> equipTitle(
+    public ResponseEntity<ApiResponse<MemberDto>> equipTitle(
             @PathVariable String id
     ) {
         Member actor = rq.getActorFromDb();
@@ -195,7 +196,8 @@ public class ApiV1MemberController {
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                                 "200",
-                                "[Member] Success: 칭호 장착"
+                                "[Member] Success: 칭호 장착",
+                                new MemberDto(actor)
                         )
                 );
     }
