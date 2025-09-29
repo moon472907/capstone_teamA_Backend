@@ -30,11 +30,7 @@ public class MemberService {
     private final TitleRepository titleRepository;
 
     //가입 (일반)
-    public Member signup(
-            String email,
-            String password,
-            String name
-    ) {
+    public Member signup(String email, String password, String name) {
         findByEmail(email)
                 .ifPresent(_member -> {
                     throw new CustomException(ErrorCode.CONFLICT, "[Member] Fail: 이미 가입된 계정");
@@ -109,12 +105,7 @@ public class MemberService {
         member.setGender(gender);
     }
 
-    public void modifyStatus(
-            Member member,
-            int level,
-            int xp,
-            int money
-    ) {
+    public void modifyStatus(Member member, int level, int xp, int money) {
         member.setLevel(level);
         member.setXp(xp);
         member.setMoney(money);
