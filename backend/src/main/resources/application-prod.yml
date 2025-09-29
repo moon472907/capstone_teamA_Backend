@@ -23,16 +23,17 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     dlq:
       topic: chat-messages-dlq
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
 logging:
   level:
     org.hibernate.orm.jdbc.bind: INFO
     org.hibernate.orm.jdbc.extract: INFO
     org.springframework.transaction.interceptor: INFO
     com.back: INFO
-  jpa:
-    show-sql: true
-    hibernate:
-      ddl-auto: update
+
 custom:
   site:
     cookieDomain: "${custom.prod.cookieDomain}"
