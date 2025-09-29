@@ -55,7 +55,7 @@ dependencies {
 
 
     // 1. Spring AI의 모든 모듈 버전을 일관되게 관리하는 BOM (필수)
-    implementation(enforcedPlatform("org.springframework.ai:spring-ai-bom:1.0.0-M1"))
+    implementation(enforcedPlatform("org.springframework.ai:spring-ai-bom:$springAiVersion"))
     // 2. Vertex AI Gemini 모델 스타터
   //  implementation("org.springframework.ai:spring-ai-vertex-ai-gemini-spring-boot-starter")
 
