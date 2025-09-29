@@ -102,8 +102,7 @@ public class ApiV1MemberController {
             @Valid @RequestBody ModifyReqDto reqBody
     ) {
         Member actor = rq.getActorFromDb();
-        memberService.modifyName(actor, reqBody.name());
-        memberService.modifyProfile(actor, reqBody.birth(), reqBody.gender());
+        memberService.modifyProfile(actor, reqBody.name(), reqBody.birth(), reqBody.gender());
         memberService.genCode(actor);
 
         return ResponseEntity
@@ -116,31 +115,13 @@ public class ApiV1MemberController {
                 );
     }
 
-    @PutMapping("/modify/name")
-    @Operation(summary = "닉네임 변경", description = "닉네임 변경")
-    public ResponseEntity<ApiResponse<MemberDto>> modifyName(
-            @Valid @RequestBody ModifyReqDto reqBody
-    ) {
-        Member actor = rq.getActorFromDb();
-        memberService.modifyName(actor, reqBody.name());
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(new ApiResponse<>(
-                                "200",
-                                "[Member] Success: 닉네임 변경",
-                                new MemberDto(actor)
-                        )
-                );
-    }
-
     @PutMapping("/modify/profile")
     @Operation(summary = "회원 정보 수정", description = "생년월일, 성별 수정")
     public ResponseEntity<ApiResponse<MemberDto>> modifyProfile(
             @Valid @RequestBody ModifyReqDto reqBody
     ) {
         Member actor = rq.getActorFromDb();
-        memberService.modifyProfile(actor, reqBody.birth(), reqBody.gender());
+        memberService.modifyProfile(actor, reqBody.name(), reqBody.birth(), reqBody.gender());
 
         return ResponseEntity
                 .status(HttpStatus.OK)

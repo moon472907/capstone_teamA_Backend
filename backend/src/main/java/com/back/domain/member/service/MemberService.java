@@ -93,15 +93,12 @@ public class MemberService {
     }
 
     // *** Modify 메서드 ***
-    public void modifyName(Member member, String name) {
-        member.setName(name);
-    }
-
     public void modifyPassword(Member member, String password) {
         member.setPassword(passwordEncoder.encode(password));
     }
 
-    public void modifyProfile(Member member, LocalDate age, MemberGender gender) {
+    public void modifyProfile(Member member, String name, LocalDate age, MemberGender gender) {
+        member.setName(name);
         member.setBirth(age);
         member.setGender(gender);
     }

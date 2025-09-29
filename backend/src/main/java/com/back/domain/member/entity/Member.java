@@ -44,9 +44,9 @@ public class Member extends BaseEntity {
     private Map<ItemType, Item> items;
 
     // *** 보유한 칭호/아이템 정보 ***
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     private Set<Title> ownedTitles;
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     private Set<Item> ownedItems;
 
     // *** 개발자용 정보 ***
