@@ -6,7 +6,6 @@ import com.back.domain.title.entity.Title;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.SoftDelete;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
@@ -19,7 +18,6 @@ import java.util.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder=true)
-@SoftDelete
 public class Member extends BaseEntity {
     // *** 회원 정보 ***
     @Column(unique = true)
