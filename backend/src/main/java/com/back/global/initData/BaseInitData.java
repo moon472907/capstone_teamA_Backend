@@ -6,6 +6,12 @@ import com.back.domain.item.service.ItemService;
 import com.back.domain.level.entity.LevelXP;
 import com.back.domain.level.repository.LevelXPRepository;
 import com.back.domain.member.service.MemberService;
+import com.back.domain.reward.entity.ContentType;
+import com.back.domain.reward.entity.RewardContent;
+import com.back.domain.reward.entity.RewardType;
+import com.back.domain.reward.service.RewardService;
+import com.back.domain.title.dto.CreateTitleDto;
+import com.back.domain.title.service.TitleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -28,6 +34,8 @@ public class BaseInitData {
     private final MemberService memberService;
     private final ItemService itemService;
     private final LevelXPRepository levelXPRepository;
+    private final TitleService titleService;
+    private final RewardService rewardService;
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner() {
@@ -35,13 +43,14 @@ public class BaseInitData {
             self.initAllData();
         };
     }
-
     @Transactional
     public void initAllData() {
         try {
             createMember();
             createItem();
             createLevelXP();
+            createTitle();
+            createReward();
         } catch (Exception e) {
             throw new RuntimeException("[initData] Fail: 초기 데이터 생성 실패", e);
         }
@@ -64,6 +73,7 @@ public class BaseInitData {
         }
     }
     private void createItem() {
+        //TODO 아이템 데이터 수정,추가 필요
         itemService.createItem(new CreateItemDto("다람쥐", ItemType.AVATAR) );
         itemService.createItem(new CreateItemDto("뛰는다람쥐", ItemType.AVATAR) );
         itemService.createItem(new CreateItemDto("먹는다람쥐", ItemType.AVATAR) );
@@ -71,6 +81,14 @@ public class BaseInitData {
         itemService.createItem(new CreateItemDto("다람쥐그림", ItemType.FURNITURE) );
     }
 
+    private void createTitle()
+    {   //TODO 칭호 데이터 수정 필요
+        titleService.createTitle(new CreateTitleDto("칭호 1"));
+        titleService.createTitle(new CreateTitleDto("칭호 2"));
+        titleService.createTitle(new CreateTitleDto("칭호 3"));
+        titleService.createTitle(new CreateTitleDto("칭호 4"));
+        titleService.createTitle(new CreateTitleDto("칭호 5"));
+    }
     private void createLevelXP() {
         if(levelXPRepository.count() > 0) {
             return;
@@ -110,4 +128,43 @@ public class BaseInitData {
 
         levelXPRepository.saveAll(xpList);
     }
+
+    private void createReward() {
+        //TODO 미션 데이터 수정 필요
+        //데일리 미션
+        List<RewardContent> dailyRewardContents = new ArrayList<>();
+        dailyRewardContents.add(new RewardContent(ContentType.XP, 100));
+        dailyRewardContents.add(new RewardContent(ContentType.MONEY, 100));
+        rewardService.createReward(RewardType.DAILY, dailyRewardContents, 1);
+     // 위클리 미션
+
+        List<RewardContent>  weeklyRewardContents = new ArrayList<>();
+        weeklyRewardContents.add(new RewardContent(ContentType.XP ,100));
+        weeklyRewardContents.add(new RewardContent(ContentType.MONEY,100));
+        rewardService.createReward(RewardType.WEEKLY,  weeklyRewardContents,1);
+    // 챌린지 클리어
+
+        List<RewardContent>  challengeRewardContents = new ArrayList<>();
+        challengeRewardContents.add(new RewardContent(ContentType.XP ,100));
+        challengeRewardContents.add(new RewardContent(ContentType.MONEY,100));
+        rewardService.createReward(RewardType.CHALLENGE,  challengeRewardContents,1);
+     // 레벨업
+
+        List<RewardContent>  levelup1RewardContents = new ArrayList<>();
+        levelup1RewardContents.add(new RewardContent(ContentType.TITLE,1));
+        rewardService.createReward(RewardType.LEVELUP,  levelup1RewardContents,1);
+
+        List<RewardContent>  levelup10RewardContents = new ArrayList<>();
+        levelup10RewardContents.add(new RewardContent(ContentType.TITLE,2));
+        rewardService.createReward(RewardType.LEVELUP,  levelup10RewardContents,10);
+
+        List<RewardContent>  levelup30RewardContents = new ArrayList<>();
+        levelup30RewardContents.add(new RewardContent(ContentType.TITLE,3));
+        rewardService.createReward(RewardType.LEVELUP,  levelup30RewardContents,30);
+
+        List<RewardContent>  levelup50RewardContents = new ArrayList<>();
+        levelup50RewardContents.add(new RewardContent(ContentType.TITLE,4));
+        rewardService.createReward(RewardType.LEVELUP,  levelup50RewardContents,50);
+    }
+
 }

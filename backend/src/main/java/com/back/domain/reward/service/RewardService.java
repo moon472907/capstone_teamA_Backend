@@ -71,15 +71,15 @@ public class RewardService {
                 else if(rewardContent.getContentType() == ContentType.MONEY)
                 {
 
-                    memberService.modifyStatus(member,member.getLevel(),member.getXp(),member.getMoney()+rewardContent.getValue());
+                    memberService.modifyStatus(member,member.getLevel(),member.getXp(),member.getMoney()+rewardContent.getRewardValue());
                 }
                 else if(rewardContent.getContentType() == ContentType.ITEM)
                 {
-                    memberService.addItem(member,rewardContent.getValue());
+                    memberService.addItem(member,rewardContent.getRewardValue());
                 }
                 else if(rewardContent.getContentType() == ContentType.TITLE)
                 {
-                    memberService.addTitle(member,rewardContent.getValue());
+                    memberService.addTitle(member,rewardContent.getRewardValue());
                 }
             }
         }
