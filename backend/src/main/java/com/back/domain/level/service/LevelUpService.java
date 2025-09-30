@@ -4,12 +4,16 @@ import com.back.domain.level.entity.LevelXP;
 import com.back.domain.level.repository.LevelXPRepository;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
+import com.back.domain.reward.entity.Reward;
+import com.back.domain.reward.entity.RewardType;
+import com.back.domain.reward.service.RewardService;
 import com.back.global.exception.CustomException;
 import com.back.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -18,6 +22,8 @@ public class LevelUpService {
 
     private final MemberRepository memberRepository;
     private final LevelXPRepository levelXPRepository;
+    private final RewardService rewardService;
+
 
     // 레벨업 보상 서비스
     @Transactional
@@ -62,7 +68,16 @@ public class LevelUpService {
                 currentLevel = nextLevel;
                 member.setLevel(currentLevel);
 
-                // 보상 지급 (보상 리워드 관련 메서드가 생성되면 해당 로직 추가)
+                // 보상 지급
+                List<Reward> rewards =
+                        rewardService.findByRewardTypeAndRequireValue(RewardType.LEVELUP, currentLevel);
+
+                if (!rewards.isEmpty()) { // 보상이 존재하는 경우에만 처리
+                    // 레벨업 보상은 해당 레벨에 하나만 있다고 가정하고 첫 번째 요소를 사용
+                    Reward reward = rewards.getFirst();
+
+                    rewardService.giveReward(member.getId(), currentLevel, reward.getId());
+                }
 
             } else {
                 break; // 레벨업 실패, 반복 종료
