@@ -3,7 +3,7 @@ plugins {
     id("org.springframework.boot") version "3.5.5"
     id("io.spring.dependency-management") version "1.1.7"
 }
-val springAiVersion by extra("1.0.2")
+val springAiVersion by extra("1.0.0-M6")
 
 group = "com"
 version = "0.0.1-SNAPSHOT"
@@ -17,6 +17,7 @@ java {
 
 repositories {
     mavenCentral()
+
 }
 
 dependencies {
@@ -25,7 +26,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.ai:spring-ai-starter-model-vertex-ai-gemini")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
 
     runtimeOnly("com.h2database:h2")
@@ -50,19 +50,21 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
     implementation("org.springframework.boot:spring-boot-starter-websocket")
-
     implementation ("org.springframework.kafka:spring-kafka")
 
 
-    // 1. Spring AI의 모든 모듈 버전을 일관되게 관리하는 BOM (필수)
-    implementation(enforcedPlatform("org.springframework.ai:spring-ai-bom:$springAiVersion"))
-    // 2. Vertex AI Gemini 모델 스타터
-  //  implementation("org.springframework.ai:spring-ai-vertex-ai-gemini-spring-boot-starter")
+    // Spring AI 의존성
+    implementation("org.springframework.ai:spring-ai-core")
+    implementation("org.springframework.ai:spring-ai-openai-spring-boot-starter")
 
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.retry:spring-retry")
+    implementation("org.springframework.boot:spring-boot-starter-aop")
 }
+
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.ai:spring-ai-bom:$springAiVersion")
+        mavenBom("org.springframework.ai:spring-ai-bom:${property("springAiVersion")}")
     }
 }
 

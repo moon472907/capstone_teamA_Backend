@@ -34,14 +34,13 @@ spring:
         highlight_sql: true
         use_sql_comments: true
   ai:
-    vertex:
-      ai:
-        gemini:
-          project-id: ${VERTEX_PROJECT_ID}
-          location: "us-central1"
-          chat:
-            options:
-              model: "gemini-2.5-flash"
+    openai:
+      api-key: ${OPENROUTER_API_KEY}
+      base-url: https://openrouter.ai/api
+      chat:
+        options:
+          model: x-ai/grok-4-fast:free
+
   security:
     oauth2:
       client:
@@ -105,8 +104,6 @@ management:
         enabled: true                 # /actuator/health/{liveness,readiness} 활성화
       show-details: never             # 프로브 용도면 never 권장(민감정보 차단)
   custom:
-    google:
-      credentials: ${GOOGLE_APPLICATION_CREDENTIALS}
     dev:
       cookieDomain: localhost
       frontUrl: http://${custom.dev.cookieDomain}:3000

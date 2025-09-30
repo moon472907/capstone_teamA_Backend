@@ -9,6 +9,8 @@ public class ChatClientConfig {
 
     @Bean
     public ChatClient chatClient(ChatClient.Builder chatClientBuilder) {
-        return chatClientBuilder.build();
+        return chatClientBuilder
+                .defaultSystem("You are a mission planner that generates structured JSON responses.")
+                .build();
     }
 }
