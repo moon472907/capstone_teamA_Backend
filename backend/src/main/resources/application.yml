@@ -122,3 +122,6 @@ custom:
     secretKey: ${CUSTOM__JWT__SECRET_KEY}
   accessToken:
     expirationSeconds: "#{60*20}"
+springdoc:
+  api-docs:
+    path: /v3/api-docs
