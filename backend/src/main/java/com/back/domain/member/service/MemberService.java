@@ -1,8 +1,12 @@
 package com.back.domain.member.service;
 
+import com.back.domain.item.entity.Item;
+import com.back.domain.item.repository.ItemRepository;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.entity.MemberGender;
 import com.back.domain.member.repository.MemberRepository;
+import com.back.domain.title.entity.Title;
+import com.back.domain.title.repository.TitleRepository;
 import com.back.global.exception.CustomException;
 import com.back.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -19,16 +23,14 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Transactional
 public class MemberService {
+    private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
     private final MemberRepository memberRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final ItemRepository itemRepository;
+    private final TitleRepository titleRepository;
 
     //가입 (일반)
-    public Member signup(
-            String email,
-            String password,
-            String name
-    ) {
+    public Member signup(String email, String password, String name) {
         findByEmail(email)
                 .ifPresent(_member -> {
                     throw new CustomException(ErrorCode.CONFLICT, "[Member] Fail: 이미 가입된 계정");
@@ -103,15 +105,22 @@ public class MemberService {
         member.setGender(gender);
     }
 
-    public void modifyStatus(
-            Member member,
-            int level,
-            int xp,
-            int money
-    ) {
+    public void modifyStatus(Member member, int level, int xp, int money) {
         member.setLevel(level);
         member.setXp(xp);
         member.setMoney(money);
+    }
+
+    public void modifyItem(Member member, int id) {
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "[Member] Fail: 존재하지 않는 아이템"));
+        member.setItem(item);
+    }
+
+    public void modifyTitle(Member member, int id) {
+        Title title = titleRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "[Member] Fail: 존재하지 않는 칭호"));
+        member.setTitle(title);
     }
 
     // *** Find 메서드 ***

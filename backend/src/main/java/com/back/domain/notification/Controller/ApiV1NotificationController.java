@@ -1,12 +1,14 @@
 package com.back.domain.notification.Controller;
 
 
+import com.back.domain.member.entity.Member;
 import com.back.domain.member.service.MemberService;
 import com.back.domain.notification.dto.CreateNotificationDto;
 import com.back.domain.notification.dto.ModifyNotificationDto;
 import com.back.domain.notification.dto.NotificationDto;
 import com.back.domain.notification.service.NotificationService;
 import com.back.global.common.ApiResponse;
+import com.back.global.rq.Rq;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -23,7 +25,7 @@ import java.util.List;
 public class ApiV1NotificationController {
     private final NotificationService notificationService;
     private final MemberService memberService;
-
+    private final Rq rq;
 
     @PostMapping
     @Transactional
@@ -55,18 +57,7 @@ public class ApiV1NotificationController {
         return new ApiResponse<>("200", "알림 전체 조회 성공", notificationService.findById(id));
     }
 
-//
-//    @GetMapping("/me")
-//    @Transactional
-//    @Operation(summary = "알림 회원 전체 조회")
-//    public ApiResponse<> findAllNotificationsByAuth(Authenticator authentication)
-//    {
-//        if (authentication == null || !authentication.isAuthenticated()) {
-//        return new ApiResponse<>("401", "인증되지 않은 사용자입니다.");
-//        }
-//        int userId =  memberService.getMemberIdByAuthentication(authentication);
-//        return new ApiResponse<>("200", "알림 전체 조회 성공", notificationService.findByUserId());
-//    }
+
 
 
 
@@ -93,5 +84,15 @@ public class ApiV1NotificationController {
     {
         notificationService.deleteNotification(id);
         return new ApiResponse<>("200", "알림 삭제 성공", null);
+    }
+
+    @GetMapping("/me")
+    @Transactional
+    @Operation
+    public ApiResponse<List<NotificationDto>> findNotificationsByUserId(
+    ) {
+        Member member = rq.getActorFromDb();
+
+        return new ApiResponse<>("200", "사용자 알림 조회 성공", notificationService.findByUserId(member.getId()));
     }
 }

@@ -116,7 +116,7 @@ public class ApiV1MemberController {
     }
 
     @PutMapping("/modify/profile")
-    @Operation(summary = "회원 정보 수정", description = "생년월일, 성별 수정")
+    @Operation(summary = "회원 정보 수정", description = "닉네임, 생년월일, 성별 수정")
     public ResponseEntity<ApiResponse<MemberDto>> modifyProfile(
             @Valid @RequestBody ModifyReqDto reqBody
     ) {
@@ -162,6 +162,72 @@ public class ApiV1MemberController {
                         "200",
                         "[Member] Success: 사용자 정보 확인 (%s)".formatted(actor.getEmail()),
                         new MemberDto(actor)
+                        )
+                );
+    }
+
+    @GetMapping("/me/items")
+    @Operation(summary = "보유한 아이템 확인", description = "보유한 아이템 리스트 확인")
+    public ResponseEntity<ApiResponse<ItemListDto>> myItems() {
+        Member actor = rq.getActorFromDb();
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 보유한 아이템 확인",
+                                new ItemListDto(actor.getOwnedItems())
+                        )
+                );
+    }
+
+    @GetMapping("/me/titles")
+    @Operation(summary = "보유한 칭호 확인", description = "보유한 칭호 리스트 확인")
+    public ResponseEntity<ApiResponse<TitleListDto>> myTitles() {
+        Member actor = rq.getActorFromDb();
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 보유한 칭호 확인",
+                                new TitleListDto(actor.getOwnedTitles())
+                        )
+                );
+    }
+
+    @PutMapping("/equip/item/{id}")
+    @Operation(summary = "아이템 장착", description = "보유한 아이템 장착")
+    public ResponseEntity<ApiResponse<MemberDto>> equipItem(
+            @PathVariable String id
+    ) {
+        Member actor = rq.getActorFromDb();
+        memberService.modifyItem(actor, Integer.parseInt(id));
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 아이템 장착",
+                                new MemberDto(actor)
+                        )
+                );
+    }
+
+    @PutMapping("/equip/title/{id}")
+    @Operation(summary = "칭호 장착", description = "보유한 칭호 장착")
+    public ResponseEntity<ApiResponse<MemberDto>> equipTitle(
+            @PathVariable String id
+    ) {
+        Member actor = rq.getActorFromDb();
+        memberService.modifyTitle(actor, Integer.parseInt(id));
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 칭호 장착",
+                                new MemberDto(actor)
                         )
                 );
     }
