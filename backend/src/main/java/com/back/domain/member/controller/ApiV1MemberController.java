@@ -202,7 +202,7 @@ public class ApiV1MemberController {
             @PathVariable String id
     ) {
         Member actor = rq.getActorFromDb();
-        memberService.modifyItem(actor, Integer.parseInt(id));
+        memberService.equipItem(actor, Integer.parseInt(id));
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -220,7 +220,7 @@ public class ApiV1MemberController {
             @PathVariable String id
     ) {
         Member actor = rq.getActorFromDb();
-        memberService.modifyTitle(actor, Integer.parseInt(id));
+        memberService.equipTitle(actor, Integer.parseInt(id));
 
         return ResponseEntity
                 .status(HttpStatus.OK)

@@ -75,11 +75,11 @@ public class RewardService {
                 }
                 else if(rewardContent.getContentType() == ContentType.ITEM)
                 {
-                    memberService.modifyItem(member,rewardContent.getValue());
+                    memberService.addItem(member,rewardContent.getValue());
                 }
                 else if(rewardContent.getContentType() == ContentType.TITLE)
                 {
-                    memberService.modifyTitle(member,rewardContent.getValue());
+                    memberService.addTitle(member,rewardContent.getValue());
                 }
             }
         }
