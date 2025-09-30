@@ -27,7 +27,7 @@ public class RewardService {
     public List<Reward> findReward() {
 
         return rewardRepository.findAll();
-
+    }
 
     public void updateReward(int id, RewardType rewardType, List<RewardContent> rewardContents, int requiredValue)
     {
