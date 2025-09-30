@@ -17,6 +17,7 @@ import java.util.List;
 public class RewardService {
     private  final RewardRepository rewardRepository;
     private final MemberService  memberService;
+
   public void createReward (RewardType rewardType, List<RewardContent> rewardContents, int requiredValue )
 
     {
@@ -27,7 +28,6 @@ public class RewardService {
 
         return rewardRepository.findAll();
 
-    }
 
     public void updateReward(int id, RewardType rewardType, List<RewardContent> rewardContents, int requiredValue)
     {
@@ -47,6 +47,11 @@ public class RewardService {
        return rewardRepository.findByRewardType(rewardType);
     }
 
+
+    public List<Reward> findByRewardTypeAndRequireValue(RewardType rewardType,int requireValue)
+    {
+        return rewardRepository.findByRewardTypeAndRequireValue(rewardType,requireValue);
+    }
 
     public void giveReward(int memberId, int value, int rewardId)
     {

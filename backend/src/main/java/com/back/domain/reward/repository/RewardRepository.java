@@ -10,4 +10,6 @@ public interface RewardRepository extends JpaRepository<Reward,Integer> {
 
     List<Reward> findByRewardType(RewardType rewardType);
 
+    List<Reward> findByRewardTypeAndRequireValue(RewardType rewardType, int requireValue);
+
 }
