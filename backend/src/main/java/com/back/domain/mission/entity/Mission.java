@@ -8,6 +8,8 @@ import com.back.domain.party.party.entity.Party;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -53,6 +55,7 @@ public class Mission extends BaseEntity {
     private LocalDate endDate;
 
     @OneToMany(mappedBy = "mission", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Fetch(FetchMode.SUBSELECT)
     @Builder.Default
     private List<SubGoal> subGoals = new ArrayList<>();
 

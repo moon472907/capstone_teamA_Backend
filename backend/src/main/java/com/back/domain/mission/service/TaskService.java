@@ -93,8 +93,6 @@ public class TaskService {
                 .taskId(task.getId())
                 .status(request.getStatus())
                 .completedDate(completedDate)
-                .earnedPoints(request.getStatus() == TaskStatus.COMPLETED ? 10 : 0)
-                .earnedExp(request.getStatus() == TaskStatus.COMPLETED ? 5 : 0)
                 .dailyProgressRate(calculateService.calculateDailyProgress(memberId, completedDate))
                 .weeklyProgressRate(calculateService.calculateWeeklyProgress(memberId, mission, completedDate))
                 .missionProgressRate(calculateService.calculateMissionProgressForMember(mission, memberId))

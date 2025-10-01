@@ -6,12 +6,14 @@ import com.back.domain.mission.entity.Mission;
 import com.back.domain.mission.exception.MissionErrorCode;
 import com.back.domain.mission.exception.MissionException;
 import com.back.domain.mission.repository.MissionRepository;
+import com.back.domain.mission.repository.SubGoalRepository;
 import com.back.domain.party.party.entity.PartyMember;
 import com.back.domain.party.party.entity.PartyMemberStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,6 +24,7 @@ public class MissionService {
 
     private final MissionRepository missionRepository;
     private final PartyMissionService partyMissionService;
+    private final SubGoalRepository subGoalRepository;
     private final MissionCalculateService missionCalculateService;
     private static final int MAX_MISSIONS_PER_USER = 5;
 
@@ -48,22 +51,15 @@ public class MissionService {
 
     // 미션 상세 조회 - task 까지 나옴
     public MissionResponse getMissionDetail(Integer memberId, Integer missionId) {
-        Mission mission = missionRepository.findByIdWithDetails(missionId)
+        Mission mission = missionRepository.findByIdWithSubGoals(missionId)
                 .orElseThrow(() -> new MissionException(MissionErrorCode.MISSION_NOT_FOUND));
+
+        subGoalRepository.findByMissionIdWithTasks(missionId);
 
         validateMissionAccess(mission, memberId, false);
 
         return partyMissionService.convertToDetailResponse(mission, memberId);
     }
-
-    //  관리자 상세 조회
-    public MissionResponse getMissionDetailAdmin(Integer missionId) {
-        Mission mission = missionRepository.findByIdWithDetailsAndParty(missionId)
-                .orElseThrow(() -> new MissionException(MissionErrorCode.MISSION_NOT_FOUND));
-
-        return partyMissionService.convertToDetailResponseAdmin(mission);
-    }
-
 
     //미션 삭제
     @Transactional
@@ -78,7 +74,6 @@ public class MissionService {
         missionRepository.delete(mission);
     }
 
-
     // 미션 접근 권한 검증
     // 개인 미션 : 본인만 접근 가능
     // 파티 미션 : ACCEPTED 상태 멤버만 접근 가능
@@ -91,6 +86,7 @@ public class MissionService {
             }
             return;
         }
+
 
         // 파티 미션
         PartyMember partyMember = mission.getParty().getPartyMembers().stream()
@@ -111,6 +107,44 @@ public class MissionService {
         if (partyMember.getStatus() != PartyMemberStatus.ACCEPTED) {
             throw new MissionException(MissionErrorCode.MEMBER_FORBIDDEN);
         }
+    }
+
+
+    //관리자용 전체 미션 목록
+    public MissionOverviewResponse getAllMissionsForAdmin() {
+        List<Mission> allMissions = missionRepository.findAllWithParty();
+
+        List<MissionResponse> activeMissions = new ArrayList<>();
+        List<MissionResponse> completedMissions = new ArrayList<>();
+
+        for (Mission m : allMissions) {
+            MissionResponse response = partyMissionService.convertToSimpleResponse(
+                    m, m.getMember().getId()
+            );
+
+            if (m.isCompleted()) {
+                completedMissions.add(response);
+            } else {
+                activeMissions.add(response);
+            }
+        }
+
+        return MissionOverviewResponse.builder()
+                .activeMissions(activeMissions)
+                .completedMissions(completedMissions)
+                .activeMissionCount(activeMissions.size())
+                .remainingSlots(null)
+                .build();
+    }
+
+    //  관리자 상세 조회
+    public MissionResponse getMissionDetailAdmin(Integer missionId) {
+        Mission mission = missionRepository.findByIdWithSubGoals(missionId)
+                .orElseThrow(() -> new MissionException(MissionErrorCode.MISSION_NOT_FOUND));
+
+        subGoalRepository.findByMissionIdWithTasks(missionId);
+
+        return partyMissionService.convertToDetailResponseAdmin(mission);
     }
 
 

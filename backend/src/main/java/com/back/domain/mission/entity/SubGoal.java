@@ -2,6 +2,8 @@ package com.back.domain.mission.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -37,6 +39,7 @@ public class SubGoal {
     private LocalDate endDate;
 
     @OneToMany(mappedBy = "subGoal", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Fetch(FetchMode.SUBSELECT)
     @Builder.Default
     private List<Task> tasks = new ArrayList<>();
 

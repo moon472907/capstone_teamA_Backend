@@ -21,29 +21,34 @@ public interface MissionRepository extends JpaRepository<Mission, Integer> {
     @Query("SELECT m FROM Mission m WHERE m.party.id = :partyId")
     List<Mission> findByPartyId(@Param("partyId") Integer partyId);
 
-    @Query("SELECT DISTINCT m FROM Mission m " +
-            "LEFT JOIN FETCH m.member " +
-            "LEFT JOIN FETCH m.subGoals sg " +
-            "LEFT JOIN FETCH sg.tasks " +
-            "WHERE m.id = :missionId")
-    Optional<Mission> findByIdWithDetails(@Param("missionId") Integer missionId);
+    Long countByMemberIdAndIsCompleted(Integer memberId, boolean isCompleted);
 
-    @Query("SELECT DISTINCT m FROM Mission m " +
-            "LEFT JOIN FETCH m.member " +
-            "LEFT JOIN FETCH m.party p " +
-            "LEFT JOIN FETCH p.partyMembers pm " +
-            "LEFT JOIN FETCH pm.member " +
-            "LEFT JOIN FETCH m.subGoals sg " +
-            "LEFT JOIN FETCH sg.tasks " +
-            "WHERE m.id = :missionId")
-    Optional<Mission> findByIdWithDetailsAndParty(@Param("missionId") Integer missionId);
-
-    @Query("SELECT DISTINCT m FROM Mission m " +
-            "LEFT JOIN FETCH m.member " +
-            "LEFT JOIN FETCH m.party " +
-            "WHERE m.member.id = :memberId AND m.isCompleted = :isCompleted")
+    @Query("""
+        SELECT DISTINCT m FROM Mission m
+        LEFT JOIN FETCH m.party p
+        WHERE m.member.id = :memberId 
+        AND m.isCompleted = :isCompleted
+        ORDER BY m.createDate DESC
+        """)
     List<Mission> findByMemberIdAndIsCompletedWithParty(
             @Param("memberId") Integer memberId,
             @Param("isCompleted") boolean isCompleted
     );
+
+    @Query("""
+        SELECT DISTINCT m FROM Mission m
+        LEFT JOIN FETCH m.subGoals sg
+        WHERE m.id = :missionId
+        """)
+    Optional<Mission> findByIdWithSubGoals(@Param("missionId") Integer missionId);
+
+    //쿼리 변환 이유 -> 두 개의 list를 동시에 fetch join해서 에러가 뜸 (해결 방안 : 쿼리 2단계로 분리)
+    //N + 1 문제 해결하려고 병합했다가 계속 오류 발생
+
+    @Query("""
+        SELECT DISTINCT m FROM Mission m
+        LEFT JOIN FETCH m.party p
+        ORDER BY m.createDate DESC
+        """)
+    List<Mission> findAllWithParty();
 }

@@ -78,4 +78,26 @@ public class ApiV1MissionController {
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success("200", "미션 삭제 성공"));
     }
+
+    @GetMapping("/all")
+    @Operation(summary = "전체 미션 목록 조회", description = "모든 사용자의 미션을 조회합니다.")
+    public ResponseEntity<ApiResponse<MissionOverviewResponse>> getAllMissions() {
+        MissionOverviewResponse response = missionService.getAllMissionsForAdmin();
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success("200", "전체 미션 조회 성공", response));
+    }
+
+    @GetMapping("/all/{missionId}")
+    @Operation(summary = "미션 상세 조회 (모든 주차)", description = "모든 주차의 Task를 제한없이 조회합니다.")
+    public ResponseEntity<ApiResponse<MissionResponse>> getMissionAllDetail(
+            @PathVariable Integer missionId) {
+
+        MissionResponse response = missionService.getMissionDetailAdmin(missionId);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success("200", "미션 상세 조회 성공", response));
+    }
 }
