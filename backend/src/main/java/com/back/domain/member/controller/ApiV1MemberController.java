@@ -1,5 +1,6 @@
 package com.back.domain.member.controller;
 
+import com.back.domain.item.entity.ItemType;
 import com.back.domain.member.dto.*;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.service.MemberService;
@@ -227,6 +228,41 @@ public class ApiV1MemberController {
                 .body(new ApiResponse<>(
                                 "200",
                                 "[Member] Success: 칭호 장착",
+                                new MemberDto(actor)
+                        )
+                );
+    }
+
+    public record ItemUnequipReqDto(ItemType type) {}
+    @PutMapping("/unequip/item")
+    @Operation(summary = "아이템 장착 해제", description = "현재 장착한 아이템 해제")
+    public ResponseEntity<ApiResponse<MemberDto>> unequipItem(
+            @Valid @RequestBody ItemUnequipReqDto reqBody
+    ) {
+        Member actor = rq.getActorFromDb();
+        actor.getItems().put(reqBody.type(), null);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 아이템 장착 해제 (%s)".formatted(reqBody.type()),
+                                new MemberDto(actor)
+                        )
+                );
+    }
+
+    @PutMapping("/unequip/title")
+    @Operation(summary = "칭호 장착 해제", description = "현재 장착한 칭호 해제")
+    public ResponseEntity<ApiResponse<MemberDto>> unequipTitle() {
+        Member actor = rq.getActorFromDb();
+        actor.setTitle(null);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 칭호 장착 해제",
                                 new MemberDto(actor)
                         )
                 );
