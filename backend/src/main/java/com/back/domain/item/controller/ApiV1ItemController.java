@@ -27,13 +27,9 @@ public class ApiV1ItemController {
     @PostMapping
     @Transactional
     @Operation(summary = "테스트용 아이템 생성 ")
-    public ApiResponse<ItemDto> CreateItem(@RequestBody CreateItemDto createItemDto)
-    {
-        ItemDto data = itemService.createItem(new CreateItemDto(
-                createItemDto.name(),
-                createItemDto.itemType()
-                )
-        );
+    public ApiResponse<ItemDto> CreateItem(@RequestBody CreateItemDto createItemDto) {
+
+        ItemDto data = itemService.createItem(new CreateItemDto(createItemDto.name(), createItemDto.itemType()));
         return new ApiResponse<>("200", "아이템 생성 성공", data);
     }
 
@@ -41,10 +37,10 @@ public class ApiV1ItemController {
     @GetMapping
     @Transactional
     @Operation(summary = "아이템 전체 조회")
-    public ApiResponse<List<ItemDto>> findAllItems()
-    {
+    public ApiResponse<List<ItemDto>> findAllItems() {
+
         try {
-            List<ItemDto> data =itemService.ReadAllItem();
+            List<ItemDto> data = itemService.ReadAllItem();
             return new ApiResponse<>("200", "아이템 전체 조회 성공", data);
         } catch (IllegalArgumentException e) {
             return new ApiResponse<>("404", "아이템이 존재하지 않습니다.", null);
@@ -54,25 +50,24 @@ public class ApiV1ItemController {
     @GetMapping("/{id}")
     @Transactional
     @Operation(summary = "아이템 단건  조회")
-    public ApiResponse<ItemDto> findItemById(@PathVariable int id)
-    {
-       try {
-           ItemDto data = itemService.ReadItemById(id);
-           return new ApiResponse<>("200", "아이템 단건 조회 성공", data);
-       } catch (IllegalArgumentException e) {
-           return new ApiResponse<>("404", "아이템이 존재하지 않습니다.", null);
-       }
+    public ApiResponse<ItemDto> findItemById(@PathVariable int id) {
+
+        try {
+            ItemDto data = itemService.ReadItemById(id);
+            return new ApiResponse<>("200", "아이템 단건 조회 성공", data);
+        } catch (IllegalArgumentException e) {
+            return new ApiResponse<>("404", "아이템이 존재하지 않습니다.", null);
+        }
 
     }
 
     @GetMapping("/ItemType/{category}")
     @Transactional
     @Operation(summary = "아이템 종류별 조회")
-    public ApiResponse<List<ItemDto>> findAllItems(@PathVariable ItemType category)
-    {
+    public ApiResponse<List<ItemDto>> findAllItems(@PathVariable ItemType category) {
 
         try {
-            List<ItemDto> data =itemService.ReadItemByItemType(category);
+            List<ItemDto> data = itemService.ReadItemByItemType(category);
             return new ApiResponse<>("200", "아이템 단건 조회 성공", data);
         } catch (IllegalArgumentException e) {
             return new ApiResponse<>("404", "아이템이 존재하지 않습니다.", null);
@@ -84,8 +79,8 @@ public class ApiV1ItemController {
     @PutMapping("/{id}")
     @Transactional
     @Operation(summary = "아이템 수정")
-    public ApiResponse<ItemDto> UpdateItem(@PathVariable int id, @RequestBody ItemDto itemDto)
-    {
+    public ApiResponse<ItemDto> UpdateItem(@PathVariable int id, @RequestBody ItemDto itemDto) {
+
         try {
             ItemDto data = itemService.UpdateItem(id, itemDto);
             return new ApiResponse<>("200", "아이템 단건 조회 성공", data);
@@ -97,8 +92,8 @@ public class ApiV1ItemController {
     @DeleteMapping("/{id}")
     @Transactional
     @Operation(summary = "아이템 삭제")
-    public ApiResponse<ItemDto> DeleteItem(@PathVariable int id)
-    {
+    public ApiResponse<ItemDto> DeleteItem(@PathVariable int id) {
+
         try {
             itemService.DeleteItem(id);
             return new ApiResponse<>("200", "아이템 삭제 성공", null);

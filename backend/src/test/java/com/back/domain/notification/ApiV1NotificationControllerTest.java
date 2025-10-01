@@ -36,6 +36,7 @@ public class ApiV1NotificationControllerTest {
 
     @BeforeEach
     void setUp() {
+
         baseUrl = "http://localhost:" + port + "/api/v1/notification";
         headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -46,7 +47,7 @@ public class ApiV1NotificationControllerTest {
     void createNotification_Success() {
         // given
         CreateNotificationDto createDto = new CreateNotificationDto(
-                 100, "알림 생성 테스트", NotificationType.MESSAGE
+                100, "알림 생성 테스트", NotificationType.MESSAGE
         );
 
         // when
@@ -57,7 +58,7 @@ public class ApiV1NotificationControllerTest {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-         assertThat(response.getBody()).contains("200-1");
+        assertThat(response.getBody()).contains("200-1");
         assertThat(response.getBody()).contains("알림이 생성되었습니다.");
         assertThat(response.getBody()).contains("알림 생성 테스트");
         assertThat(response.getBody()).contains("MESSAGE");
@@ -88,7 +89,7 @@ public class ApiV1NotificationControllerTest {
     void findAllNotifications_Success() {
         // given - 테스트 데이터 생성
         CreateNotificationDto createDto1 = new CreateNotificationDto(
-                 100, "테스트 알림 1", NotificationType.MESSAGE
+                100, "테스트 알림 1", NotificationType.MESSAGE
         );
         CreateNotificationDto createDto2 = new CreateNotificationDto(
                 101, "테스트 알림 2", NotificationType.MESSAGE
@@ -162,7 +163,7 @@ public class ApiV1NotificationControllerTest {
     void updateNotification_Success() {
         // given - 테스트 알림 생성
         CreateNotificationDto createDto = new CreateNotificationDto(
-                 100, "수정 전 알림", NotificationType.MESSAGE
+                100, "수정 전 알림", NotificationType.MESSAGE
         );
 
         HttpEntity<CreateNotificationDto> createRequest = new HttpEntity<>(createDto, headers);
@@ -191,7 +192,7 @@ public class ApiV1NotificationControllerTest {
     void markNotificationAsRead_Success() {
         // given - 테스트 알림 생성
         CreateNotificationDto createDto = new CreateNotificationDto(
-                 100, "읽음 처리 테스트", NotificationType.MESSAGE
+                100, "읽음 처리 테스트", NotificationType.MESSAGE
         );
 
         HttpEntity<CreateNotificationDto> createRequest = new HttpEntity<>(createDto, headers);
@@ -234,7 +235,7 @@ public class ApiV1NotificationControllerTest {
     void updateNotification_InvalidData() {
         // given
         CreateNotificationDto createDto = new CreateNotificationDto(
-                 100, "수정 테스트", NotificationType.MESSAGE
+                100, "수정 테스트", NotificationType.MESSAGE
         );
 
         HttpEntity<CreateNotificationDto> createRequest = new HttpEntity<>(createDto, headers);
@@ -261,7 +262,7 @@ public class ApiV1NotificationControllerTest {
     void deleteNotification_Success() {
         // given - 테스트 알림 생성
         CreateNotificationDto createDto = new CreateNotificationDto(
-                 100, "삭제 테스트 알림", NotificationType.MESSAGE
+                100, "삭제 테스트 알림", NotificationType.MESSAGE
         );
 
         HttpEntity<CreateNotificationDto> createRequest = new HttpEntity<>(createDto, headers);
