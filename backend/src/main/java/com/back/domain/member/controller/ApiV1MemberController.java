@@ -1,5 +1,6 @@
 package com.back.domain.member.controller;
 
+import com.back.domain.item.entity.ItemType;
 import com.back.domain.member.dto.*;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.service.MemberService;
@@ -202,7 +203,7 @@ public class ApiV1MemberController {
             @PathVariable String id
     ) {
         Member actor = rq.getActorFromDb();
-        memberService.modifyItem(actor, Integer.parseInt(id));
+        memberService.equipItem(actor, Integer.parseInt(id));
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -220,13 +221,48 @@ public class ApiV1MemberController {
             @PathVariable String id
     ) {
         Member actor = rq.getActorFromDb();
-        memberService.modifyTitle(actor, Integer.parseInt(id));
+        memberService.equipTitle(actor, Integer.parseInt(id));
 
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                                 "200",
                                 "[Member] Success: 칭호 장착",
+                                new MemberDto(actor)
+                        )
+                );
+    }
+
+    public record ItemUnequipReqDto(ItemType type) {}
+    @PutMapping("/unequip/item")
+    @Operation(summary = "아이템 장착 해제", description = "현재 장착한 아이템 해제")
+    public ResponseEntity<ApiResponse<MemberDto>> unequipItem(
+            @Valid @RequestBody ItemUnequipReqDto reqBody
+    ) {
+        Member actor = rq.getActorFromDb();
+        memberService.unequipItem(actor, reqBody.type());
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 아이템 장착 해제 (%s)".formatted(reqBody.type()),
+                                new MemberDto(actor)
+                        )
+                );
+    }
+
+    @PutMapping("/unequip/title")
+    @Operation(summary = "칭호 장착 해제", description = "현재 장착한 칭호 해제")
+    public ResponseEntity<ApiResponse<MemberDto>> unequipTitle() {
+        Member actor = rq.getActorFromDb();
+        memberService.unequipTitle(actor);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 칭호 장착 해제",
                                 new MemberDto(actor)
                         )
                 );

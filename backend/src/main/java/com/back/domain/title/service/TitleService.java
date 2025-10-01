@@ -43,5 +43,7 @@ public class TitleService {
     }
 
 
-
+    public int count() {
+        return (int)titleRepository.count();
+    }
 }
