@@ -1,6 +1,7 @@
 package com.back.domain.member.service;
 
 import com.back.domain.item.entity.Item;
+import com.back.domain.item.entity.ItemType;
 import com.back.domain.item.repository.ItemRepository;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.entity.MemberGender;
@@ -95,7 +96,7 @@ public class MemberService {
         authService.delete_social(provider, member.getSocialAccessToken());
     }
 
-    // *** 아이템 획득/장착 ***
+    // *** 아이템&칭호 획득 ***
     public void addItem(Member member, int itemId) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "[Member] Fail: 존재하지 않는 아이템"));
@@ -108,6 +109,7 @@ public class MemberService {
         member.addTitle(title);
     }
 
+    // *** 아이템&칭호 장착 ***
     public void equipItem(Member member, int itemId) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "[Member] Fail: 존재하지 않는 아이템"));
@@ -122,6 +124,15 @@ public class MemberService {
         if(!member.getOwnedTitles().contains(title))
             throw new CustomException(ErrorCode.CONFLICT, "[Member] Fail: 보유하지 않은 칭호");
         member.setTitle(title);
+    }
+
+    // *** 아이템&칭호 장착 해제***
+    public void unequipItem(Member member, ItemType type) {
+        member.getItems().put(type, null);
+    }
+
+    public void unequipTitle(Member member) {
+        member.setTitle(null);
     }
 
     // *** Modify 메서드 ***

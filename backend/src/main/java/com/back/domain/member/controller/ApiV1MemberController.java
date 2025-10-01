@@ -240,7 +240,7 @@ public class ApiV1MemberController {
             @Valid @RequestBody ItemUnequipReqDto reqBody
     ) {
         Member actor = rq.getActorFromDb();
-        actor.getItems().put(reqBody.type(), null);
+        memberService.unequipItem(actor, reqBody.type());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -256,7 +256,7 @@ public class ApiV1MemberController {
     @Operation(summary = "칭호 장착 해제", description = "현재 장착한 칭호 해제")
     public ResponseEntity<ApiResponse<MemberDto>> unequipTitle() {
         Member actor = rq.getActorFromDb();
-        actor.setTitle(null);
+        memberService.unequipTitle(actor);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
