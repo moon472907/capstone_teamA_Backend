@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v1/Title")
+@RequestMapping("api/v1/title")
 @RequiredArgsConstructor
 @Tag(name = "ApiV1TitleController", description = "API 칭호 컨트롤러")
 
@@ -46,7 +46,7 @@ public class ApiV1TitleController {
 
     @PutMapping("/{id}")
     @Transactional
-    @Operation
+    @Operation(summary = "칭호 수정")
     public ApiResponse<TitleDto> updateTitle(@PathVariable int id, @Valid  @RequestBody TitleDto titleDto)
     {
         return new ApiResponse<>("200", "칭호 수정 성공", titleService.updateTitle(id, titleDto));
