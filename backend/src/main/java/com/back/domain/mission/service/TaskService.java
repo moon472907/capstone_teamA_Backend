@@ -49,6 +49,12 @@ public class TaskService {
         Mission mission = task.getSubGoal().getMission();
         SubGoal subGoal = task.getSubGoal();
 
+        // task의 요일 체크
+        int completedDayOfWeek = completedDate.getDayOfWeek().getValue();
+        if (task.getDayNum() != completedDayOfWeek) {
+            throw new MissionException(MissionErrorCode.TASK_WRONG_DAY);
+        }
+
         // 미션 시작일 체크
         if (completedDate.isBefore(mission.getStartDate())) {
             throw new MissionException(MissionErrorCode.MISSION_NOT_STARTED);
@@ -63,12 +69,6 @@ public class TaskService {
         if (completedDate.isBefore(subGoal.getStartDate()) ||
                 completedDate.isAfter(subGoal.getEndDate())) {
             throw new MissionException(MissionErrorCode.TASK_NOT_IN_DATE_RANGE);
-        }
-
-        // task의 요일 체크
-        int completedDayOfWeek = completedDate.getDayOfWeek().getValue();
-        if (task.getDayNum() != completedDayOfWeek) {
-            throw new MissionException(MissionErrorCode.TASK_WRONG_DAY);
         }
 
         // 이미 완료한 기록이 있다면 예외처리
@@ -150,6 +150,10 @@ public class TaskService {
     public TaskResponse updateTask(Integer memberId, Integer taskId, String newTitle) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new MissionException(MissionErrorCode.TASK_NOT_FOUND));
+
+        if (newTitle == null || newTitle.trim().isEmpty()) {
+            throw new MissionException(MissionErrorCode.TASK_TITLE_REQUIRED);
+        }
 
         Mission mission = task.getSubGoal().getMission();
         if (!mission.getMember().getId().equals(memberId)) {

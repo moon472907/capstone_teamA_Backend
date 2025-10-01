@@ -3,6 +3,8 @@ package com.back.domain.mission.service;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.mission.dto.ai.AiMissionResult;
+import com.back.domain.mission.exception.MissionErrorCode;
+import com.back.domain.mission.exception.MissionException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -79,7 +81,7 @@ public class AiMissionGeneratorService {
     public AiMissionResult generateMission(String rawGoal, int weeks, Integer memberId) {
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("회원이 존재하지 않습니다."));
+                .orElseThrow(() -> new MissionException((MissionErrorCode.MEMBER_FORBIDDEN)));
 
         int age = Period.between(member.getBirth(), LocalDate.now()).getYears();
         String gender = member.getGender().name(); // "MALE", "FEMALE", "NONE"

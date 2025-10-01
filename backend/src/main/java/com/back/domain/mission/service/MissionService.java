@@ -23,6 +23,7 @@ public class MissionService {
     private final MissionRepository missionRepository;
     private final PartyMissionService partyMissionService;
     private final MissionCalculateService missionCalculateService;
+    private static final int MAX_MISSIONS_PER_USER = 5;
 
     // 특정 회원의 전체 미션 조회 ( 진행 중과 완료로 분리)
     public MissionOverviewResponse getMissions(Integer memberId) {
@@ -41,7 +42,7 @@ public class MissionService {
                 .activeMissions(activeResponses)
                 .completedMissions(completedResponses)
                 .activeMissionCount(activeResponses.size())
-                .remainingSlots(5 - activeResponses.size())
+                .remainingSlots(MAX_MISSIONS_PER_USER - activeResponses.size())
                 .build();
     }
 
@@ -62,6 +63,7 @@ public class MissionService {
 
         return partyMissionService.convertToDetailResponseAdmin(mission);
     }
+
 
     //미션 삭제
     @Transactional

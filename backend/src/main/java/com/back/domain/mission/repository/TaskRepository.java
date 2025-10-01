@@ -1,7 +1,8 @@
 package com.back.domain.mission.repository;
 
 import com.back.domain.mission.entity.Task;
-import com.back.domain.mission.entity.TaskLog;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -60,5 +61,17 @@ public interface TaskRepository extends JpaRepository<Task, Integer> {
             @Param("dayOfWeek") int dayOfWeek
     );
 
+    //페이징 관련
+    @Query("SELECT t FROM Task t " +
+            "JOIN FETCH t.subGoal sg " +
+            "JOIN FETCH sg.mission m " +
+            "WHERE t.dayNum = :dayOfWeek " +
+            "AND :date BETWEEN sg.startDate AND sg.endDate " +
+            "AND :date BETWEEN m.startDate AND m.endDate")
+    Slice<Task> findExpiredTasksSlice(
+            @Param("date") LocalDate date,
+            @Param("dayOfWeek") int dayOfWeek,
+            PageRequest pageRequest
+    );
 
 }

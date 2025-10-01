@@ -8,14 +8,15 @@ import com.back.domain.mission.dto.ai.WeeklyPlan;
 import com.back.domain.mission.dto.request.PartyMissionCreateRequest;
 import com.back.domain.mission.dto.response.MissionResponse;
 import com.back.domain.mission.dto.response.SubGoalResponse;
-import com.back.domain.mission.entity.*;
+import com.back.domain.mission.entity.Mission;
+import com.back.domain.mission.entity.SubGoal;
+import com.back.domain.mission.entity.Task;
 import com.back.domain.mission.enums.MissionType;
 import com.back.domain.mission.exception.MissionErrorCode;
 import com.back.domain.mission.exception.MissionException;
 import com.back.domain.mission.repository.MissionRepository;
 import com.back.domain.party.party.dto.PartyRequestDto;
 import com.back.domain.party.party.entity.Party;
-import com.back.domain.party.party.entity.PartyMemberStatus;
 import com.back.domain.party.party.service.PartyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -40,7 +41,7 @@ public class PartyMissionService {
     private final TaskService taskService;
     private static final int MAX_MISSIONS_PER_USER = 5;
 
-    // 파티 미션 생성
+    // 파티/개인 미션 생성
     public MissionResponse createPartyMission(Integer memberId, PartyMissionCreateRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MissionException(MissionErrorCode.MEMBER_NOT_FOUND));
@@ -85,41 +86,6 @@ public class PartyMissionService {
 
         Mission savedMission = missionRepository.save(mission);
         return convertToDetailResponse(savedMission, memberId);
-    }
-
-    // 파티 미션 조회
-    @Transactional(readOnly = true)
-    public List<MissionResponse> getPartyMissions(Integer partyId) {
-        List<Mission> missions = missionRepository.findByPartyId(partyId);
-
-        return missions.stream()
-                .map(mission -> {
-                    Integer fristMemberId = mission.getParty().getPartyMembers().stream()
-                            .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
-                            .findFirst()
-                            .map(pm -> pm.getMember().getId())
-                            .orElse(mission.getMember().getId());
-                    return convertToSimpleResponse(mission,fristMemberId);
-                })
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public MissionResponse getPartyMissionDetail(Integer partyId, Integer missionId) {
-        Mission mission = missionRepository.findById(missionId)
-                .orElseThrow(() -> new MissionException(MissionErrorCode.MISSION_NOT_FOUND));
-
-        if (mission.getParty() == null || !mission.getParty().getId().equals(partyId)) {
-            throw new MissionException(MissionErrorCode.MEMBER_FORBIDDEN); // 파티 불일치
-        }
-
-        Integer firstMemberId = mission.getParty().getPartyMembers().stream()
-                .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
-                .findFirst()
-                .map(pm -> pm.getMember().getId())
-                .orElse(mission.getMember().getId());
-
-        return convertToDetailResponse(mission, firstMemberId); // 상세 조회
     }
 
     //  AI 기반 주차별 subgoal + task 생성
