@@ -11,7 +11,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class MissionResponse {
     private Integer missionId;
     private String title;
@@ -24,6 +24,18 @@ public class MissionResponse {
     private boolean isCompleted; //미션 완료 여부
     private boolean isPartyMission; //파티 미션 여부 (개인인지 / 파티인지)
     private Integer partyId; // 파티일경우
-    private Integer progressRate; //미션 전체 진행률 (개인)
+    private Integer myProgressRate; //미션 진행률 (개인)
+    private PartyProgressDto partyProgress; // 미션 진행률 파티
     private List<SubGoalResponse> subGoals;
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PartyProgressDto {
+        private Integer myProgress;
+        private Integer averageProgress;
+        private Integer totalProgress;
+    }
 }

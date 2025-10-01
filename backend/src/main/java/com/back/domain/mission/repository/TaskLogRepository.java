@@ -12,36 +12,52 @@ import java.util.Optional;
 
 @Repository
 public interface TaskLogRepository extends JpaRepository<TaskLog, Integer> {
-
     boolean existsByTaskIdAndMemberIdAndDate(Integer taskId, Integer memberId, LocalDate date);
 
-    Optional<TaskLog> findByTaskIdAndMemberIdAndDate(Integer taskId, Integer memberId, LocalDate date);
-
-    Optional<TaskLog> findTopByTaskIdAndMemberIdOrderByDateDesc(Integer taskId, Integer memberId);
+    boolean existsByTaskIdAndStatus(Integer taskId, TaskStatus status);
 
     Long countByMemberIdAndDateAndStatus(Integer memberId, LocalDate date, TaskStatus status);
 
-    @Query("SELECT COUNT(DISTINCT tl.task.id) FROM TaskLog tl " +
-            "JOIN tl.task t " +
-            "JOIN t.subGoal sg " +
-            "WHERE sg.mission.id = :missionId " +
-            "AND tl.status = :status")
-    Long countCompletedTasksByMission(@Param("missionId") Integer missionId,
-                                      @Param("status") TaskStatus status);
+    @Query("""
+        SELECT COUNT(t) 
+        FROM Task t 
+        WHERE t.subGoal.mission.member.id = :memberId
+        AND t.dayNum = :dayOfWeek
+        AND :date BETWEEN t.subGoal.startDate AND t.subGoal.endDate
+    """)
+    Long countDailyTasks(
+            @Param("memberId") Integer memberId,
+            @Param("date") LocalDate date,
+            @Param("dayOfWeek") int dayOfWeek
+    );
 
-    @Query("SELECT COUNT(DISTINCT tl.task.id) FROM TaskLog tl " +
-            "WHERE tl.task.subGoal.id = :subGoalId " +
-            "AND tl.status = :status")
-    Long countCompletedTasksBySubGoal(@Param("subGoalId") Integer subGoalId,
-                                      @Param("status") TaskStatus status);
+    @Query("""
+        SELECT COUNT(tl) 
+        FROM TaskLog tl 
+        WHERE tl.task.subGoal.mission.id = :missionId
+        AND tl.memberId = :memberId
+        AND tl.status = :status
+    """)
+    Long countCompletedTasksByMissionAndMember(
+            @Param("missionId") Integer missionId,
+            @Param("memberId") Integer memberId,
+            @Param("status") TaskStatus status
+    );
 
-    @Query("SELECT COUNT(t) FROM Task t " +
-            "JOIN t.subGoal sg " +
-            "JOIN sg.mission m " +
-            "WHERE m.member.id = :memberId " +
-            "AND :date BETWEEN sg.startDate AND sg.endDate " +
-            "AND t.dayNum = :dayOfWeek")
-    Long countDailyTasks(@Param("memberId") Integer memberId,
-                         @Param("date") LocalDate date,
-                         @Param("dayOfWeek") Integer dayOfWeek);
+    @Query("""
+        SELECT COUNT(tl) 
+        FROM TaskLog tl 
+        WHERE tl.task.subGoal.id = :subGoalId
+        AND tl.memberId = :memberId
+        AND tl.status = :status
+    """)
+    Long countCompletedTasksBySubGoalAndMember(
+            @Param("subGoalId") Integer subGoalId,
+            @Param("memberId") Integer memberId,
+            @Param("status") TaskStatus status
+    );
+
+    Optional<TaskLog> findTopByTaskIdAndMemberIdOrderByDateDesc(Integer taskId, Integer memberId);
+
+    Optional<TaskLog> findByTaskIdAndMemberIdAndDate(Integer taskId, Integer memberId, LocalDate date);
 }

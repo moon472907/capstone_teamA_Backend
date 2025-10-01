@@ -18,9 +18,12 @@ public enum MissionErrorCode {
     NOT_EDITABLE(HttpStatus.BAD_REQUEST, "SUBGOAL-401", "수정할 수 없는 주차입니다."),
 
     // Task
-    TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK-404", "해당 Task를 찾을 수 없습니다."),
-    TASK_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "TASK-400", "이미 완료된 Task입니다."),
-
+    TASK_TITLE_REQUIRED(HttpStatus.BAD_REQUEST, "TASK-400", "태스크 제목은 필수입니다."),
+    TASK_ALREADY_EDITED(HttpStatus.FORBIDDEN, "TASK-401", "이미 수정된 태스크입니다."),
+    TASK_NOT_EDITABLE(HttpStatus.FORBIDDEN, "TASK-402", "수정 가능 기한이 지났습니다."),
+    TASK_NOT_FOUND(HttpStatus.NOT_FOUND,"TASK--404","태스크를 찾을 수 없습니다."),
+    TASK_NOT_IN_SUBGOAL(HttpStatus.BAD_REQUEST, "TASK-401", "해당 서브골에 속하지 않는 태스크입니다."),
+    TASK_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "TASK-400", "이미 완료된 태스크입니다."),
     // Member
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER-404", "멤버를 찾을 수 없습니다."),
     MEMBER_FORBIDDEN(HttpStatus.FORBIDDEN, "MEMBER-403", "접근 권한이 없습니다."),

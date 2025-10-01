@@ -36,26 +36,33 @@ public class SubGoal {
     @Column(nullable = false)
     private LocalDate endDate;
 
-    @Column(nullable = false)
-    private Boolean hasBeenEdited = false;  // Boolean으로 변경
-
-    private LocalDate editableUntil;
-
     @OneToMany(mappedBy = "subGoal", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Task> tasks = new ArrayList<>();
 
-    public Boolean getHasBeenEdited() {
-        return hasBeenEdited;
-    }
-
-    public boolean canEdit() {
-        if (Boolean.TRUE.equals(hasBeenEdited)) return false;
-
+    public boolean isCurrentWeek() {
         LocalDate today = LocalDate.now();
-        if (today.isBefore(startDate)) return true;
-        if (editableUntil != null && !today.isAfter(editableUntil)) return true;
-
-        return false;
+        return !today.isBefore(startDate) && !today.isAfter(endDate);
     }
+
+    public boolean isUpcoming() {
+        return LocalDate.now().isBefore(startDate);
+    }
+
+    public boolean isPast() {
+        return LocalDate.now().isAfter(endDate);
+    }
+
+    public void addTask(Task task) {
+        tasks.add(task);
+        task.setSubGoal(this);
+    }
+
+    public void setMission(Mission mission) {
+        this.mission = mission;
+        if (mission != null && !mission.getSubGoals().contains(this)) {
+            mission.getSubGoals().add(this);
+        }
+    }
+
 }

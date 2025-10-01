@@ -16,9 +16,19 @@ public class SubGoalResponse {
     private Integer weekNum; // 몇번쨰 주차인지
     private LocalDate startDate;
     private LocalDate endDate;
-    private boolean hasBeenEdited; //사용자가 한번이라도 수정했는지
-    private LocalDate editableUntil; // 수정 가능 기한
-    private String editStatus; // 수정 상태 표시
-    private Integer weekProgressRate; //해당주차 진행률
+    private Integer weekProgressRate; // 개인 미션 진행률
+    private PartyWeekProgressDto partyWeekProgress; // 파티 미션 진행률
+
+    private boolean visible;
     private List<TaskResponse> tasks;
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PartyWeekProgressDto {
+        private Integer myProgress;
+        private Integer averageProgress;
+    }
 }

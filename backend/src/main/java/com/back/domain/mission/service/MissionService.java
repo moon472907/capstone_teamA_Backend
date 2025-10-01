@@ -6,6 +6,8 @@ import com.back.domain.mission.entity.Mission;
 import com.back.domain.mission.exception.MissionErrorCode;
 import com.back.domain.mission.exception.MissionException;
 import com.back.domain.mission.repository.MissionRepository;
+import com.back.domain.party.party.entity.PartyMember;
+import com.back.domain.party.party.entity.PartyMemberStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ public class MissionService {
 
     private final MissionRepository missionRepository;
     private final PartyMissionService partyMissionService;
+    private final MissionCalculateService missionCalculateService;
 
     // 특정 회원의 전체 미션 조회 ( 진행 중과 완료로 분리)
     public MissionOverviewResponse getMissions(Integer memberId) {
@@ -27,11 +30,11 @@ public class MissionService {
         List<Mission> completedMissions = missionRepository.findByMemberIdAndIsCompleted(memberId, true);
 
         List<MissionResponse> activeResponses = activeMissions.stream()
-                .map(m -> partyMissionService.convertToResponse(m, false))
+                .map(m -> partyMissionService.convertToSimpleResponse(m, memberId))
                 .collect(Collectors.toList());
 
         List<MissionResponse> completedResponses = completedMissions.stream()
-                .map(m -> partyMissionService.convertToResponse(m, false))
+                .map(m -> partyMissionService.convertToSimpleResponse(m, memberId))
                 .collect(Collectors.toList());
 
         return MissionOverviewResponse.builder()
@@ -47,11 +50,17 @@ public class MissionService {
         Mission mission = missionRepository.findById(missionId)
                 .orElseThrow(() -> new MissionException(MissionErrorCode.MISSION_NOT_FOUND));
 
-        if (!mission.getMember().getId().equals(memberId)) {
-            throw new MissionException(MissionErrorCode.MEMBER_FORBIDDEN);
-        }
+        validateMissionAccess(mission, memberId, false);
 
-        return partyMissionService.convertToResponse(mission, true);
+        return partyMissionService.convertToDetailResponse(mission, memberId);
+    }
+
+    //  관리자 상세 조회
+    public MissionResponse getMissionDetailAdmin(Integer missionId) {
+        Mission mission = missionRepository.findById(missionId)
+                .orElseThrow(() -> new MissionException(MissionErrorCode.MISSION_NOT_FOUND));
+
+        return partyMissionService.convertToDetailResponseAdmin(mission);
     }
 
     //미션 삭제
@@ -66,4 +75,42 @@ public class MissionService {
 
         missionRepository.delete(mission);
     }
+
+
+    // 미션 접근 권한 검증
+    // 개인 미션 : 본인만 접근 가능
+    // 파티 미션 : ACCEPTED 상태 멤버만 접근 가능
+    // 공개 파티 : 외부인도 읽기 전용 접근 가능
+    private void validateMissionAccess(Mission mission, Integer memberId, boolean requireWrite) {
+        // 개인 미션
+        if (!mission.isPartyMission()) {
+            if (!mission.getMember().getId().equals(memberId)) {
+                throw new MissionException(MissionErrorCode.MEMBER_FORBIDDEN);
+            }
+            return;
+        }
+
+        // 파티 미션
+        PartyMember partyMember = mission.getParty().getPartyMembers().stream()
+                .filter(pm -> pm.getMember().getId().equals(memberId))
+                .findFirst()
+                .orElse(null);
+
+        // 파티 멤버가 아닌 경우
+        if (partyMember == null) {
+            // 공개 파티이고 읽기 전용이면 허용
+            if (!requireWrite && mission.getParty().isPublic()) {
+                return;
+            }
+            throw new MissionException(MissionErrorCode.MEMBER_FORBIDDEN);
+        }
+
+        // ACCEPTED 상태가 아니면 접근 불가
+        if (partyMember.getStatus() != PartyMemberStatus.ACCEPTED) {
+            throw new MissionException(MissionErrorCode.MEMBER_FORBIDDEN);
+        }
+    }
+
+
+
 }
