@@ -27,6 +27,7 @@ import java.time.format.DateTimeFormatter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -402,6 +403,52 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.message").value("[Member] Success: 칭호 장착"))
                 .andExpect(jsonPath("$.content").exists())
                 .andExpect(jsonPath("$.content.title").value(title2.getId()));
+    }
+
+    @Test
+    @DisplayName("아이템 장착 해제")
+    void unequipItem() throws Exception {
+        ResultActions resultActions = mvc
+                .perform(
+                        put(baseUrl + "/unequip/item")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "type": "%s"
+                                        }
+                                        """.formatted(item1.getType()).stripIndent())
+                                .cookie(new Cookie("apiKey", user1.getApiKey()))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("unequipItem"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("[Member] Success: 아이템 장착 해제 (%s)".formatted(item1.getType())))
+                .andExpect(jsonPath("$.content").exists())
+                .andExpect(jsonPath("$.content.items." + item1.getType()).value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("칭호 장착 해제")
+    void unequipTitle() throws Exception {
+        ResultActions resultActions = mvc
+                .perform(
+                        put(baseUrl + "/unequip/title")
+                                .cookie(new Cookie("apiKey", user1.getApiKey()))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("unequipTitle"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("[Member] Success: 칭호 장착 해제"))
+                .andExpect(jsonPath("$.content").exists())
+                .andExpect(jsonPath("$.content.title").value(nullValue()));
     }
 
     @Test
