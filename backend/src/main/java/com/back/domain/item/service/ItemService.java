@@ -58,4 +58,7 @@ public class ItemService {
         itemRepository.delete(item);
     }
 
+    public int count() {
+        return (int)itemRepository.count();
+    }
 }

@@ -5,6 +5,7 @@ import com.back.domain.item.entity.ItemType;
 import com.back.domain.item.service.ItemService;
 import com.back.domain.level.entity.LevelXP;
 import com.back.domain.level.repository.LevelXPRepository;
+import com.back.domain.member.entity.Member;
 import com.back.domain.member.service.MemberService;
 import com.back.domain.reward.entity.ContentType;
 import com.back.domain.reward.entity.RewardContent;
@@ -43,26 +44,56 @@ public class BaseInitData {
             self.initAllData();
         };
     }
+
     @Transactional
     public void initAllData() {
         try {
-            createMember();
             createItem();
-            createLevelXP();
             createTitle();
+            createMember();
+            createLevelXP();
             createReward();
         } catch (Exception e) {
             throw new RuntimeException("[initData] Fail: 초기 데이터 생성 실패", e);
         }
     }
 
+    private void createItem() {
+        if(itemService.count() > 0) return;
+        //TODO 아이템 데이터 수정,추가 필요
+        itemService.createItem(new CreateItemDto("아바타1", ItemType.AVATAR));
+        itemService.createItem(new CreateItemDto("아바타2", ItemType.AVATAR));
+        itemService.createItem(new CreateItemDto("아바타3", ItemType.AVATAR));
+        itemService.createItem(new CreateItemDto("가구1", ItemType.FURNITURE));
+        itemService.createItem(new CreateItemDto("가구2", ItemType.FURNITURE));
+        itemService.createItem(new CreateItemDto("가구3", ItemType.FURNITURE));
+        itemService.createItem(new CreateItemDto("의상1", ItemType.CLOTHE));
+        itemService.createItem(new CreateItemDto("의상2", ItemType.CLOTHE));
+        itemService.createItem(new CreateItemDto("의상3", ItemType.CLOTHE));
+        itemService.createItem(new CreateItemDto("배경1", ItemType.BACKGROUND));
+        itemService.createItem(new CreateItemDto("배경2", ItemType.BACKGROUND));
+        itemService.createItem(new CreateItemDto("배경3", ItemType.BACKGROUND));
+    }
+
+    private void createTitle() {
+        if(titleService.count() > 0) return;
+        //TODO 칭호 데이터 수정 필요
+        titleService.createTitle(new CreateTitleDto("칭호 1"));
+        titleService.createTitle(new CreateTitleDto("칭호 2"));
+        titleService.createTitle(new CreateTitleDto("칭호 3"));
+    }
+
     private void createMember() {
         if(memberService.findByEmail("user1@user.com").isEmpty()) {
-            memberService.signup(
+            Member user1 = memberService.signup(
                     "user1@user.com",
                     "user123",
                     "유저1"
             );
+            memberService.addItem(user1, 1);
+            memberService.addItem(user1, 2);
+            memberService.addTitle(user1, 1);
+            memberService.addTitle(user1, 2);
         }
         if(memberService.findByEmail("user2@user.com").isEmpty()) {
             memberService.signup(
@@ -72,23 +103,7 @@ public class BaseInitData {
             );
         }
     }
-    private void createItem() {
-        //TODO 아이템 데이터 수정,추가 필요
-        itemService.createItem(new CreateItemDto("다람쥐", ItemType.AVATAR) );
-        itemService.createItem(new CreateItemDto("뛰는다람쥐", ItemType.AVATAR) );
-        itemService.createItem(new CreateItemDto("먹는다람쥐", ItemType.AVATAR) );
-        itemService.createItem(new CreateItemDto("다람쥐먹는중", ItemType.FURNITURE) );
-        itemService.createItem(new CreateItemDto("다람쥐그림", ItemType.FURNITURE) );
-    }
 
-    private void createTitle()
-    {   //TODO 칭호 데이터 수정 필요
-        titleService.createTitle(new CreateTitleDto("칭호 1"));
-        titleService.createTitle(new CreateTitleDto("칭호 2"));
-        titleService.createTitle(new CreateTitleDto("칭호 3"));
-        titleService.createTitle(new CreateTitleDto("칭호 4"));
-        titleService.createTitle(new CreateTitleDto("칭호 5"));
-    }
     private void createLevelXP() {
         if(levelXPRepository.count() > 0) {
             return;
