@@ -1,6 +1,7 @@
 package com.back.domain.mission.repository;
 
 import com.back.domain.mission.entity.Task;
+import com.back.domain.mission.entity.TaskLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -43,4 +44,21 @@ public interface TaskRepository extends JpaRepository<Task, Integer> {
             @Param("date") LocalDate date,
             @Param("dayNum") Integer dayNum
     );
+
+    // 특정 날짜에 해야했던 모든 task 조회 자동 실패 처리용 )
+    @Query("""
+        SELECT t 
+        FROM Task t 
+        JOIN t.subGoal sg 
+        JOIN sg.mission m 
+        WHERE t.dayNum = :dayOfWeek
+        AND :date BETWEEN sg.startDate AND sg.endDate
+        AND m.isCompleted = false
+    """)
+    List<Task> findExpiredTasks(
+            @Param("date") LocalDate date,
+            @Param("dayOfWeek") int dayOfWeek
+    );
+
+
 }

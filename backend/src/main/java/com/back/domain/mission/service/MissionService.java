@@ -26,8 +26,8 @@ public class MissionService {
 
     // 특정 회원의 전체 미션 조회 ( 진행 중과 완료로 분리)
     public MissionOverviewResponse getMissions(Integer memberId) {
-        List<Mission> activeMissions = missionRepository.findByMemberIdAndIsCompleted(memberId, false);
-        List<Mission> completedMissions = missionRepository.findByMemberIdAndIsCompleted(memberId, true);
+        List<Mission> activeMissions = missionRepository.findByMemberIdAndIsCompletedWithParty(memberId, false);
+        List<Mission> completedMissions = missionRepository.findByMemberIdAndIsCompletedWithParty(memberId, true);
 
         List<MissionResponse> activeResponses = activeMissions.stream()
                 .map(m -> partyMissionService.convertToSimpleResponse(m, memberId))
@@ -47,7 +47,7 @@ public class MissionService {
 
     // 미션 상세 조회 - task 까지 나옴
     public MissionResponse getMissionDetail(Integer memberId, Integer missionId) {
-        Mission mission = missionRepository.findById(missionId)
+        Mission mission = missionRepository.findByIdWithDetails(missionId)
                 .orElseThrow(() -> new MissionException(MissionErrorCode.MISSION_NOT_FOUND));
 
         validateMissionAccess(mission, memberId, false);
@@ -57,7 +57,7 @@ public class MissionService {
 
     //  관리자 상세 조회
     public MissionResponse getMissionDetailAdmin(Integer missionId) {
-        Mission mission = missionRepository.findById(missionId)
+        Mission mission = missionRepository.findByIdWithDetailsAndParty(missionId)
                 .orElseThrow(() -> new MissionException(MissionErrorCode.MISSION_NOT_FOUND));
 
         return partyMissionService.convertToDetailResponseAdmin(mission);

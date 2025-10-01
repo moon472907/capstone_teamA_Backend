@@ -273,9 +273,7 @@ public class PartyMissionService {
                 .endDate(sg.getEndDate())
                 .visible(visible)
                 .tasks(visible
-                        ? sg.getTasks().stream()
-                        .map(task -> taskService.toTaskResponse(task, memberId, today))
-                        .collect(Collectors.toList())
+                        ? taskService.toTaskResponsesBatch(sg.getTasks(), memberId, today)
                         : List.of()
                 );
 

@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MissionRepository extends JpaRepository<Mission, Integer> {
@@ -19,4 +20,30 @@ public interface MissionRepository extends JpaRepository<Mission, Integer> {
 
     @Query("SELECT m FROM Mission m WHERE m.party.id = :partyId")
     List<Mission> findByPartyId(@Param("partyId") Integer partyId);
+
+    @Query("SELECT DISTINCT m FROM Mission m " +
+            "LEFT JOIN FETCH m.member " +
+            "LEFT JOIN FETCH m.subGoals sg " +
+            "LEFT JOIN FETCH sg.tasks " +
+            "WHERE m.id = :missionId")
+    Optional<Mission> findByIdWithDetails(@Param("missionId") Integer missionId);
+
+    @Query("SELECT DISTINCT m FROM Mission m " +
+            "LEFT JOIN FETCH m.member " +
+            "LEFT JOIN FETCH m.party p " +
+            "LEFT JOIN FETCH p.partyMembers pm " +
+            "LEFT JOIN FETCH pm.member " +
+            "LEFT JOIN FETCH m.subGoals sg " +
+            "LEFT JOIN FETCH sg.tasks " +
+            "WHERE m.id = :missionId")
+    Optional<Mission> findByIdWithDetailsAndParty(@Param("missionId") Integer missionId);
+
+    @Query("SELECT DISTINCT m FROM Mission m " +
+            "LEFT JOIN FETCH m.member " +
+            "LEFT JOIN FETCH m.party " +
+            "WHERE m.member.id = :memberId AND m.isCompleted = :isCompleted")
+    List<Mission> findByMemberIdAndIsCompletedWithParty(
+            @Param("memberId") Integer memberId,
+            @Param("isCompleted") boolean isCompleted
+    );
 }

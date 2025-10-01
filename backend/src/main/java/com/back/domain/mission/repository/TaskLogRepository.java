@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -60,4 +61,27 @@ public interface TaskLogRepository extends JpaRepository<TaskLog, Integer> {
     Optional<TaskLog> findTopByTaskIdAndMemberIdOrderByDateDesc(Integer taskId, Integer memberId);
 
     Optional<TaskLog> findByTaskIdAndMemberIdAndDate(Integer taskId, Integer memberId, LocalDate date);
+
+    @Query("SELECT tl FROM TaskLog tl " +
+            "WHERE tl.task.id IN :taskIds " +
+            "AND tl.memberId = :memberId " +
+            "AND tl.date = :date")
+    List<TaskLog> findByTaskIdsAndMemberIdAndDate(
+            @Param("taskIds") List<Integer> taskIds,
+            @Param("memberId") Integer memberId,
+            @Param("date") LocalDate date
+    );
+
+    @Query("SELECT tl FROM TaskLog tl " +
+            "WHERE tl.task.id IN :taskIds " +
+            "AND tl.memberId = :memberId " +
+            "AND tl.id IN (" +
+            "    SELECT MAX(tl2.id) FROM TaskLog tl2 " +
+            "    WHERE tl2.task.id = tl.task.id " +
+            "    AND tl2.memberId = :memberId" +
+            ")")
+    List<TaskLog> findLastCompletedByTaskIds(
+            @Param("taskIds") List<Integer> taskIds,
+            @Param("memberId") Integer memberId
+    );
 }

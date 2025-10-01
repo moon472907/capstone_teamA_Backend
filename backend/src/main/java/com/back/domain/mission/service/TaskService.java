@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -45,13 +46,36 @@ public class TaskService {
         // 완료 날짜 ( 없을 시 오늘 )
         LocalDate completedDate = request.getDate() != null ? request.getDate() : LocalDate.now();
 
+        Mission mission = task.getSubGoal().getMission();
+        SubGoal subGoal = task.getSubGoal();
+
+        // 미션 시작일 체크
+        if (completedDate.isBefore(mission.getStartDate())) {
+            throw new MissionException(MissionErrorCode.MISSION_NOT_STARTED);
+        }
+
+        // 미션 종료일 체크
+        if (completedDate.isAfter(mission.getEndDate())) {
+            throw new MissionException(MissionErrorCode.MISSION_ALREADY_ENDED);
+        }
+
+        // 해당 주차 범위 체크
+        if (completedDate.isBefore(subGoal.getStartDate()) ||
+                completedDate.isAfter(subGoal.getEndDate())) {
+            throw new MissionException(MissionErrorCode.TASK_NOT_IN_DATE_RANGE);
+        }
+
+        // task의 요일 체크
+        int completedDayOfWeek = completedDate.getDayOfWeek().getValue();
+        if (task.getDayNum() != completedDayOfWeek) {
+            throw new MissionException(MissionErrorCode.TASK_WRONG_DAY);
+        }
+
         // 이미 완료한 기록이 있다면 예외처리
         if (taskLogRepository.existsByTaskIdAndMemberIdAndDate(
                 request.getTaskId(), memberId, completedDate)) {
             throw new MissionException(MissionErrorCode.TASK_ALREADY_COMPLETED);
         }
-
-        Mission mission = task.getSubGoal().getMission();
 
         //tasklog에 기록처리
         TaskLog taskLog = TaskLog.builder()
@@ -187,6 +211,70 @@ public class TaskService {
                 .findTopByTaskIdAndMemberIdOrderByDateDesc(task.getId(), memberId)
                 .map(TaskLog::getDate)
                 .orElse(null);
+
+        return TaskResponse.builder()
+                .taskId(task.getId())
+                .title(task.getTitle())
+                .dayNum(task.getDayNum())
+                .status(status)
+                .lastCompletedDate(lastCompletedDate)
+                .isToday(calculateService.isToday(task))
+                .hasBeenEdited(task.getHasBeenEdited())
+                .canEdit(task.canEdit())
+                .editDeadline(task.getEditDeadline())
+                .build();
+    }
+
+    // 배치 변환 메서드 추가
+    @Transactional(readOnly = true)
+    public List<TaskResponse> toTaskResponsesBatch(List<Task> tasks, Integer memberId, LocalDate date) {
+        if (tasks.isEmpty()) {
+            return List.of();
+        }
+
+        List<Integer> taskIds = tasks.stream()
+                .map(Task::getId)
+                .collect(Collectors.toList());
+
+        List<TaskLog> currentLogs = taskLogRepository
+                .findByTaskIdsAndMemberIdAndDate(taskIds, memberId, date);
+        List<TaskLog> lastLogs = taskLogRepository
+                .findLastCompletedByTaskIds(taskIds, memberId);
+
+        Map<Integer, TaskLog> currentLogMap = currentLogs.stream()
+                .collect(Collectors.toMap(
+                        tl -> tl.getTask().getId(),
+                        tl -> tl,
+                        (existing, replacement) -> existing
+                ));
+
+        Map<Integer, TaskLog> lastLogMap = lastLogs.stream()
+                .collect(Collectors.toMap(
+                        tl -> tl.getTask().getId(),
+                        tl -> tl,
+                        (existing, replacement) -> existing
+                ));
+
+        return tasks.stream()
+                .map(task -> convertToTaskResponseWithMaps(
+                        task, memberId, date, currentLogMap, lastLogMap
+                ))
+                .collect(Collectors.toList());
+    }
+
+    // Map 사용 변환 메서드 추가
+    private TaskResponse convertToTaskResponseWithMaps(
+            Task task, Integer memberId, LocalDate date,
+            Map<Integer, TaskLog> currentLogMap,
+            Map<Integer, TaskLog> lastLogMap) {
+
+        TaskLog currentLog = currentLogMap.get(task.getId());
+        TaskLog lastLog = lastLogMap.get(task.getId());
+
+        TaskStatus status = currentLog != null ?
+                currentLog.getStatus() : TaskStatus.PENDING;
+        LocalDate lastCompletedDate = lastLog != null ?
+                lastLog.getDate() : null;
 
         return TaskResponse.builder()
                 .taskId(task.getId())
