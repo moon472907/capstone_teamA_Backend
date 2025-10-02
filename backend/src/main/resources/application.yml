@@ -127,6 +127,8 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     doc-expansion : none
-    operations-sorter: none
+    operations-sorter: alpha
     tags-sorter: alpha
     try-it-out-enabled: true
+    filter: true
+    display-request-duration: true
