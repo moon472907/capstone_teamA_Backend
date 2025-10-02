@@ -81,7 +81,6 @@ public class Rq {
         Cookie cookie = new Cookie(name, value);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
-        cookie.setDomain("localhost");
         cookie.setSecure(true);
         cookie.setAttribute("SameSite", "None");
 
