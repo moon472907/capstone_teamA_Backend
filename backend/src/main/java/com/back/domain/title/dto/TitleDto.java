@@ -4,13 +4,15 @@ import com.back.domain.title.entity.Title;
 
 public record TitleDto(
         int id,
-        String contents
+        String contents,
+        String achiveRequire
 ) {
     public TitleDto(Title title)
     {
         this(
             title.getId(),
-            title.getContent()
+            title.getContent(),
+            title.getAchieveRequire()
         );
     }
 }

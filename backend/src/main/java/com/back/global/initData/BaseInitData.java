@@ -78,9 +78,10 @@ public class BaseInitData {
     private void createTitle() {
         if(titleService.count() > 0) return;
         //TODO 칭호 데이터 수정 필요
-        titleService.createTitle(new CreateTitleDto("칭호 1"));
-        titleService.createTitle(new CreateTitleDto("칭호 2"));
-        titleService.createTitle(new CreateTitleDto("칭호 3"));
+        titleService.createTitle(new CreateTitleDto("칭호 1","1레벨 달성 칭호"));
+        titleService.createTitle(new CreateTitleDto("칭호 2","10레벨 달성 칭호"));
+        titleService.createTitle(new CreateTitleDto("칭호 3","30레벨 달성 칭호"));
+        titleService.createTitle(new CreateTitleDto("칭호 4","50레벨 달성 칭호"));
     }
 
     private void createMember() {

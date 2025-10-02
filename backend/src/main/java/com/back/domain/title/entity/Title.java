@@ -12,11 +12,12 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Title extends BaseEntity {
     String content;
-    int level;
+    String achieveRequire;
 
 
-    public Title(String content) {
+    public Title(String content , String achieveRequire) {
         this.content = content;
+        this.achieveRequire = achieveRequire;
     }
 
 }
