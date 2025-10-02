@@ -8,7 +8,9 @@ import com.back.domain.mission.dto.ai.WeeklyPlan;
 import com.back.domain.mission.dto.request.PartyMissionCreateRequest;
 import com.back.domain.mission.dto.response.MissionResponse;
 import com.back.domain.mission.dto.response.SubGoalResponse;
-import com.back.domain.mission.entity.*;
+import com.back.domain.mission.entity.Mission;
+import com.back.domain.mission.entity.SubGoal;
+import com.back.domain.mission.entity.Task;
 import com.back.domain.mission.enums.MissionType;
 import com.back.domain.mission.exception.MissionErrorCode;
 import com.back.domain.mission.exception.MissionException;
@@ -39,7 +41,7 @@ public class PartyMissionService {
     private final TaskService taskService;
     private static final int MAX_MISSIONS_PER_USER = 5;
 
-    // 파티 미션 생성
+    // 파티/개인 미션 생성
     public MissionResponse createPartyMission(Integer memberId, PartyMissionCreateRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MissionException(MissionErrorCode.MEMBER_NOT_FOUND));
@@ -50,7 +52,7 @@ public class PartyMissionService {
             throw new MissionException(MissionErrorCode.MISSION_LIMIT_EXCEEDED);
         }
 
-        // 파티 생성 (필요시)
+        // 파티 생성 (필요 시)
         Party party = null;
         if (request.getMaxMembers() > 1) {
             PartyRequestDto partyRequest = new PartyRequestDto();
@@ -76,7 +78,6 @@ public class PartyMissionService {
                 .subGoals(new ArrayList<>())
                 .build();
 
-
         if (request.getType() == MissionType.AI) {
             generateAiSubGoals(mission, request);
         } else {
@@ -84,32 +85,10 @@ public class PartyMissionService {
         }
 
         Mission savedMission = missionRepository.save(mission);
-        return convertToResponse(savedMission, true);
+        return convertToDetailResponse(savedMission, memberId);
     }
 
-    @Transactional(readOnly = true)
-    public List<MissionResponse> getPartyMissions(Integer partyId) {
-        List<Mission> missions = missionRepository.findByPartyId(partyId);
-
-        return missions.stream()
-                .map(mission -> convertToResponse(mission, false)) // 목록 조회니까 false
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public MissionResponse getPartyMissionDetail(Integer partyId, Integer missionId) {
-        Mission mission = missionRepository.findById(missionId)
-                .orElseThrow(() -> new MissionException(MissionErrorCode.MISSION_NOT_FOUND));
-
-        if (mission.getParty() == null || !mission.getParty().getId().equals(partyId)) {
-            throw new MissionException(MissionErrorCode.MEMBER_FORBIDDEN); // 파티 불일치 시 예외
-        }
-
-        return convertToResponse(mission, true); // 상세니까 subGoals까지 포함
-    }
-
-
-    // AI 기반으로 주차별  subgoal + task 생성
+    //  AI 기반 주차별 subgoal + task 생성
     private void generateAiSubGoals(Mission mission, PartyMissionCreateRequest request) {
         AiMissionResult aiResult = aiGeneratorService.generateMission(
                 request.getTitle(),
@@ -133,8 +112,6 @@ public class PartyMissionService {
                     .orderNum(weekPlan.getWeekNum())
                     .startDate(weekStart)
                     .endDate(weekEnd)
-                    .hasBeenEdited(false)
-                    .editableUntil(weekStart.plusDays(2))
                     .tasks(new ArrayList<>())
                     .build();
 
@@ -143,6 +120,7 @@ public class PartyMissionService {
                         .subGoal(subGoal)
                         .title(dailyTask.getTitle())
                         .dayNum(dailyTask.getDayNum())
+                        .hasBeenEdited(false) //  Task 단위 수정 여부
                         .taskLogs(new ArrayList<>())
                         .build();
                 subGoal.getTasks().add(task);
@@ -152,7 +130,7 @@ public class PartyMissionService {
         }
     }
 
-    // 단순 기본 생성 로직 ( AI 아닐 경우)
+    // 기본 생성 로직
     private void generateBasicSubGoals(Mission mission, Integer weeks) {
         String[] dayNames = {"", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"};
 
@@ -166,8 +144,6 @@ public class PartyMissionService {
                     .orderNum(week)
                     .startDate(weekStart)
                     .endDate(weekEnd)
-                    .hasBeenEdited(false)
-                    .editableUntil(weekStart.plusDays(2))
                     .tasks(new ArrayList<>())
                     .build();
 
@@ -176,6 +152,7 @@ public class PartyMissionService {
                         .subGoal(subGoal)
                         .title(dayNames[day] + " 활동")
                         .dayNum(day)
+                        .hasBeenEdited(false) //  Task 단위 수정 여부
                         .taskLogs(new ArrayList<>())
                         .build();
                 subGoal.getTasks().add(task);
@@ -185,51 +162,96 @@ public class PartyMissionService {
         }
     }
 
-    // Mission 엔티티 -> MissionResponse  변환
-    //includeSubGoals=true면 주차별(SubGoal, Task)까지 전부 포함
-    public MissionResponse convertToResponse(Mission mission, boolean includeSubGoals) {
+    //  Mission → MissionResponse 변환
+
+    // 미션 기본 정보 (제목, 카테고리, 기간, 총 주차수, 완료 여부 등) + 진행률 계산 // subgoal, task X
+    public MissionResponse convertToSimpleResponse(Mission mission,Integer memberId) {
         Integer totalWeeks = (int) ChronoUnit.WEEKS.between(
                 mission.getStartDate(),
                 mission.getEndDate().plusDays(1)
         );
 
-        List<SubGoalResponse> subGoalResponses = null;
-        if (includeSubGoals && mission.getSubGoals() != null) {
-            subGoalResponses = mission.getSubGoals().stream()
-                    .map(sg -> SubGoalResponse.builder()
-                            .subGoalId(sg.getId())
-                            .title(sg.getTitle())
-                            .weekNum(sg.getOrderNum())
-                            .startDate(sg.getStartDate())
-                            .endDate(sg.getEndDate())
-                            .hasBeenEdited(sg.getHasBeenEdited())  // Boolean 타입이므로 바로 접근
-                            .editableUntil(sg.getEditableUntil())
-                            .weekProgressRate(calculateService.calculateWeekProgress(sg))
-                            .tasks(
-                                    sg.getTasks().stream()
-                                            .map(task -> taskService.toTaskResponse(task, mission.getMember().getId(), LocalDate.now()))
-                                            .collect(Collectors.toList())
-                            )
-                            .build())
-                    .collect(Collectors.toList());
+        MissionResponse.MissionResponseBuilder builder = MissionResponse.builder()
+                .missionId(mission.getId())
+                .title(mission.getTitle())
+                .category(mission.getCategory())
+                .type(mission.getType())
+                .startDate(mission.getStartDate())
+                .endDate(mission.getEndDate())
+                .totalWeeks(totalWeeks)
+                .currentWeek(calculateService.calculateCurrentWeek(mission))
+                .isCompleted(mission.isCompleted())
+                .isPartyMission(mission.isPartyMission())
+                .partyId(mission.getParty() != null ? mission.getParty().getId() : null);
+
+        if (mission.isPartyMission()) {
+            builder.partyProgress(MissionResponse.PartyProgressDto.builder()
+                    .myProgress(calculateService.calculatePartyMissionProgressForMe(mission, memberId))
+                    .averageProgress(calculateService.calculatePartyMissionProgressAverage(mission))
+                    .totalProgress(calculateService.calculatePartyMissionProgressTotal(mission))
+                    .build());
+        } else {
+            builder.myProgressRate(calculateService.calculateMissionProgressForMember(mission, memberId));
         }
 
-        MissionResponse.MissionResponseBuilder builder = MissionResponse.builder();
-        builder.missionId(mission.getId());
-        builder.title(mission.getTitle());
-        builder.category(mission.getCategory());
-        builder.type(mission.getType());
-        builder.startDate(mission.getStartDate());
-        builder.endDate(mission.getEndDate());
-        builder.totalWeeks(totalWeeks);
-        builder.currentWeek(calculateService.calculateCurrentWeek(mission));
-        builder.isCompleted(mission.isCompleted());
-        builder.isPartyMission(mission.isPartyMission());
-        builder.partyId(mission.getParty() != null ? mission.getParty().getId() : null);
-        builder.progressRate(calculateService.calculateMissionProgress(mission));
-        builder.subGoals(subGoalResponses);
-        MissionResponse build = builder
+        return builder.build();
+    }
+
+    // 상세 조회  subgaol ( visible로 인해 미래 주차는 숨겨짐)
+    public MissionResponse convertToDetailResponse(Mission mission, Integer memberId) {
+        LocalDate today = LocalDate.now();
+        int currentWeek = calculateService.getCurrentWeekNumber(mission, today);
+
+        List<SubGoalResponse> subGoalResponses = mission.getSubGoals().stream()
+                .map(sg -> buildSubGoalResponse(sg, mission, memberId, currentWeek, today, true))
+                .collect(Collectors.toList());
+
+        return convertToSimpleResponse(mission, memberId).toBuilder()
+                .subGoals(subGoalResponses)
                 .build();
-        return build;
+    }
+
+    // 관리자용 상세 조회 ( visible 제한 X )
+    public MissionResponse convertToDetailResponseAdmin(Mission mission) {
+        Integer memberId = mission.getMember().getId();
+        LocalDate today = LocalDate.now();
+        int currentWeek = calculateService.getCurrentWeekNumber(mission, today);
+
+        List<SubGoalResponse> subGoalResponses = mission.getSubGoals().stream()
+                .map(sg -> buildSubGoalResponse(sg, mission, memberId, currentWeek, today, false))
+                .collect(Collectors.toList());
+
+        return convertToSimpleResponse(mission, memberId).toBuilder()
+                .subGoals(subGoalResponses)
+                .build();
+    }
+
+    // subgoal DTO ( 주차별 테스크, 진행률, visible 여부)
+    private SubGoalResponse buildSubGoalResponse(SubGoal sg, Mission mission, Integer memberId,
+                                                 int currentWeek, LocalDate today, boolean applyVisible) {
+        boolean visible = applyVisible ? calculateService.calculateVisible(mission, sg.getOrderNum(), currentWeek, today) : true;
+
+        SubGoalResponse.SubGoalResponseBuilder builder = SubGoalResponse.builder()
+                .subGoalId(sg.getId())
+                .title(sg.getTitle())
+                .weekNum(sg.getOrderNum())
+                .startDate(sg.getStartDate())
+                .endDate(sg.getEndDate())
+                .visible(visible)
+                .tasks(visible
+                        ? taskService.toTaskResponsesBatch(sg.getTasks(), memberId, today)
+                        : List.of()
+                );
+
+        if (mission.isPartyMission()) {
+            builder.partyWeekProgress(SubGoalResponse.PartyWeekProgressDto.builder()
+                    .myProgress(calculateService.calculateWeekProgressForMember(sg, memberId))
+                    .averageProgress(calculateService.calculatePartyWeekAverage(sg))
+                    .build());
+        } else {
+            builder.weekProgressRate(calculateService.calculateWeekProgressForMember(sg, memberId));
+        }
+
+        return builder.build();
     }
 }

@@ -11,16 +11,13 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class WeeklyUpdateRequest {
+public class WeekTaskUpdateRequest {
 
-    @NotNull(message = "미션 ID는 필수입니다")
-    private Integer missionId;
-
-    @NotNull(message = "서브골 ID는 필수입니다")
+    @NotNull(message = "SubGoal ID는 필수입니다")
     private Integer subGoalId;
 
-    @NotEmpty(message = "수정할 태스크가 필요합니다")
-    private List<TaskUpdateDto> taskUpdates;
+    @NotEmpty(message = "수정할 Task 목록이 필요합니다")
+    private List<TaskUpdateDto> tasks;
 
     @Getter
     @Setter
@@ -28,7 +25,11 @@ public class WeeklyUpdateRequest {
     @AllArgsConstructor
     @Builder
     public static class TaskUpdateDto {
+        @NotNull(message = "Task ID는 필수입니다")
         private Integer taskId;
+
+        @NotNull(message = "제목은 필수입니다")
         private String title;
     }
+
 }

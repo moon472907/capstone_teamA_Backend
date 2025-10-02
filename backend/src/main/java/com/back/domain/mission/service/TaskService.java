@@ -1,19 +1,28 @@
 package com.back.domain.mission.service;
 
 import com.back.domain.mission.dto.request.TaskCompleteRequest;
+import com.back.domain.mission.dto.request.WeekTaskUpdateRequest;
 import com.back.domain.mission.dto.response.TaskCompleteResponse;
 import com.back.domain.mission.dto.response.TaskResponse;
-import com.back.domain.mission.entity.*;
+import com.back.domain.mission.entity.Mission;
+import com.back.domain.mission.entity.SubGoal;
+import com.back.domain.mission.entity.Task;
+import com.back.domain.mission.entity.TaskLog;
 import com.back.domain.mission.enums.TaskStatus;
 import com.back.domain.mission.exception.MissionErrorCode;
 import com.back.domain.mission.exception.MissionException;
-import com.back.domain.mission.repository.*;
+import com.back.domain.mission.repository.MissionRepository;
+import com.back.domain.mission.repository.SubGoalRepository;
+import com.back.domain.mission.repository.TaskLogRepository;
+import com.back.domain.mission.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -26,7 +35,7 @@ public class TaskService {
     private final TaskLogRepository taskLogRepository;
     private final MissionRepository missionRepository;
     private final MissionCalculateService calculateService;
-
+    private final SubGoalRepository subGoalRepository;
 
     // 특정 task 완료 처리
     public TaskCompleteResponse completeTask(Integer memberId, TaskCompleteRequest request) {
@@ -37,13 +46,36 @@ public class TaskService {
         // 완료 날짜 ( 없을 시 오늘 )
         LocalDate completedDate = request.getDate() != null ? request.getDate() : LocalDate.now();
 
+        Mission mission = task.getSubGoal().getMission();
+        SubGoal subGoal = task.getSubGoal();
+
+        // task의 요일 체크
+        int completedDayOfWeek = completedDate.getDayOfWeek().getValue();
+        if (task.getDayNum() != completedDayOfWeek) {
+            throw new MissionException(MissionErrorCode.TASK_WRONG_DAY);
+        }
+
+        // 미션 시작일 체크
+        if (completedDate.isBefore(mission.getStartDate())) {
+            throw new MissionException(MissionErrorCode.MISSION_NOT_STARTED);
+        }
+
+        // 미션 종료일 체크
+        if (completedDate.isAfter(mission.getEndDate())) {
+            throw new MissionException(MissionErrorCode.MISSION_ALREADY_ENDED);
+        }
+
+        // 해당 주차 범위 체크
+        if (completedDate.isBefore(subGoal.getStartDate()) ||
+                completedDate.isAfter(subGoal.getEndDate())) {
+            throw new MissionException(MissionErrorCode.TASK_NOT_IN_DATE_RANGE);
+        }
+
         // 이미 완료한 기록이 있다면 예외처리
         if (taskLogRepository.existsByTaskIdAndMemberIdAndDate(
                 request.getTaskId(), memberId, completedDate)) {
             throw new MissionException(MissionErrorCode.TASK_ALREADY_COMPLETED);
         }
-
-        Mission mission = task.getSubGoal().getMission();
 
         //tasklog에 기록처리
         TaskLog taskLog = TaskLog.builder()
@@ -56,16 +88,14 @@ public class TaskService {
 
         taskLogRepository.save(taskLog);
 
-        // 완료 응답 반환 ( 포인트/경험치 + 진행률 포함 )
+        // 완료 응답 반환 ( 포인트/경험치 + 진행률 포함 ---> TODO : reward 완료되면 수정해야함 !!  )
         return TaskCompleteResponse.builder()
                 .taskId(task.getId())
                 .status(request.getStatus())
                 .completedDate(completedDate)
-                .earnedPoints(request.getStatus() == TaskStatus.COMPLETED ? 10 : 0)
-                .earnedExp(request.getStatus() == TaskStatus.COMPLETED ? 5 : 0)
                 .dailyProgressRate(calculateService.calculateDailyProgress(memberId, completedDate))
                 .weeklyProgressRate(calculateService.calculateWeeklyProgress(memberId, mission, completedDate))
-                .missionProgressRate(calculateService.calculateMissionProgress(mission))
+                .missionProgressRate(calculateService.calculateMissionProgressForMember(mission, memberId))
                 .build();
     }
 
@@ -114,12 +144,65 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+    // task 수정
+    public TaskResponse updateTask(Integer memberId, Integer taskId, String newTitle) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new MissionException(MissionErrorCode.TASK_NOT_FOUND));
+
+        if (newTitle == null || newTitle.trim().isEmpty()) {
+            throw new MissionException(MissionErrorCode.TASK_TITLE_REQUIRED);
+        }
+
+        Mission mission = task.getSubGoal().getMission();
+        if (!mission.getMember().getId().equals(memberId)) {
+            throw new MissionException(MissionErrorCode.MEMBER_FORBIDDEN);
+        }
+
+        // Task 내부 로직 사용
+        task.updateContent(newTitle);
+
+        return toTaskResponse(task, memberId, LocalDate.now());
+    }
+
+    public List<TaskResponse> updateWeekTasks(Integer memberId, WeekTaskUpdateRequest request) {
+        // SubGoal 조회 및 권한 확인
+        SubGoal subGoal = subGoalRepository.findById(request.getSubGoalId())
+                .orElseThrow(() -> new MissionException(MissionErrorCode.SUBGOAL_NOT_FOUND));
+
+        Mission mission = subGoal.getMission();
+        if (!mission.getMember().getId().equals(memberId)) {
+            throw new MissionException(MissionErrorCode.MEMBER_FORBIDDEN);
+        }
+
+        List<TaskResponse> responses = new ArrayList<>();
+
+        for (WeekTaskUpdateRequest.TaskUpdateDto taskDto : request.getTasks()) {
+            Task task = taskRepository.findById(taskDto.getTaskId())
+                    .orElseThrow(() -> new MissionException(MissionErrorCode.TASK_NOT_FOUND));
+
+            // SubGoal 일치 확인
+            if (!task.getSubGoal().getId().equals(request.getSubGoalId())) {
+                throw new MissionException(MissionErrorCode.TASK_NOT_IN_SUBGOAL);
+            }
+
+            // Task 수정 (canEdit 체크 포함)
+            task.updateContent(taskDto.getTitle());
+
+            responses.add(toTaskResponse(task, memberId, LocalDate.now()));
+        }
+
+        return responses;
+    }
+
+
+    // task 엔티티 -> taskResponse DTO 변환
+
     @Transactional(readOnly = true)
     public TaskResponse toTaskResponse(Task task, Integer memberId, LocalDate date) {
         return convertToTaskResponse(task, memberId, date);
     }
 
-    // task 엔티티 -> taskResponse DTO 변환
+
     private TaskResponse convertToTaskResponse(Task task, Integer memberId, LocalDate date) {
         Optional<TaskLog> taskLog = taskLogRepository.findByTaskIdAndMemberIdAndDate(
                 task.getId(), memberId, date);
@@ -138,6 +221,73 @@ public class TaskService {
                 .status(status)
                 .lastCompletedDate(lastCompletedDate)
                 .isToday(calculateService.isToday(task))
+                .hasBeenEdited(task.getHasBeenEdited())
+                .canEdit(task.canEdit())
+                .editDeadline(task.getEditDeadline())
+                .build();
+    }
+
+    // 배치 변환 메서드 추가
+    @Transactional(readOnly = true)
+    public List<TaskResponse> toTaskResponsesBatch(List<Task> tasks, Integer memberId, LocalDate date) {
+        if (tasks.isEmpty()) {
+            return List.of();
+        }
+
+        List<Integer> taskIds = tasks.stream()
+                .map(Task::getId)
+                .collect(Collectors.toList());
+
+        List<TaskLog> currentLogs = taskLogRepository
+                .findByTaskIdsAndMemberIdAndDate(taskIds, memberId, date);
+        List<TaskLog> lastLogs = taskLogRepository
+                .findLastCompletedByTaskIds(taskIds, memberId);
+
+        Map<Integer, TaskLog> currentLogMap = currentLogs.stream()
+                .collect(Collectors.toMap(
+                        tl -> tl.getTask().getId(),
+                        tl -> tl,
+                        (existing, replacement) -> existing
+                ));
+
+        Map<Integer, TaskLog> lastLogMap = lastLogs.stream()
+                .collect(Collectors.toMap(
+                        tl -> tl.getTask().getId(),
+                        tl -> tl,
+                        (existing, replacement) -> existing
+                ));
+
+        return tasks.stream()
+                .map(task -> convertToTaskResponseWithMaps(
+                        task, memberId, date, currentLogMap, lastLogMap
+                ))
+                .collect(Collectors.toList());
+    }
+
+    // Map 사용 변환 메서드 추가
+    private TaskResponse convertToTaskResponseWithMaps(
+            Task task, Integer memberId, LocalDate date,
+            Map<Integer, TaskLog> currentLogMap,
+            Map<Integer, TaskLog> lastLogMap) {
+
+        TaskLog currentLog = currentLogMap.get(task.getId());
+        TaskLog lastLog = lastLogMap.get(task.getId());
+
+        TaskStatus status = currentLog != null ?
+                currentLog.getStatus() : TaskStatus.PENDING;
+        LocalDate lastCompletedDate = lastLog != null ?
+                lastLog.getDate() : null;
+
+        return TaskResponse.builder()
+                .taskId(task.getId())
+                .title(task.getTitle())
+                .dayNum(task.getDayNum())
+                .status(status)
+                .lastCompletedDate(lastCompletedDate)
+                .isToday(calculateService.isToday(task))
+                .hasBeenEdited(task.getHasBeenEdited())
+                .canEdit(task.canEdit())
+                .editDeadline(task.getEditDeadline())
                 .build();
     }
 }

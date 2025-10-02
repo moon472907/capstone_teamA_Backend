@@ -18,8 +18,8 @@ public class TaskResponse {
     private LocalDate lastCompletedDate; // 마지막 완료 일자
     private boolean isToday; // 오늘 해야하는 task인지 여부
 
-    //private boolean hasBeenEdited;// 이미 수정된 Task인지 여부 (true면 1회 수정 끝)
-    //private LocalDate editableUntil;// 수정 가능 기한 (ex: 이번 주 종료일까지)
-    //private String editStatus;   // 수정 상태 표시 ("가능", "불가", "기간만료")
-
+    // 🔹 수정 관련 필드
+    private boolean hasBeenEdited;  // 이미 수정됐는지 여부
+    private boolean canEdit;        // 지금 시점에 수정 가능한지 여부
+    private LocalDate editDeadline;  // 수정 마감일
 }

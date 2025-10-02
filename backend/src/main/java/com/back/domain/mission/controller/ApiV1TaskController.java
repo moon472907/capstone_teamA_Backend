@@ -2,6 +2,7 @@ package com.back.domain.mission.controller;
 
 import com.back.domain.member.entity.Member;
 import com.back.domain.mission.dto.request.TaskCompleteRequest;
+import com.back.domain.mission.dto.request.WeekTaskUpdateRequest;
 import com.back.domain.mission.dto.response.TaskCompleteResponse;
 import com.back.domain.mission.dto.response.TaskResponse;
 import com.back.domain.mission.service.TaskService;
@@ -63,6 +64,33 @@ public class ApiV1TaskController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success("200", "태스크 완료 처리 성공", response));
+    }
+
+    @PutMapping("/{taskId}")
+    @Operation(summary = "태스크 수정", description = "태스크 제목을 수정합니다.")
+    public ResponseEntity<ApiResponse<TaskResponse>> updateTask(
+            @PathVariable Integer taskId,
+            @RequestBody String newTitle) {
+
+        Member actor = rq.getActorFromDb();
+        TaskResponse response = taskService.updateTask(actor.getId(), taskId, newTitle);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success("200", "태스크 수정 성공", response));
+    }
+
+    @PutMapping("/week")
+    @Operation(summary = "주차 Task 일괄 수정", description = "한 주차의 여러 Task를 한번에 수정합니다.")
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> updateWeekTasks(
+            @Valid @RequestBody WeekTaskUpdateRequest request) {
+
+        Member actor = rq.getActorFromDb();
+        List<TaskResponse> responses = taskService.updateWeekTasks(actor.getId(), request);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success("200", "주차 Task 일괄 수정 성공", responses));
     }
 }
 
