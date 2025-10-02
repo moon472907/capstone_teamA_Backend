@@ -16,9 +16,12 @@ public class TitleService {
 
     private final TitleRepository titleRepository;
 
-    public TitleDto  createTitle( CreateTitleDto CreateTitleDto)
+    public TitleDto  createTitle( CreateTitleDto createTitleDto)
     {
-        return new TitleDto(titleRepository.save(new Title(CreateTitleDto.content())));
+        return new TitleDto(titleRepository.save(new Title(
+                createTitleDto.content(),
+                createTitleDto.achiveRequire()
+        )));
     }
 
     public List<TitleDto> findAll()

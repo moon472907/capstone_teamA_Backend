@@ -23,7 +23,7 @@ public class ApiV1MemberController {
     private final Rq rq;
 
     @PostMapping("/signup")
-    @Operation(summary = "회원 가입(일반 계정)", description = "일반 계정(소셜 X) 회원 가입")
+    @Operation(summary = "[Test] 회원 가입(일반 계정)", description = "일반 계정(소셜 X) 회원 가입")
     public ResponseEntity<ApiResponse<MemberDto>> signup(
             @Valid @RequestBody SignupReqDto reqBody
     ) {
@@ -40,7 +40,7 @@ public class ApiV1MemberController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "로그인(일반 계정)", description = "일반 계정(소셜 X) 로그인")
+    @Operation(summary = "[Test] 로그인(일반 계정)", description = "일반 계정(소셜 X) 로그인")
     public ResponseEntity<ApiResponse<LoginResDto>> login(
             @Valid @RequestBody LoginReqDto reqBody
     ) {
@@ -116,6 +116,29 @@ public class ApiV1MemberController {
                 );
     }
 
+    @DeleteMapping("/delete")
+    @Operation(summary = "회원 탈퇴", description = "회원 탈퇴")
+    public ResponseEntity<ApiResponse<Void>> delete() {
+        Member actor = rq.getActorFromDb();
+        String email = actor.getEmail();
+
+        if(actor.getSocialAccessToken() != null) {
+            memberService.delete_social(actor);
+        }
+        memberService.delete(actor);
+        rq.deleteCookie("apiKey");
+        rq.deleteCookie("accessToken");
+        rq.deleteCookie("JSESSIONID");
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 회원 탈퇴 (%s)".formatted(email)
+                        )
+                );
+    }
+
     @PutMapping("/modify/profile")
     @Operation(summary = "회원 정보 수정", description = "닉네임, 생년월일, 성별 수정")
     public ResponseEntity<ApiResponse<MemberDto>> modifyProfile(
@@ -136,7 +159,7 @@ public class ApiV1MemberController {
 
     public record PasswordReqDto(String password) {}
     @PutMapping("/modify/password")
-    @Operation(summary = "비밀번호 변경(일반 계정)", description = "비밀번호 변경")
+    @Operation(summary = "[Test] 비밀번호 변경", description = "비밀번호 변경")
     public ResponseEntity<ApiResponse<Void>> modifyPassword(
             @Valid @RequestBody PasswordReqDto reqBody
     ) {
@@ -268,25 +291,38 @@ public class ApiV1MemberController {
                 );
     }
 
-    @DeleteMapping("/delete")
-    @Operation(summary = "회원 탈퇴", description = "회원 탈퇴")
-    public ResponseEntity<ApiResponse<Void>> delete() {
+    @PutMapping("/obtain/item/{id}")
+    @Operation(summary = "[Test] 아이템 획득", description = "아이템 획득")
+    public ResponseEntity<ApiResponse<MemberDto>> obtainItem(
+            @PathVariable String id
+    ) {
         Member actor = rq.getActorFromDb();
-        String email = actor.getEmail();
-
-        if(actor.getSocialAccessToken() != null) {
-            memberService.delete_social(actor);
-        }
-        memberService.delete(actor);
-        rq.deleteCookie("apiKey");
-        rq.deleteCookie("accessToken");
-        rq.deleteCookie("JSESSIONID");
+        memberService.addItem(actor, Integer.parseInt(id));
 
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                                 "200",
-                                "[Member] Success: 회원 탈퇴 (%s)".formatted(email)
+                                "[Member] Success: 아이템 획득",
+                                new MemberDto(actor)
+                        )
+                );
+    }
+
+    @PutMapping("/obtain/title/{id}")
+    @Operation(summary = "[Test] 칭호 획득", description = "칭호 획득")
+    public ResponseEntity<ApiResponse<MemberDto>> obtainTitle(
+            @PathVariable String id
+    ) {
+        Member actor = rq.getActorFromDb();
+        memberService.addTitle(actor, Integer.parseInt(id));
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 칭호 획득",
+                                new MemberDto(actor)
                         )
                 );
     }

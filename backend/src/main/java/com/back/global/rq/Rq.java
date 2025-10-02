@@ -81,9 +81,8 @@ public class Rq {
         Cookie cookie = new Cookie(name, value);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
-        cookie.setDomain("localhost");
         cookie.setSecure(true);
-        cookie.setAttribute("SameSite", "Strict");
+        cookie.setAttribute("SameSite", "None");
 
         if (value.isBlank()) cookie.setMaxAge(0);
         else cookie.setMaxAge(60 * 60 * 24 * 365);

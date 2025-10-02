@@ -69,10 +69,13 @@ public class SecurityConfig {
 
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
+        final String frontDevUrl = "http://localhost:3000";
+        final String frontUrl = "https://www.nutree.noredsun.com/";
+
         CorsConfiguration configuration = new CorsConfiguration();
 
         // 허용할 오리진 설정
-        configuration.setAllowedOrigins(List.of("https://cdpn.io", "http://localhost:3000"));
+        configuration.setAllowedOrigins(List.of(frontDevUrl, frontUrl));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
 
         // 자격 증명 허용 설정
