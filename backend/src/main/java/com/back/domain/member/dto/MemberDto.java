@@ -18,7 +18,7 @@ public record MemberDto(
         Integer level,
         Integer xp,
         Integer money,
-        Integer title,
+        String title,
         Map<ItemType, Integer> items
 ) {
     public MemberDto(Member member) {
@@ -31,7 +31,7 @@ public record MemberDto(
                 member.getLevel(),
                 member.getXp(),
                 member.getMoney(),
-                member.getTitle() != null ? member.getTitle().getId() : null,
+                member.getTitle() != null ? member.getTitle().getContent() : null,
                 buildItems(member)
         );
     }
