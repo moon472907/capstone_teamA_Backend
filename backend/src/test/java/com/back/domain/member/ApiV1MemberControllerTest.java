@@ -62,8 +62,8 @@ public class ApiV1MemberControllerTest {
     void setUp() {
         item1 = itemRepository.save(new Item(ItemType.AVATAR, "아이템1", ""));
         item2 = itemRepository.save(new Item(ItemType.AVATAR, "아이템2", ""));
-        title1 = titleRepository.save(new Title("칭호1"));
-        title2 = titleRepository.save(new Title("칭호2"));
+        title1 = titleRepository.save(new Title("칭호1", ""));
+        title2 = titleRepository.save(new Title("칭호2",""));
 
         user1 = memberService.signup(
                 "test1@test.com",

@@ -140,6 +140,7 @@ public class ApiV1ItemControllerTest {
         CreateItemDto createItemDto3 = new CreateItemDto(
                 "테스트3", ItemType.FURNITURE);
 
+
         HttpEntity<CreateItemDto> request1 = new HttpEntity<>(createItemDto1, headers);
         restTemplate.exchange(baseUrl, HttpMethod.POST, request1, String.class);
 

@@ -2,6 +2,7 @@ package com.back.global.rq;
 
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.service.MemberService;
+import com.back.global.app.AppConfig;
 import com.back.global.exception.CustomException;
 import com.back.global.exception.ErrorCode;
 import com.back.global.security.SecurityUser;
@@ -83,6 +84,13 @@ public class Rq {
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setAttribute("SameSite", "None");
+        if(AppConfig.isProd()) {
+            cookie.setDomain("nutree.noredsun.com");
+        }
+        else {
+            cookie.setDomain("localhost");
+        }
+
 
         if (value.isBlank()) cookie.setMaxAge(0);
         else cookie.setMaxAge(60 * 60 * 24 * 365);
