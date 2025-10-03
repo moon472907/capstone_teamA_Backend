@@ -557,7 +557,7 @@ class MissionServiceTest {
                 .maxMembers(1)
                 .build();
 
-        assertThat(request.isCategoryValid()).isFalse();
+        assertThat(request.validateCategory()).isFalse();
     }
 
     @Test
