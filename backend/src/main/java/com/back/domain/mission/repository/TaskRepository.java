@@ -17,18 +17,23 @@ public interface TaskRepository extends JpaRepository<Task, Integer> {
     List<Task> findBySubGoalId(Integer subGoalId);
 
     @Query("""
-        SELECT t FROM Task t 
-        JOIN t.subGoal sg 
-        JOIN sg.mission m 
-        WHERE m.member.id = :memberId 
-        AND :today BETWEEN sg.startDate AND sg.endDate 
-        AND t.dayNum = :dayOfWeek 
-        AND m.isCompleted = false
+    SELECT DISTINCT t FROM Task t
+    JOIN FETCH t.subGoal sg
+    JOIN FETCH sg.mission m
+    LEFT JOIN m.party p
+    LEFT JOIN p.partyMembers pm
+    WHERE (m.member.id = :memberId 
+           OR (pm.member.id = :memberId AND pm.status = 'ACCEPTED'))
+    AND m.isCompleted = false
+    AND t.dayNum = :dayNum
+    AND :date BETWEEN sg.startDate AND sg.endDate
+    AND :date BETWEEN m.startDate AND m.endDate
+    ORDER BY m.id, sg.orderNum, t.dayNum
     """)
     List<Task> findTodayTasks(
             @Param("memberId") Integer memberId,
-            @Param("today") LocalDate today,
-            @Param("dayOfWeek") Integer dayOfWeek
+            @Param("date") LocalDate date,
+            @Param("dayNum") int dayNum
     );
 
     @Query("""

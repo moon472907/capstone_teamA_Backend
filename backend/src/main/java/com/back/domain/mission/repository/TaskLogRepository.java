@@ -84,4 +84,11 @@ public interface TaskLogRepository extends JpaRepository<TaskLog, Integer> {
             @Param("taskIds") List<Integer> taskIds,
             @Param("memberId") Integer memberId
     );
+
+    boolean existsByTaskIdAndMemberIdAndDateAndStatus(
+            Integer taskId,
+            Integer memberId,
+            LocalDate date,
+            TaskStatus status
+    );
 }

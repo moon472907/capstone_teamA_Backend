@@ -1,5 +1,6 @@
 package com.back.domain.mission.service;
 
+import com.back.domain.mission.dto.response.TaskResponse;
 import com.back.domain.mission.entity.Mission;
 import com.back.domain.mission.entity.SubGoal;
 import com.back.domain.mission.entity.Task;
@@ -212,5 +213,25 @@ public class MissionCalculateService {
                 .sum();
 
         return (int) (totalProgress / activeMembers.size());
+    }
+
+
+    public TaskResponse.PartyTaskProgressDto calculatePartyTaskProgress(Task task, LocalDate date) {
+        Mission mission = task.getSubGoal().getMission();
+
+        if (!mission.isPartyMission()) {
+            return null;
+        }
+
+        List<PartyMember> activeMembers = mission.getParty().getPartyMembers().stream()
+                .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
+                .toList();
+
+        long completedCount = activeMembers.stream()
+                .filter(pm -> taskLogRepository.existsByTaskIdAndMemberIdAndDateAndStatus(
+                        task.getId(), pm.getMember().getId(), date, TaskStatus.COMPLETED))
+                .count();
+
+        return new TaskResponse.PartyTaskProgressDto((int) completedCount, activeMembers.size());
     }
 }

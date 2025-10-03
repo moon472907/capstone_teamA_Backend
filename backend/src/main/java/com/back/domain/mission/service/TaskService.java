@@ -202,19 +202,20 @@ public class TaskService {
         return convertToTaskResponse(task, memberId, date);
     }
 
-
     private TaskResponse convertToTaskResponse(Task task, Integer memberId, LocalDate date) {
         Optional<TaskLog> taskLog = taskLogRepository.findByTaskIdAndMemberIdAndDate(
                 task.getId(), memberId, date);
 
         TaskStatus status = taskLog.map(TaskLog::getStatus).orElse(TaskStatus.PENDING);
-
         LocalDate lastCompletedDate = taskLogRepository
                 .findTopByTaskIdAndMemberIdOrderByDateDesc(task.getId(), memberId)
                 .map(TaskLog::getDate)
                 .orElse(null);
 
-        return TaskResponse.builder()
+        SubGoal subGoal = task.getSubGoal();
+        Mission mission = subGoal.getMission();
+
+        TaskResponse.TaskResponseBuilder builder = TaskResponse.builder()
                 .taskId(task.getId())
                 .title(task.getTitle())
                 .dayNum(task.getDayNum())
@@ -224,7 +225,17 @@ public class TaskService {
                 .hasBeenEdited(task.getHasBeenEdited())
                 .canEdit(task.canEdit())
                 .editDeadline(task.getEditDeadline())
-                .build();
+                .missionId(mission.getId())
+                .missionTitle(mission.getTitle())
+                .subGoalId(subGoal.getId())
+                .subGoalTitle(subGoal.getTitle())
+                .weekNum(subGoal.getOrderNum());
+
+        if (mission.isPartyMission()) {
+            builder.partyProgress(calculateService.calculatePartyTaskProgress(task, date));
+        }
+
+        return builder.build();
     }
 
     // 배치 변환 메서드 추가
