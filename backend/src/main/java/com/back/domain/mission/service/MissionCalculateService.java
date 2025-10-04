@@ -215,8 +215,8 @@ public class MissionCalculateService {
         return (int) (totalProgress / activeMembers.size());
     }
 
-
-    public TaskResponse.PartyTaskProgressDto calculatePartyTaskProgress(Task task, LocalDate date) {
+    //특정 테스크를 특정 날짜에 완료한 팀원 수 계산
+    public  TaskResponse.PartyCompletionDto  calculateTaskCompletion(Task task, LocalDate date) {
         Mission mission = task.getSubGoal().getMission();
 
         if (!mission.isPartyMission()) {
@@ -227,11 +227,19 @@ public class MissionCalculateService {
                 .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
                 .toList();
 
-        long completedCount = activeMembers.stream()
+        int totalMembers = activeMembers.size();
+
+        long completedMembers = activeMembers.stream()
                 .filter(pm -> taskLogRepository.existsByTaskIdAndMemberIdAndDateAndStatus(
-                        task.getId(), pm.getMember().getId(), date, TaskStatus.COMPLETED))
+                        task.getId(),
+                        pm.getMember().getId(),
+                        date,
+                        TaskStatus.COMPLETED
+                ))
                 .count();
 
-        return new TaskResponse.PartyTaskProgressDto((int) completedCount, activeMembers.size());
-    }
+        return TaskResponse.PartyCompletionDto.builder()
+                .completedMembers((int) completedMembers)
+                .totalMembers(totalMembers)
+                .build();    }
 }

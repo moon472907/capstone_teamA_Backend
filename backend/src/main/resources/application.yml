@@ -39,7 +39,7 @@ spring:
       base-url: https://openrouter.ai/api
       chat:
         options:
-          model: x-ai/grok-4-fast:free
+          model: x-ai/grok-4-fast
 
   security:
     oauth2:

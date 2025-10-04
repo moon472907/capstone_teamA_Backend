@@ -1,6 +1,7 @@
 package com.back.domain.mission.dto.response;
 
 import com.back.domain.mission.enums.TaskStatus;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -23,20 +24,23 @@ public class TaskResponse {
     private boolean canEdit;        // 지금 시점에 수정 가능한지 여부
     private LocalDate editDeadline;  // 수정 마감일
 
-    private Integer missionId;
-    private String missionTitle;
-    private Integer subGoalId;
-    private String subGoalTitle;  // "1주차: 기초 체력 다지기"
-    private Integer weekNum;
 
-    private PartyTaskProgressDto partyProgress;  // 파티 미션일 때만
+    //today 전용
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String missionTitle;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String subGoalTitle;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private PartyCompletionDto partyCompletion;
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class PartyTaskProgressDto {
-        private Integer completedMembers;  // 완료한 인원
-        private Integer totalMembers;      // 전체 인원 (ACCEPTED)
+    public static class PartyCompletionDto {
+        private Integer completedMembers;
+        private Integer totalMembers;
     }
 }
