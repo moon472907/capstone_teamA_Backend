@@ -108,7 +108,7 @@ public class TaskService {
         List<Task> tasks = taskRepository.findTodayTasks(memberId, today, todayDayNum);
 
         return tasks.stream()
-                .map(task -> convertToTaskResponse(task, memberId, today))
+                .map(task -> convertToTaskResponseForToday(task, memberId, today))
                 .collect(Collectors.toList());
     }
 
@@ -202,20 +202,19 @@ public class TaskService {
         return convertToTaskResponse(task, memberId, date);
     }
 
+
     private TaskResponse convertToTaskResponse(Task task, Integer memberId, LocalDate date) {
         Optional<TaskLog> taskLog = taskLogRepository.findByTaskIdAndMemberIdAndDate(
                 task.getId(), memberId, date);
 
         TaskStatus status = taskLog.map(TaskLog::getStatus).orElse(TaskStatus.PENDING);
+
         LocalDate lastCompletedDate = taskLogRepository
                 .findTopByTaskIdAndMemberIdOrderByDateDesc(task.getId(), memberId)
                 .map(TaskLog::getDate)
                 .orElse(null);
 
-        SubGoal subGoal = task.getSubGoal();
-        Mission mission = subGoal.getMission();
-
-        TaskResponse.TaskResponseBuilder builder = TaskResponse.builder()
+        return TaskResponse.builder()
                 .taskId(task.getId())
                 .title(task.getTitle())
                 .dayNum(task.getDayNum())
@@ -225,17 +224,7 @@ public class TaskService {
                 .hasBeenEdited(task.getHasBeenEdited())
                 .canEdit(task.canEdit())
                 .editDeadline(task.getEditDeadline())
-                .missionId(mission.getId())
-                .missionTitle(mission.getTitle())
-                .subGoalId(subGoal.getId())
-                .subGoalTitle(subGoal.getTitle())
-                .weekNum(subGoal.getOrderNum());
-
-        if (mission.isPartyMission()) {
-            builder.partyProgress(calculateService.calculatePartyTaskProgress(task, date));
-        }
-
-        return builder.build();
+                .build();
     }
 
     // 배치 변환 메서드 추가
@@ -300,5 +289,21 @@ public class TaskService {
                 .canEdit(task.canEdit())
                 .editDeadline(task.getEditDeadline())
                 .build();
+    }
+
+    private TaskResponse convertToTaskResponseForToday(Task task, Integer memberId, LocalDate date) {
+        TaskResponse response = convertToTaskResponse(task, memberId, date);
+
+        Mission mission = task.getSubGoal().getMission();
+        SubGoal subGoal = task.getSubGoal();
+
+        response.setMissionTitle(mission.getTitle());
+        response.setSubGoalTitle(subGoal.getTitle());
+
+        if (mission.isPartyMission()) {
+            response.setPartyCompletion(calculateService.calculateTaskCompletion(task, date));
+        }
+
+        return response;
     }
 }

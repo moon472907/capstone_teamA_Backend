@@ -118,9 +118,7 @@ public class MissionService {
         List<MissionResponse> completedMissions = new ArrayList<>();
 
         for (Mission m : allMissions) {
-            MissionResponse response = partyMissionService.convertToSimpleResponse(
-                    m, m.getMember().getId()
-            );
+            MissionResponse response = partyMissionService.convertToDetailResponseAdmin(m);
 
             if (m.isCompleted()) {
                 completedMissions.add(response);
