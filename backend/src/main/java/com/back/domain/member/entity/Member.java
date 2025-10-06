@@ -32,6 +32,7 @@ public class Member extends BaseEntity {
     // *** 상태 정보 ***
     private int level = 1;
     private int xp = 0;
+    private int xpReq = 5000;
     private int money = 0;
 
     // *** 장착한 칭호/아이템 정보 ***
