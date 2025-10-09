@@ -27,7 +27,7 @@ public enum MissionErrorCode {
     TASK_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "TASK-400", "이미 완료된 태스크입니다."),
     TASK_NOT_IN_DATE_RANGE(HttpStatus.BAD_REQUEST, "TASK-402", "해당 날짜는 이 주차 범위가 아닙니다"),
     TASK_WRONG_DAY(HttpStatus.BAD_REQUEST, "TASK-403", "해당 태스크의 요일이 아닙니다"),
-
+    PARTY_TASK_CANNOT_CANCEL(HttpStatus.BAD_REQUEST,"TASK-402","파티 미션의 완료한 태스크는 취소할 수 없습니다" ),
 
     // Member
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER-404", "멤버를 찾을 수 없습니다."),

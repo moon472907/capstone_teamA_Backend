@@ -223,23 +223,19 @@ public class MissionCalculateService {
             return null;
         }
 
-        List<PartyMember> activeMembers = mission.getParty().getPartyMembers().stream()
+        List<Integer> memberIds = mission.getParty().getPartyMembers().stream()
                 .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
+                .map(pm -> pm.getMember().getId())
                 .toList();
 
-        int totalMembers = activeMembers.size();
+        int totalMembers = memberIds.size();
 
-        long completedMembers = activeMembers.stream()
-                .filter(pm -> taskLogRepository.existsByTaskIdAndMemberIdAndDateAndStatus(
-                        task.getId(),
-                        pm.getMember().getId(),
-                        date,
-                        TaskStatus.COMPLETED
-                ))
-                .count();
+        Long completedMembers = taskLogRepository.countCompletedMembers(
+                task.getId(), date, TaskStatus.COMPLETED, memberIds);
 
         return TaskResponse.PartyCompletionDto.builder()
-                .completedMembers((int) completedMembers)
+                .completedMembers(completedMembers.intValue())
                 .totalMembers(totalMembers)
-                .build();    }
+                .build();
+    }
 }
