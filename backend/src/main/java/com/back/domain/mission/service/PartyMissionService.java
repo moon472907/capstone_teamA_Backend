@@ -19,6 +19,7 @@ import com.back.domain.party.party.dto.PartyRequestDto;
 import com.back.domain.party.party.entity.Party;
 import com.back.domain.party.party.service.PartyService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,8 +39,10 @@ public class PartyMissionService {
     private final PartyService partyService;
     private final MissionCalculateService calculateService;
     private final AiMissionGeneratorService aiGeneratorService;
-    private final TaskService taskService;
     private static final int MAX_MISSIONS_PER_USER = 5;
+
+    @Lazy
+    private final TaskService taskService;
 
     // 파티/개인 미션 생성
     public MissionResponse createPartyMission(Integer memberId, PartyMissionCreateRequest request) {

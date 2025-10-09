@@ -292,8 +292,6 @@ class MissionServiceTest {
 
         TaskCompleteRequest request = TaskCompleteRequest.builder()
                 .taskId(task.getId())
-                .status(TaskStatus.COMPLETED)
-                .date(today)
                 .build();
 
         TaskCompleteResponse response = taskService.completeTask(
@@ -321,8 +319,6 @@ class MissionServiceTest {
 
         TaskCompleteRequest request = TaskCompleteRequest.builder()
                 .taskId(task.getId())
-                .status(TaskStatus.COMPLETED)
-                .date(today)
                 .build();
 
         taskService.completeTask(testMember.getId(), request);
@@ -453,8 +449,6 @@ class MissionServiceTest {
         LocalDate tuesday = startDate.plusDays(1);
         TaskCompleteRequest request = TaskCompleteRequest.builder()
                 .taskId(mondayTask.getId())
-                .status(TaskStatus.COMPLETED)
-                .date(tuesday)
                 .build();
 
         assertThatThrownBy(() ->
@@ -472,8 +466,6 @@ class MissionServiceTest {
 
         TaskCompleteRequest request = TaskCompleteRequest.builder()
                 .taskId(task.getId())
-                .status(TaskStatus.COMPLETED)
-                .date(LocalDate.now())
                 .build();
 
         assertThatThrownBy(() ->
@@ -491,8 +483,6 @@ class MissionServiceTest {
 
         TaskCompleteRequest request = TaskCompleteRequest.builder()
                 .taskId(task.getId())
-                .status(TaskStatus.COMPLETED)
-                .date(LocalDate.now())
                 .build();
 
         assertThatThrownBy(() ->
@@ -520,9 +510,7 @@ class MissionServiceTest {
     @DisplayName("존재하지 않는 Task 완료 시 예외 발생")
     void completeTask_NotFound_ThrowsException() {
         TaskCompleteRequest request = TaskCompleteRequest.builder()
-                .taskId(99999)  // 존재하지 않는 ID
-                .status(TaskStatus.COMPLETED)
-                .date(LocalDate.now())
+                .taskId(99999)
                 .build();
 
         assertThatThrownBy(() ->

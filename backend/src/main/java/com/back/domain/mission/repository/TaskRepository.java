@@ -13,9 +13,7 @@ import java.util.List;
 
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Integer> {
-
     List<Task> findBySubGoalId(Integer subGoalId);
-
     @Query("""
     SELECT DISTINCT t FROM Task t
     JOIN FETCH t.subGoal sg
@@ -78,5 +76,4 @@ public interface TaskRepository extends JpaRepository<Task, Integer> {
             @Param("dayOfWeek") int dayOfWeek,
             PageRequest pageRequest
     );
-
 }

@@ -10,6 +10,7 @@ import com.back.domain.mission.repository.SubGoalRepository;
 import com.back.domain.party.party.entity.PartyMember;
 import com.back.domain.party.party.entity.PartyMemberStatus;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,11 +24,11 @@ import java.util.stream.Collectors;
 public class MissionService {
 
     private final MissionRepository missionRepository;
-    private final PartyMissionService partyMissionService;
     private final SubGoalRepository subGoalRepository;
     private final MissionCalculateService missionCalculateService;
     private static final int MAX_MISSIONS_PER_USER = 5;
-
+    private final ApplicationEventPublisher eventPublisher;
+    private final PartyMissionService partyMissionService;
     // 특정 회원의 전체 미션 조회 ( 진행 중과 완료로 분리)
     public MissionOverviewResponse getMissions(Integer memberId) {
         List<Mission> activeMissions = missionRepository.findByMemberIdAndIsCompletedWithParty(memberId, false);
@@ -144,7 +145,6 @@ public class MissionService {
 
         return partyMissionService.convertToDetailResponseAdmin(mission);
     }
-
 
 
 }
