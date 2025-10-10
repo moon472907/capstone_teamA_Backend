@@ -7,19 +7,24 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
+
 public record NotificationDto(
         @NotNull int id,
         @NotNull int memberID,
         @NotNull NotificationType type,
-        @NotBlank  String message,
+        @NotBlank String message,
         @NotNull Boolean isRead,
         @NotNull LocalDateTime createDate,
         @NotNull LocalDateTime modifyDate
 
 ) {
 
-    public NotificationDto(Notification notification)
+    public LocalDateTime getCreateDate()
     {
+        return createDate;
+    }
+    public NotificationDto(Notification notification) {
+
         this(
                 notification.getId(),
                 notification.getMemberId(),
@@ -30,4 +35,5 @@ public record NotificationDto(
                 notification.getModifyDate()
         );
     }
+
 }
