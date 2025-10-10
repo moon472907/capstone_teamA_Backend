@@ -76,11 +76,15 @@ public class BaseInitData {
 
     private void createTitle() {
         if(titleService.count() > 0) return;
-        //TODO 칭호 데이터 수정 필요
-        titleService.createTitle(new CreateTitleDto("칭호 1","1레벨 달성 칭호","설명1"));
-        titleService.createTitle(new CreateTitleDto("칭호 2","10레벨 달성 칭호","설명2"));
-        titleService.createTitle(new CreateTitleDto("칭호 3","30레벨 달성 칭호","설명3"));
-        titleService.createTitle(new CreateTitleDto("칭호 4","50레벨 달성 칭호","설명4"));
+
+        titleService.createTitle(new CreateTitleDto("새싹 다람쥐 \uD83C\uDF31","오늘의 미션 1회 달성","작은 새싹이 숲을 바꾸듯, 당신의 첫 걸음이 시작됐어요."));
+        titleService.createTitle(new CreateTitleDto("티끌모아 태산 \uD83C\uDFD4\uFE0F","오늘의 미션 10회 달성","작은 목표들이 모여 큰 성취를 이룬다."));
+        titleService.createTitle(new CreateTitleDto("근성 다람쥐 \uD83D\uDCAA","주차별 미션 5회 달성","한 주 한 주 쌓인 근성이, 결국 당신을 더 강하게 만든다."));
+        titleService.createTitle(new CreateTitleDto("람쥐 썬더 ⚡","미션 목표 3회 클리어","짧고 강한 도전, 번개처럼 완수해버리는 당신!"));
+        titleService.createTitle(new CreateTitleDto("미션 마스터 \uD83C\uDFAF","미션 목표 10회 클리어","목표는 깨기 위해 있는 것! 당신은 이미 달성 머신."));
+        titleService.createTitle(new CreateTitleDto("열정 다람쥐 \uD83D\uDD25","레벨 10 달성","숲을 가득 채운 당신의 열정, 이제 막 불이 붙었어요!"));
+        titleService.createTitle(new CreateTitleDto("에이스 다람쥐 \uD83C\uDFC5","레벨 30 달성","누가 봐도 인정할 만한 실력! 당신은 이미 숲의 에이스예요."));
+        titleService.createTitle(new CreateTitleDto("전설의 다람쥐 \uD83D\uDC51","레벨 50 달성","숲의 다람쥐들이 모두 존경하는 이름, 바로 당신이에요."));
     }
 
     private void createMember() {
