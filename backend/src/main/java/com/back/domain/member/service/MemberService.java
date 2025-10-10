@@ -5,6 +5,7 @@ import com.back.domain.item.entity.ItemType;
 import com.back.domain.item.repository.ItemRepository;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.entity.MemberGender;
+import com.back.domain.member.entity.MemberStatistic;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.title.entity.Title;
 import com.back.domain.title.repository.TitleRepository;
@@ -26,6 +27,7 @@ import java.util.Optional;
 public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
+    private final MemberStatisticService memberStatisticService;
     private final MemberRepository memberRepository;
     private final ItemRepository itemRepository;
     private final TitleRepository titleRepository;
@@ -39,6 +41,8 @@ public class MemberService {
 
         password = passwordEncoder.encode(password);
         Member member = new Member(email, password, name);
+        MemberStatistic memberStatistic = memberStatisticService.create(member);
+        member.setStatistic(memberStatistic);
 
         return memberRepository.save(member);
     }
@@ -87,6 +91,7 @@ public class MemberService {
 
     //회원 탈퇴
     public void delete(Member member) {
+        memberStatisticService.delete(member);
         memberRepository.delete(member);
     }
 
@@ -135,11 +140,20 @@ public class MemberService {
         member.setTitle(null);
     }
 
-    // *** Modify 메서드 ***
-    public void modifyPassword(Member member, String password) {
-        member.setPassword(passwordEncoder.encode(password));
+    // *** 미션 클리어 카운트 ***
+    public void clearDaily(Member member) {
+        member.getStatistic().clearDaily();
     }
 
+    public void clearWeekly(Member member) {
+        member.getStatistic().clearWeekly();
+    }
+
+    public void clearChallenge(Member member) {
+        member.getStatistic().clearChallenge();
+    }
+
+    // *** Modify 메서드 ***
     public void modifyProfile(Member member, String name, LocalDate age, MemberGender gender) {
         member.setName(name);
         member.setBirth(age);
@@ -151,6 +165,10 @@ public class MemberService {
         member.setXp(xp);
         member.setMoney(money);
     }
+
+//    public void modifyPassword(Member member, String password) {
+//        member.setPassword(passwordEncoder.encode(password));
+//    }
 
     // *** Find 메서드 ***
     public Optional<Member> findById(int id) {

@@ -326,4 +326,19 @@ public class ApiV1MemberController {
                         )
                 );
     }
+
+    @GetMapping("/me/statistic")
+    @Operation(summary = "회원 통계 확인", description = "클리어한 미션 카운트")
+    public ResponseEntity<ApiResponse<StatisticDto>> meStatistic() {
+        Member actor = rq.getActorFromDb();
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 사용자 통계 확인 (%s)".formatted(actor.getEmail()),
+                                new StatisticDto(actor.getStatistic())
+                        )
+                );
+    }
 }
