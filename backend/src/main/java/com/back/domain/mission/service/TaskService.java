@@ -16,6 +16,7 @@ import com.back.domain.mission.repository.SubGoalRepository;
 import com.back.domain.mission.repository.TaskLogRepository;
 import com.back.domain.mission.repository.TaskRepository;
 import com.back.domain.party.party.entity.PartyMemberStatus;
+import com.back.global.util.TimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class TaskService {
-
+    private final TimeProvider timeProvider;
     private final TaskRepository taskRepository;
     private final TaskLogRepository taskLogRepository;
     private final MissionCalculateService calculateService;
@@ -47,7 +48,7 @@ public class TaskService {
     public TaskCompleteResponse completeTask(Integer memberId, TaskCompleteRequest request) {
         // 1. Task 조회
         Task task = findTaskById(request.getTaskId());
-        LocalDate today = LocalDate.now();
+        LocalDate today = timeProvider.today();
         Mission mission = task.getSubGoal().getMission();
         SubGoal subGoal = task.getSubGoal();
 
@@ -109,7 +110,7 @@ public class TaskService {
     // 오늘의 태스크 조회
     @Transactional(readOnly = true)
     public List<TaskResponse> getTodayTasks(Integer memberId) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = timeProvider.today();
         int todayDayNum = today.getDayOfWeek().getValue();
 
         List<Task> tasks = taskRepository.findTodayTasks(memberId, today, todayDayNum);
@@ -142,7 +143,7 @@ public class TaskService {
         // Task 엔티티 내부에서 수정 가능 여부 검증
         task.updateContent(newTitle);
 
-        return toTaskResponse(task, memberId, LocalDate.now());
+        return toTaskResponse(task, memberId, timeProvider.today());
     }
 
     // 주차별 태스크 일괄 수정
@@ -161,7 +162,7 @@ public class TaskService {
             }
 
             task.updateContent(taskDto.getTitle());
-            responses.add(toTaskResponse(task, memberId, LocalDate.now()));
+            responses.add(toTaskResponse(task, memberId, timeProvider.today()));
         }
 
         return responses;

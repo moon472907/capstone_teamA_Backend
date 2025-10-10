@@ -8,6 +8,7 @@ import com.back.domain.mission.enums.TaskStatus;
 import com.back.domain.mission.repository.TaskLogRepository;
 import com.back.domain.party.party.entity.PartyMember;
 import com.back.domain.party.party.entity.PartyMemberStatus;
+import com.back.global.util.TimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,12 +21,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MissionCalculateService {
 
+    private final TimeProvider timeProvider;
     private final TaskLogRepository taskLogRepository;
 
     // 날짜 계산
     // 시작 날짜 계산
     public LocalDate calculateStartDate() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = timeProvider.today();
         DayOfWeek todayDayOfWeek = today.getDayOfWeek();
 
         if (todayDayOfWeek == DayOfWeek.MONDAY) {
@@ -47,7 +49,7 @@ public class MissionCalculateService {
 
     //현재 몇 주차인지 계산( 시작 전 0, 후 null)
     public Integer calculateCurrentWeek(Mission mission) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = timeProvider.today();
         if (today.isBefore(mission.getStartDate())) {
             return 0;
         }
@@ -70,7 +72,7 @@ public class MissionCalculateService {
 
     // 오늘 할 일인지 여부
     public boolean isToday(Task task) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = timeProvider.today();
         DayOfWeek todayDayOfWeek = today.getDayOfWeek();
         int todayDayNum = todayDayOfWeek.getValue();
 
@@ -216,7 +218,7 @@ public class MissionCalculateService {
     }
 
     //특정 테스크를 특정 날짜에 완료한 팀원 수 계산
-    public  TaskResponse.PartyCompletionDto  calculateTaskCompletion(Task task, LocalDate date) {
+    public TaskResponse.PartyCompletionDto calculateTaskCompletion(Task task, LocalDate date) {
         Mission mission = task.getSubGoal().getMission();
 
         if (!mission.isPartyMission()) {

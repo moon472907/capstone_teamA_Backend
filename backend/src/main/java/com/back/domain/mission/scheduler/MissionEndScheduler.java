@@ -5,6 +5,7 @@ import com.back.domain.mission.repository.MissionRepository;
 import com.back.domain.mission.service.MissionCompletionService;
 import com.back.domain.party.party.entity.PartyMember;
 import com.back.domain.party.party.entity.PartyMemberStatus;
+import com.back.global.util.TimeProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,7 +18,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class MissionEndScheduler {
-
+    private final TimeProvider timeProvider;
     private final MissionRepository missionRepository;
     private final MissionCompletionService missionCompletionService;
 
@@ -26,7 +27,7 @@ public class MissionEndScheduler {
     public void completeEndedMissions() {
         log.info("미션 종료 처리 스케줄러 시작");
 
-        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDate yesterday = timeProvider.today().minusDays(1);
         List<Mission> endedMissions = missionRepository.findByEndDate(yesterday);
 
         if (endedMissions.isEmpty()) {
