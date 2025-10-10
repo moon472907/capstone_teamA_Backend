@@ -52,6 +52,8 @@ public class Member extends BaseEntity {
     private MemberRole role = MemberRole.USER;
     private String apiKey = null;
     private String socialAccessToken = null;
+    @OneToOne(cascade = CascadeType.ALL)
+    private MemberStatistic statistic;
 
     //생성자(회원 가입)
     public Member(String email, String password, String name) {

@@ -56,9 +56,9 @@ public class ApiV1TitleControllerTest {
     @DisplayName("READ - 전체 칭호 조회 성공")
     void findAllItems_Success() {
 
-        CreateTitleDto createTitleDto1 = new CreateTitleDto("칭호 테스트 1");
-        CreateTitleDto createTitleDto2 = new CreateTitleDto("칭호 테스트 2");
-        CreateTitleDto createTitleDto3 = new CreateTitleDto("칭호 테스트 3");
+        CreateTitleDto createTitleDto1 = new CreateTitleDto("칭호 테스트 1" ,"획득 조건 1", "설명 1") ;
+        CreateTitleDto createTitleDto2 = new CreateTitleDto("칭호 테스트 2" ,"획득 조건 2", "설명 2");
+        CreateTitleDto createTitleDto3 = new CreateTitleDto("칭호 테스트 3" ,"획득 조건 3", "설명 3");
 
         HttpEntity<CreateTitleDto> request1 = new HttpEntity<>(createTitleDto1, headers);
         restTemplate.exchange(baseUrl, HttpMethod.POST, request1, String.class);
@@ -83,7 +83,7 @@ public class ApiV1TitleControllerTest {
 
         Title title = titleRepository.findAll().getLast();
 
-        CreateTitleDto createTitleDto1 = new CreateTitleDto("칭호 테스트 1");
+        CreateTitleDto createTitleDto1 = new CreateTitleDto("칭호 테스트 1","획득 조건 1", "설명 1");
         HttpEntity<CreateTitleDto> request1 = new HttpEntity<>(createTitleDto1, headers);
         restTemplate.exchange(baseUrl, HttpMethod.POST, request1, String.class);
         ResponseEntity<String> response = restTemplate.getForEntity(baseUrl + "/" + (title.getId() + 1), String.class);
@@ -98,13 +98,13 @@ public class ApiV1TitleControllerTest {
     void createTitle_Success() {
 
         int titleId = titleRepository.findAll().getLast().getId() + 1;
-        CreateTitleDto createTitleDto = new CreateTitleDto("칭호 테스트 1");
+        CreateTitleDto createTitleDto = new CreateTitleDto("칭호 테스트 1" ,"획득 조건 1", "설명 1");
         HttpEntity<CreateTitleDto> request = new HttpEntity<>(createTitleDto, headers);
         ResponseEntity<String> response = restTemplate.postForEntity(baseUrl, request, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).contains("칭호 테스트 1");
 
-        TitleDto titleDto = new TitleDto(titleId, "칭호 수정 테스트 1");
+        TitleDto titleDto = new TitleDto(titleId, "칭호 수정 테스트 1" ,"획득 조건 1", "설명 1");
         HttpEntity<TitleDto> request1 = new HttpEntity<>(titleDto, headers);
         ResponseEntity<String> response1 = restTemplate.exchange(baseUrl + "/" + titleId, HttpMethod.PUT, request1, String.class);
 
@@ -116,7 +116,7 @@ public class ApiV1TitleControllerTest {
     @DisplayName("DELETE - 칭호 삭제 성공")
     void UpdateTitle_Success() {
 
-        CreateTitleDto createTitleDto = new CreateTitleDto("칭호 테스트 1");
+        CreateTitleDto createTitleDto = new CreateTitleDto("칭호 테스트 1" ,"획득 조건 1", "설명 1");
         HttpEntity<CreateTitleDto> request = new HttpEntity<>(createTitleDto, headers);
 
         ResponseEntity<String> response = restTemplate.postForEntity(baseUrl, request, String.class);

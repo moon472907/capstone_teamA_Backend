@@ -9,6 +9,7 @@ import com.back.domain.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -34,7 +35,9 @@ private final NotificationRepository notificationRepository ;
     }
 
     public List<NotificationDto> findAll() {
-        return notificationRepository.findAll().stream().map(NotificationDto::new).toList();
+        return notificationRepository.findAll().stream().map(NotificationDto::new)
+                .sorted(Comparator.comparing(NotificationDto::getCreateDate).reversed())
+                .toList();
     }
 
     public void deleteNotification(int id) {
@@ -64,6 +67,7 @@ private final NotificationRepository notificationRepository ;
         return notificationRepository.findByMemberId(userId)
                 .stream()
                 .map(NotificationDto::new) // 생성자 참조
+                .sorted(Comparator.comparing(NotificationDto::getCreateDate).reversed())
                 .toList();
 
     }
@@ -72,6 +76,7 @@ private final NotificationRepository notificationRepository ;
         return notificationRepository.findByMemberIdAndIsRead(userId, isRead)
                 .stream()
                 .map(NotificationDto::new) // 생성자 참조
+                .sorted(Comparator.comparing(NotificationDto::getCreateDate).reversed())
                 .toList();
     }
 

@@ -19,13 +19,12 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Profile("!prod")
+
 @Configuration
 @RequiredArgsConstructor
 public class BaseInitData {
@@ -61,27 +60,27 @@ public class BaseInitData {
     private void createItem() {
         if(itemService.count() > 0) return;
         //TODO 아이템 데이터 수정,추가 필요
-        itemService.createItem(new CreateItemDto("아바타1", ItemType.AVATAR));
-        itemService.createItem(new CreateItemDto("아바타2", ItemType.AVATAR));
-        itemService.createItem(new CreateItemDto("아바타3", ItemType.AVATAR));
-        itemService.createItem(new CreateItemDto("가구1", ItemType.FURNITURE));
-        itemService.createItem(new CreateItemDto("가구2", ItemType.FURNITURE));
-        itemService.createItem(new CreateItemDto("가구3", ItemType.FURNITURE));
-        itemService.createItem(new CreateItemDto("의상1", ItemType.CLOTHE));
-        itemService.createItem(new CreateItemDto("의상2", ItemType.CLOTHE));
-        itemService.createItem(new CreateItemDto("의상3", ItemType.CLOTHE));
-        itemService.createItem(new CreateItemDto("배경1", ItemType.BACKGROUND));
-        itemService.createItem(new CreateItemDto("배경2", ItemType.BACKGROUND));
-        itemService.createItem(new CreateItemDto("배경3", ItemType.BACKGROUND));
+        itemService.createItem(new CreateItemDto("아바타1", ItemType.SPECIAL));
+
+        itemService.createItem(new CreateItemDto("아바타2", ItemType.SPECIAL));
+
+        itemService.createItem(new CreateItemDto("아바타3", ItemType.SPECIAL));
+
+        itemService.createItem(new CreateItemDto("아바타4", ItemType.SPECIAL));
+
+        itemService.createItem(new CreateItemDto("아바타5", ItemType.SPECIAL));
+
+        itemService.createItem(new CreateItemDto("아바타6", ItemType.SPECIAL));
+
     }
 
     private void createTitle() {
         if(titleService.count() > 0) return;
         //TODO 칭호 데이터 수정 필요
-        titleService.createTitle(new CreateTitleDto("칭호 1","1레벨 달성 칭호"));
-        titleService.createTitle(new CreateTitleDto("칭호 2","10레벨 달성 칭호"));
-        titleService.createTitle(new CreateTitleDto("칭호 3","30레벨 달성 칭호"));
-        titleService.createTitle(new CreateTitleDto("칭호 4","50레벨 달성 칭호"));
+        titleService.createTitle(new CreateTitleDto("칭호 1","1레벨 달성 칭호","설명1"));
+        titleService.createTitle(new CreateTitleDto("칭호 2","10레벨 달성 칭호","설명2"));
+        titleService.createTitle(new CreateTitleDto("칭호 3","30레벨 달성 칭호","설명3"));
+        titleService.createTitle(new CreateTitleDto("칭호 4","50레벨 달성 칭호","설명4"));
     }
 
     private void createMember() {

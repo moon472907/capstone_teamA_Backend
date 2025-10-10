@@ -58,11 +58,11 @@ public class ApiV1ItemControllerTest {
     void findAllItems_Success() {
 
         CreateItemDto createItemDto1 = new CreateItemDto(
-                "테스트1", ItemType.AVATAR);
+                "테스트1", ItemType.SPECIAL);
         CreateItemDto createItemDto2 = new CreateItemDto(
-                "테스트2", ItemType.FURNITURE);
+                "테스트2", ItemType.SPORTS);
         CreateItemDto createItemDto3 = new CreateItemDto(
-                "테스트3", ItemType.FURNITURE);
+                "테스트3", ItemType.SPORTS);
 
         HttpEntity<CreateItemDto> request1 = new HttpEntity<>(createItemDto1, headers);
         restTemplate.exchange(baseUrl, HttpMethod.POST, request1, String.class);
@@ -94,13 +94,14 @@ public class ApiV1ItemControllerTest {
             num = itemList.getLast().getId();
         }
         CreateItemDto createItemDto1 = new CreateItemDto(
-                "테스트1", ItemType.AVATAR);
+                "테스트1", ItemType.SPECIAL);
         CreateItemDto createItemDto2 = new CreateItemDto(
-                "테스트2", ItemType.FURNITURE);
+                "테스트2", ItemType.SPORTS);
         CreateItemDto createItemDto3 = new CreateItemDto(
-                "테스트3", ItemType.FURNITURE);
+                "테스트3", ItemType.SPORTS);
 
         HttpEntity<CreateItemDto> request1 = new HttpEntity<>(createItemDto1, headers);
+
         restTemplate.exchange(baseUrl, HttpMethod.POST, request1, String.class);
 
         HttpEntity<CreateItemDto> request2 = new HttpEntity<>(createItemDto2, headers);
@@ -113,19 +114,19 @@ public class ApiV1ItemControllerTest {
         ResponseEntity<String> response1 = restTemplate.getForEntity(baseUrl + "/" + num, String.class);
         assertThat(response1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response1.getBody()).contains("테스트1");
-        assertThat(response1.getBody()).contains(ItemType.AVATAR.toString());
+        assertThat(response1.getBody()).contains(ItemType.SPECIAL.toString());
 
         num++;
         ResponseEntity<String> response2 = restTemplate.getForEntity(baseUrl + "/" + num, String.class);
         assertThat(response2.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response2.getBody()).contains("테스트2");
-        assertThat(response2.getBody()).contains(ItemType.FURNITURE.toString());
+        assertThat(response2.getBody()).contains(ItemType.SPORTS.toString());
 
         num++;
         ResponseEntity<String> response3 = restTemplate.getForEntity(baseUrl + "/" + num, String.class);
         assertThat(response3.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response3.getBody()).contains("테스트3");
-        assertThat(response3.getBody()).contains(ItemType.FURNITURE.toString());
+        assertThat(response3.getBody()).contains(ItemType.SPORTS.toString());
     }
 
 
@@ -134,11 +135,11 @@ public class ApiV1ItemControllerTest {
     void findItemsByItemType_Success() {
 
         CreateItemDto createItemDto1 = new CreateItemDto(
-                "테스트1", ItemType.AVATAR);
+                "테스트1", ItemType.SPECIAL);
         CreateItemDto createItemDto2 = new CreateItemDto(
-                "테스트2", ItemType.FURNITURE);
+                "테스트2", ItemType.SPORTS);
         CreateItemDto createItemDto3 = new CreateItemDto(
-                "테스트3", ItemType.FURNITURE);
+                "테스트3", ItemType.SPORTS);
 
 
         HttpEntity<CreateItemDto> request1 = new HttpEntity<>(createItemDto1, headers);
@@ -151,21 +152,21 @@ public class ApiV1ItemControllerTest {
         restTemplate.exchange(baseUrl, HttpMethod.POST, request3, String.class);
 
 
-        ResponseEntity<String> response1 = restTemplate.getForEntity(baseUrl + "/ItemType/AVATAR", String.class);
+        ResponseEntity<String> response1 = restTemplate.getForEntity(baseUrl + "/ItemType/SPECIAL", String.class);
         assertThat(response1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response1.getBody()).contains("테스트1");
-        assertThat(response1.getBody()).contains(ItemType.AVATAR.toString());
-        assertThat(response1.getBody()).doesNotContain(ItemType.FURNITURE.toString());
-        assertThat(response1.getBody()).doesNotContain(ItemType.CLOTHE.toString());
+        assertThat(response1.getBody()).contains(ItemType.SPECIAL.toString());
+        assertThat(response1.getBody()).doesNotContain(ItemType.SPORTS.toString());
+        assertThat(response1.getBody()).doesNotContain(ItemType.FESTIVAL.toString());
 
 
-        ResponseEntity<String> response2 = restTemplate.getForEntity(baseUrl + "/ItemType/FURNITURE", String.class);
+        ResponseEntity<String> response2 = restTemplate.getForEntity(baseUrl + "/ItemType/SPORTS", String.class);
         assertThat(response2.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response2.getBody()).contains("테스트2");
         assertThat(response2.getBody()).contains("테스트3");
-        assertThat(response2.getBody()).contains(ItemType.FURNITURE.toString());
-        assertThat(response2.getBody()).doesNotContain(ItemType.AVATAR.toString());
-        assertThat(response2.getBody()).doesNotContain(ItemType.CLOTHE.toString());
+        assertThat(response2.getBody()).contains(ItemType.SPORTS.toString());
+        assertThat(response2.getBody()).doesNotContain(ItemType.SPECIAL.toString());
+        assertThat(response2.getBody()).doesNotContain(ItemType.FESTIVAL.toString());
 
 
     }
@@ -180,11 +181,11 @@ public class ApiV1ItemControllerTest {
             num = itemList.getLast().getId();
         }
         CreateItemDto createItemDto1 = new CreateItemDto(
-                "테스트1", ItemType.AVATAR);
+                "테스트1", ItemType.SPECIAL);
         CreateItemDto createItemDto2 = new CreateItemDto(
-                "테스트2", ItemType.FURNITURE);
+                "테스트2", ItemType.SPORTS);
         CreateItemDto createItemDto3 = new CreateItemDto(
-                "테스트3", ItemType.FURNITURE);
+                "테스트3", ItemType.SPORTS);
 
         HttpEntity<CreateItemDto> request1 = new HttpEntity<>(createItemDto1, headers);
         restTemplate.exchange(baseUrl, HttpMethod.POST, request1, String.class);
@@ -197,25 +198,25 @@ public class ApiV1ItemControllerTest {
 
         num++;
         CreateItemDto updateDto1 = new CreateItemDto(
-                "업데이트1", ItemType.CLOTHE);
+                "업데이트1", ItemType.FESTIVAL);
         HttpEntity<CreateItemDto> updateRequest1 = new HttpEntity<>(updateDto1, headers);
         ResponseEntity<String> response1 = restTemplate.exchange(baseUrl + "/" + num, HttpMethod.PUT, updateRequest1, String.class);
         assertThat(response1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response1.getBody()).contains("업데이트1");
-        assertThat(response1.getBody()).contains(ItemType.CLOTHE.toString());
+        assertThat(response1.getBody()).contains(ItemType.FESTIVAL.toString());
         assertThat(response1.getBody()).doesNotContain("테스트1");
-        assertThat(response1.getBody()).doesNotContain(ItemType.AVATAR.toString());
+        assertThat(response1.getBody()).doesNotContain(ItemType.SPECIAL.toString());
 
         num++;
         CreateItemDto updateDto2 = new CreateItemDto(
-                "업데이트2", ItemType.CLOTHE);
+                "업데이트2", ItemType.FESTIVAL);
         HttpEntity<CreateItemDto> updateRequest2 = new HttpEntity<>(updateDto2, headers);
         ResponseEntity<String> response2 = restTemplate.exchange(baseUrl + "/" + num, HttpMethod.PUT, updateRequest2, String.class);
         assertThat(response2.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response2.getBody()).contains("업데이트2");
-        assertThat(response2.getBody()).contains(ItemType.CLOTHE.toString());
+        assertThat(response2.getBody()).contains(ItemType.FESTIVAL.toString());
         assertThat(response2.getBody()).doesNotContain("테스트2");
-        assertThat(response2.getBody()).doesNotContain(ItemType.FURNITURE.toString());
+        assertThat(response2.getBody()).doesNotContain(ItemType.SPORTS.toString());
     }
 
     @Test
@@ -225,11 +226,11 @@ public class ApiV1ItemControllerTest {
 
 
         CreateItemDto createItemDto1 = new CreateItemDto(
-                "테스트1", ItemType.AVATAR);
+                "테스트1", ItemType.SPECIAL);
         CreateItemDto createItemDto2 = new CreateItemDto(
-                "테스트2", ItemType.FURNITURE);
+                "테스트2", ItemType.SPORTS);
         CreateItemDto createItemDto3 = new CreateItemDto(
-                "테스트3", ItemType.FURNITURE);
+                "테스트3", ItemType.SPORTS);
 
         List<Item> itemList1 = itemRepository.findAll();
 
@@ -253,7 +254,7 @@ public class ApiV1ItemControllerTest {
         ResponseEntity<String> response1 = restTemplate.getForEntity(baseUrl + "/" + num, String.class);
         assertThat(response1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response1.getBody()).contains("테스트1");
-        assertThat(response1.getBody()).contains(ItemType.AVATAR.toString());
+        assertThat(response1.getBody()).contains(ItemType.SPECIAL.toString());
 
 
         restTemplate.delete(baseUrl + "/" + num);
