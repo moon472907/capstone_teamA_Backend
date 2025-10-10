@@ -20,7 +20,8 @@ public class TitleService {
     {
         return new TitleDto(titleRepository.save(new Title(
                 createTitleDto.content(),
-                createTitleDto.achiveRequire()
+                createTitleDto.achiveRequire(),
+                createTitleDto.caption()
         )));
     }
 

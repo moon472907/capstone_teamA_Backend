@@ -13,11 +13,13 @@ import lombok.Setter;
 public class Title extends BaseEntity {
     String content;
     String achieveRequire;
+    String caption;
 
 
-    public Title(String content , String achieveRequire) {
+    public Title(String content , String achieveRequire  ,  String caption) {
         this.content = content;
         this.achieveRequire = achieveRequire;
+        this.caption = caption;
     }
 
 }
