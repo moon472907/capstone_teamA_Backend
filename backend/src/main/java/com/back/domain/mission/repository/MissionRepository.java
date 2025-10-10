@@ -52,4 +52,19 @@ public interface MissionRepository extends JpaRepository<Mission, Integer> {
         ORDER BY m.createDate DESC
         """)
     List<Mission> findAllWithParty();
+
+    @Query("""
+        SELECT DISTINCT m FROM Mission m
+        LEFT JOIN FETCH m.party p
+        LEFT JOIN PartyMember pm ON pm.party.id = p.id
+        WHERE (m.member.id = :memberId 
+               OR (pm.member.id = :memberId 
+                   AND pm.status = 'ACCEPTED'))
+        AND m.isCompleted = :isCompleted
+        ORDER BY m.createDate DESC
+        """)
+    List<Mission> findMyMissionsWithParty(
+            @Param("memberId") Integer memberId,
+            @Param("isCompleted") boolean isCompleted
+    );
 }

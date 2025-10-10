@@ -31,9 +31,10 @@ public class MissionService {
     private final PartyMissionService partyMissionService;
     // 특정 회원의 전체 미션 조회 ( 진행 중과 완료로 분리)
     public MissionOverviewResponse getMissions(Integer memberId) {
-        List<Mission> activeMissions = missionRepository.findByMemberIdAndIsCompletedWithParty(memberId, false);
-        List<Mission> completedMissions = missionRepository.findByMemberIdAndIsCompletedWithParty(memberId, true);
-
+        List<Mission> activeMissions = missionRepository
+                .findMyMissionsWithParty(memberId, false);
+        List<Mission> completedMissions = missionRepository
+                .findMyMissionsWithParty(memberId, true);
         List<MissionResponse> activeResponses = activeMissions.stream()
                 .map(m -> partyMissionService.convertToSimpleResponse(m, memberId))
                 .collect(Collectors.toList());

@@ -3,6 +3,7 @@ package com.back.domain.mission.scheduler;
 import com.back.domain.mission.entity.Task;
 import com.back.domain.mission.repository.TaskRepository;
 import com.back.domain.mission.service.TaskAutoFailService;
+import com.back.global.util.TimeProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -16,7 +17,7 @@ import java.time.LocalDate;
 @Component
 @RequiredArgsConstructor
 public class TaskAutoFailScheduler {
-
+    private final TimeProvider timeProvider;
     private final TaskRepository taskRepository;
     private final TaskAutoFailService taskAutoFailService;
 
@@ -25,7 +26,7 @@ public class TaskAutoFailScheduler {
     public void autoFailExpiredTasks() {
         log.info("자동 실패 처리 스케줄러 시작");
 
-        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDate yesterday =  timeProvider.today().minusDays(1);
         int yesterdayDayOfWeek = yesterday.getDayOfWeek().getValue();
 
         log.info("처리 대상 날짜: {}, 요일: {}", yesterday, yesterdayDayOfWeek);
