@@ -1,5 +1,6 @@
 package com.back.global.exception;
 
+import com.back.domain.mission.exception.MissionException;
 import com.back.global.common.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -48,5 +49,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus())
                 .body(response);
+    }
+
+    @ExceptionHandler(MissionException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePetException(MissionException e) {
+        log.info(e.getMessage(), e);
+        ApiResponse<Void> response = ApiResponse.fail(
+                e.getCode(),
+                e.getMessage()
+        );
+        return ResponseEntity.status(e.getHttpStatus()).body(response);
     }
 }
