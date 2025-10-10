@@ -157,23 +157,23 @@ public class ApiV1MemberController {
                 );
     }
 
-    public record PasswordReqDto(String password) {}
-    @PutMapping("/modify/password")
-    @Operation(summary = "[Test] 비밀번호 변경", description = "비밀번호 변경")
-    public ResponseEntity<ApiResponse<Void>> modifyPassword(
-            @Valid @RequestBody PasswordReqDto reqBody
-    ) {
-        Member actor = rq.getActorFromDb();
-        memberService.modifyPassword(actor, reqBody.password());
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(new ApiResponse<>(
-                                "200",
-                                "[Member] Success: 비밀번호 변경"
-                        )
-                );
-    }
+//    public record PasswordReqDto(String password) {}
+//    @PutMapping("/modify/password")
+//    @Operation(summary = "[Test] 비밀번호 변경", description = "비밀번호 변경")
+//    public ResponseEntity<ApiResponse<Void>> modifyPassword(
+//            @Valid @RequestBody PasswordReqDto reqBody
+//    ) {
+//        Member actor = rq.getActorFromDb();
+//        memberService.modifyPassword(actor, reqBody.password());
+//
+//        return ResponseEntity
+//                .status(HttpStatus.OK)
+//                .body(new ApiResponse<>(
+//                                "200",
+//                                "[Member] Success: 비밀번호 변경"
+//                        )
+//                );
+//    }
 
     @GetMapping("/me")
     @Operation(summary = "회원 정보 확인", description = "현재 로그인된 사용자 정보 확인")
