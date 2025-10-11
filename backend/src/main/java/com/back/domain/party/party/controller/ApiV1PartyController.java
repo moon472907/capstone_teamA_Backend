@@ -2,7 +2,6 @@ package com.back.domain.party.party.controller;
 
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.service.MemberService;
-import com.back.domain.mission.entity.Mission;
 import com.back.domain.mission.enums.MissionCategory;
 import com.back.domain.party.party.dto.*;
 import com.back.domain.party.party.entity.Party;
@@ -145,14 +144,8 @@ public class ApiV1PartyController {
     @GetMapping("/{partyId}")
     @Operation(summary = "파티 상세 조회", description = "특정 파티의 상세 정보를 조회하고 조회수를 1 증가시키는 API (미션ID 포함)")
     public ResponseEntity<ApiResponse<PartyDto>> getPartyDetails(@PathVariable Integer partyId) {
-        // 1. 파티 정보 조회 및 조회수 증가
-        Party party = partyService.getPartyDetails(partyId);
 
-        // 2. 파티에 연결된 미션 정보 조회 (Service에 추가된 헬퍼 메서드 사용)
-        Mission mission = partyService.getMissionByPartyId(partyId);
-
-        // 3. Party와 Mission 정보를 모두 DTO에 담아 반환
-        PartyDto partyDto = new PartyDto(party, mission);
+        PartyDto partyDto = partyService.getPartyDetails(partyId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)

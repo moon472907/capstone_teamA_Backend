@@ -12,6 +12,14 @@ public class PartyMemberDto {
     private Integer id;
     private String email;
     private String name;
+    private String status;
+
+    public PartyMemberDto(Member member, String missionStatus) {
+        this.id = member.getId();
+        this.email = member.getEmail();
+        this.name = member.getName();
+        this.status = missionStatus;
+    }
 
     public PartyMemberDto(Member member) {
         this.id = member.getId();

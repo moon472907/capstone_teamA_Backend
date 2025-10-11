@@ -29,6 +29,8 @@ public class PartyDto {
     private LocalDate endDate;
     private LocalDate createDate;
     private Integer views;
+    private String missionTitle;
+    private Boolean missionIsCompleted;
 
 
     public PartyDto(Party party, Mission mission) {
@@ -53,11 +55,24 @@ public class PartyDto {
             this.category = mission.getCategory();
             this.startDate = mission.getStartDate();
             this.endDate = mission.getEndDate();
+            this.missionTitle = mission.getTitle();
+            this.missionIsCompleted = mission.isCompleted();
+        } else {
+            this.category = null;
+            this.startDate = null;
+            this.endDate = null;
+            this.missionTitle = null;
+            this.missionIsCompleted = null;
         }
 
         this.members = party.getPartyMembers().stream()
                 .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
-                .map(partyMember -> new PartyMemberDto(partyMember.getMember()))
+                .map(partyMember -> {
+                    return new PartyMemberDto(
+                            partyMember.getMember(),
+                            null
+                    );
+                })
                 .collect(Collectors.toList());
     }
 
@@ -79,10 +94,12 @@ public class PartyDto {
         this.category = null;
         this.startDate = null;
         this.endDate = null;
+        this.missionTitle = null;
+        this.missionIsCompleted = null;
 
         this.members = party.getPartyMembers().stream()
                 .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
-                .map(partyMember -> new PartyMemberDto(partyMember.getMember()))
+                .map(partyMember -> new PartyMemberDto(partyMember.getMember(), null))
                 .collect(Collectors.toList());
     }
 

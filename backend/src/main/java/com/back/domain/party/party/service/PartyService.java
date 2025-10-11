@@ -4,8 +4,10 @@ import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.mission.entity.Mission;
 import com.back.domain.mission.enums.MissionCategory;
+import com.back.domain.mission.repository.MissionCompletionLogRepository;
 import com.back.domain.mission.repository.MissionRepository;
 import com.back.domain.party.party.dto.PartyDto;
+import com.back.domain.party.party.dto.PartyMemberDto;
 import com.back.domain.party.party.dto.PartyRequestDto;
 import com.back.domain.party.party.dto.PartyUpdateRequestDto;
 import com.back.domain.party.party.entity.Party;
@@ -41,6 +43,8 @@ public class PartyService {
     private final MemberRepository memberRepository;
     private final PartyMemberRepository partyMemberRepository;
     private final MissionRepository missionRepository;
+    private final MissionCompletionLogRepository completionLogRepository;
+
 
     public Page<PartyDto> getPublicPartyList(
             Pageable pageable,
@@ -210,23 +214,44 @@ public class PartyService {
         partyRepository.delete(party);
     }
 
+    private String getMemberMissionStatus(Integer missionId, Integer memberId) {
+        boolean isCompleted = completionLogRepository.existsByMissionIdAndMemberId(missionId, memberId);
+        return isCompleted ? "COMPLETED" : "PROGRESS";
+    }
+
+    // 파티 상세 조회 (캐시 적용)
     @Cacheable(value = "partyDetails", key = "#partyId")
-    @Transactional
-    public Party getPartyDetails(Integer partyId) {
+    @Transactional(readOnly = true)
+    public PartyDto getPartyDetails(Integer partyId) {
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "파티를 찾을 수 없습니다."));
 
         party.incrementViews();
 
-        return party;
-    }
+        Mission mission = missionRepository.findByPartyId(partyId).stream().findFirst().orElse(null);
 
-    @Cacheable(value = "missionByParty", key = "#partyId")
-    @Transactional(readOnly = true)
-    public Mission getMissionByPartyId(Integer partyId) {
-        return missionRepository.findByPartyId(partyId).stream()
-                .findFirst()
-                .orElse(null);
+        // 파티원 DTO 리스트 생성 로직
+        List<PartyMemberDto> memberDtos = party.getPartyMembers().stream()
+                .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
+                .map(partyMember -> {
+                    String memberMissionStatus = null;
+                    if (mission != null) {
+                        memberMissionStatus = getMemberMissionStatus( // 상태 계산 로직 사용
+                                mission.getId(),
+                                partyMember.getMember().getId()
+                        );
+                    }
+                    return new PartyMemberDto(
+                            partyMember.getMember(),
+                            memberMissionStatus
+                    );
+                })
+                .collect(Collectors.toList());
+
+        PartyDto dto = new PartyDto(party, mission);
+        dto.setMembers(memberDtos);
+
+        return dto;
     }
 
     @Transactional
