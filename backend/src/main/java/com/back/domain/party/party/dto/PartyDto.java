@@ -39,7 +39,7 @@ public class PartyDto {
         this.leaderId = party.getLeader().getId();
 
         this.currentMembers = (int) party.getPartyMembers().stream()
-                .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
+                .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED || pm.getStatus() == PartyMemberStatus.COMPLETED)
                 .count();
 
         this.maxMembers = party.getMaxMembers();
@@ -66,11 +66,11 @@ public class PartyDto {
         }
 
         this.members = party.getPartyMembers().stream()
-                .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
+                .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED || pm.getStatus() == PartyMemberStatus.COMPLETED)
                 .map(partyMember -> {
                     return new PartyMemberDto(
                             partyMember.getMember(),
-                            null
+                            partyMember.getStatus().name()
                     );
                 })
                 .collect(Collectors.toList());
@@ -82,7 +82,7 @@ public class PartyDto {
         this.leaderId = party.getLeader().getId();
 
         this.currentMembers = (int) party.getPartyMembers().stream()
-                .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
+                .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED || pm.getStatus() == PartyMemberStatus.COMPLETED)
                 .count();
 
         this.maxMembers = party.getMaxMembers();
@@ -98,8 +98,8 @@ public class PartyDto {
         this.missionIsCompleted = null;
 
         this.members = party.getPartyMembers().stream()
-                .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
-                .map(partyMember -> new PartyMemberDto(partyMember.getMember(), null))
+                .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED || pm.getStatus() == PartyMemberStatus.COMPLETED)
+                .map(partyMember -> new PartyMemberDto(partyMember.getMember(), partyMember.getStatus().name()))
                 .collect(Collectors.toList());
     }
 
