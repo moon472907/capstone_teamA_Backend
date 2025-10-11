@@ -2,15 +2,14 @@ package com.back.domain.mission.event;
 
 import lombok.Builder;
 import lombok.Getter;
-
 import java.time.LocalDate;
 
 @Getter
 @Builder
-public class MissionCompletedEvent {
-    private Integer missionId;
+public class WeeklyCompletedEvent {
     private Integer memberId;
-    private boolean  PartyMission;
-    private Integer partyId;
+    private Integer subGoalId;
+    private Integer missionId;
+    private Integer weekNum;
     private LocalDate completedDate;
 }
