@@ -1,4 +1,4 @@
-dockerfile# 첫 번째 스테이지: 빌드 스테이지
+#dockerfile# 첫 번째 스테이지: 빌드 스테이지
 FROM gradle:jdk-21-and-23-graal-jammy AS builder
 
 ENV LANG=C.UTF-8 \
