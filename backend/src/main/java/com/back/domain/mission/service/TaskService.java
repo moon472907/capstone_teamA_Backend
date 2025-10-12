@@ -39,7 +39,7 @@ public class TaskService {
     private final MissionCalculateService calculateService;
     private final SubGoalRepository subGoalRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final MissionCompletionService missionCompletionService;
+    private final CompletionCheckService completionCheckService;
 
     // 태스크 완료/취소 처리 (체크박스 토글)
     // 당일만 처리 가능
@@ -67,11 +67,6 @@ public class TaskService {
             taskLog = existingLog.get();
             TaskStatus currentStatus = taskLog.getStatus();
 
-            // 파티 미션: 완료 후 취소 불가
-            if (mission.isPartyMission() && currentStatus == TaskStatus.COMPLETED) {
-                throw new MissionException(MissionErrorCode.PARTY_TASK_CANNOT_CANCEL);
-            }
-
             // 토글 로직
             if (currentStatus == TaskStatus.COMPLETED) {
                 finalStatus = TaskStatus.CANCELLED;  // 완료 → 취소
@@ -97,11 +92,10 @@ public class TaskService {
 
         // 5. 이벤트 발행 (COMPLETED일 때만 - 보상 처리용)
         if (finalStatus == TaskStatus.COMPLETED) {
-            publishTaskCompletedEvent(memberId, task, mission, subGoal, today, finalStatus);
+            completionCheckService.checkAllCompletions(memberId, task, today);
+        } else if (finalStatus == TaskStatus.CANCELLED) {
+            completionCheckService.recheckAfterCancellation(memberId, task, today);
         }
-
-        // 6. 미션 완료 체크
-        missionCompletionService.checkAndCompleteMission(mission.getId(), memberId);
 
         // 7. 응답 생성
         return buildTaskCompleteResponse(task, mission, memberId, today, finalStatus);

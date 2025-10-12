@@ -57,7 +57,7 @@ public class MissionCompletionService {
         eventPublisher.publishEvent(MissionCompletedEvent.builder()
                 .missionId(mission.getId())
                 .memberId(memberId)
-                .isPartyMission(mission.isPartyMission())
+                .PartyMission(mission.isPartyMission())
                 .partyId(mission.isPartyMission() ? mission.getParty().getId() : null)
                 .completedDate(completedDate)
                 .build());
