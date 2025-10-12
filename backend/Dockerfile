@@ -1,5 +1,9 @@
-# 첫 번째 스테이지: 빌드 스테이지
+dockerfile# 첫 번째 스테이지: 빌드 스테이지
 FROM gradle:jdk-21-and-23-graal-jammy AS builder
+
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    LANGUAGE=C.UTF-8
 
 # 작업 디렉토리 설정
 WORKDIR /app
@@ -20,6 +24,11 @@ RUN gradle build --no-daemon -x test
 
 # 두 번째 스테이지: 실행 스테이지
 FROM container-registry.oracle.com/graalvm/jdk:21
+
+# 런타임 로케일 설정 추가
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    LANGUAGE=C.UTF-8
 
 # 작업 디렉토리 설정
 WORKDIR /app
