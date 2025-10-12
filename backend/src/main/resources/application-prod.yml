@@ -40,5 +40,9 @@ custom:
     frontUrl: "${custom.prod.frontUrl}"
     backUrl: "${custom.prod.backUrl}"
     name: nutree
+app:
+  image:
+    base-url: "http://api.nutree.noredsun.com/images/"
+
 
 

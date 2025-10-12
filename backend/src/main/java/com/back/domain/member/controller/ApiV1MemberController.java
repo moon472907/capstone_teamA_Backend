@@ -93,6 +93,7 @@ public class ApiV1MemberController {
                                 "200",
                                 "[Member] Success: 가입 완료 검사",
                                 new ValidResDto(valid)
+                        
                         )
                 );
     }

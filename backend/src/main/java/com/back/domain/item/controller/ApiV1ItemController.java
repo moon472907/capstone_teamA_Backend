@@ -10,7 +10,6 @@ import com.back.global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,7 +24,6 @@ public class ApiV1ItemController {
     private final MemberService memberService;
 
     @PostMapping
-    @Transactional
     @Operation(summary = "테스트용 아이템 생성 ")
     public ApiResponse<ItemDto> CreateItem(@RequestBody CreateItemDto createItemDto) {
 
@@ -35,7 +33,6 @@ public class ApiV1ItemController {
 
 
     @GetMapping
-    @Transactional
     @Operation(summary = "아이템 전체 조회")
     public ApiResponse<List<ItemDto>> findAllItems() {
 
@@ -48,7 +45,6 @@ public class ApiV1ItemController {
     }
 
     @GetMapping("/{id}")
-    @Transactional
     @Operation(summary = "아이템 단건  조회")
     public ApiResponse<ItemDto> findItemById(@PathVariable int id) {
 
@@ -62,7 +58,6 @@ public class ApiV1ItemController {
     }
 
     @GetMapping("/ItemType/{category}")
-    @Transactional
     @Operation(summary = "아이템 종류별 조회")
     public ApiResponse<List<ItemDto>> findAllItems(@PathVariable ItemType category) {
 
@@ -77,7 +72,6 @@ public class ApiV1ItemController {
 
 
     @PutMapping("/{id}")
-    @Transactional
     @Operation(summary = "아이템 수정")
     public ApiResponse<ItemDto> UpdateItem(@PathVariable int id, @RequestBody ItemDto itemDto) {
 
@@ -90,7 +84,6 @@ public class ApiV1ItemController {
     }
 
     @DeleteMapping("/{id}")
-    @Transactional
     @Operation(summary = "아이템 삭제")
     public ApiResponse<ItemDto> DeleteItem(@PathVariable int id) {
 
