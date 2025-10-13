@@ -139,6 +139,20 @@ public class MemberService {
         member.setTitle(null);
     }
 
+    //아이템 구매
+    public void buyItem(Member member, int itemId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "[Member] Fail: 존재하지 않는 아이템"));
+        if(member.getOwnedItems().contains(item)) {
+            throw new CustomException(ErrorCode.BAD_REQUEST, "[Member] Fail: 이미 보유중인 아이템");
+        }
+        if(member.getMoney() < item.getPrice()) {
+            throw new CustomException(ErrorCode.BAD_REQUEST, "[Member] Fail: 돈 부족");
+        }
+        member.addItem(item);
+        member.setMoney(member.getMoney() - item.getPrice());
+    }
+
     // *** 미션 클리어 카운트 ***
     public void clearDaily(Member member) {
         member.getStatistic().clearDaily();
