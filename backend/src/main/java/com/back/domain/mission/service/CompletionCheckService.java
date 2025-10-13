@@ -1,8 +1,14 @@
 package com.back.domain.mission.service;
 
 import com.back.domain.mission.entity.*;
-import com.back.domain.mission.event.*;
-import com.back.domain.mission.repository.*;
+import com.back.domain.mission.event.DailyCompletedEvent;
+import com.back.domain.mission.event.MissionCompletedEvent;
+import com.back.domain.mission.event.WeeklyCompletedEvent;
+import com.back.domain.mission.repository.DailyCompletionLogRepository;
+import com.back.domain.mission.repository.MissionCompletionLogRepository;
+import com.back.domain.mission.repository.SubGoalCompletionLogRepository;
+import com.back.domain.reward.entity.RewardType;
+import com.back.domain.reward.service.RewardService;
 import com.back.domain.statistics.service.StatisticsService;
 import com.back.global.util.TimeProvider;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +33,8 @@ public class CompletionCheckService {
 
     private final StatisticsService statisticsService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final RewardService rewardService;
 
-    // Task 완료 시: 모든 완료 조건 체크
     public void checkAllCompletions(Integer memberId, Task task, LocalDate date) {
         SubGoal subGoal = task.getSubGoal();
         Mission mission = subGoal.getMission();
@@ -38,7 +44,6 @@ public class CompletionCheckService {
         checkMissionCompletion(memberId, mission);
     }
 
-    // Task 취소 시: 완료 상태 재검증
     public void recheckAfterCancellation(Integer memberId, Task task, LocalDate date) {
         SubGoal subGoal = task.getSubGoal();
         Mission mission = subGoal.getMission();
@@ -48,8 +53,8 @@ public class CompletionCheckService {
         recheckMissionCompletion(memberId, mission);
     }
 
+    // ========== 데일리 ==========
 
-    // 데일리 완료 체크
     private void checkDailyCompletion(Integer memberId, LocalDate date) {
         if (dailyCompletionLogRepository.existsByMemberIdAndCompletedDate(memberId, date)) {
             return;
@@ -57,13 +62,18 @@ public class CompletionCheckService {
 
         Integer progress = calculateService.calculateDailyProgress(memberId, date);
 
-        if (progress >= 100) {
+        if (progress >= 80) {
             dailyCompletionLogRepository.save(DailyCompletionLog.builder()
                     .memberId(memberId)
                     .completedDate(date)
                     .build());
 
             statisticsService.onDailyCompleted(memberId, date);
+
+            try {
+                rewardService.giveRewardByType(memberId, RewardType.DAILYCLEAR);
+            } catch (Exception ignored) {
+            }
 
             applicationEventPublisher.publishEvent(DailyCompletedEvent.builder()
                     .memberId(memberId)
@@ -80,14 +90,15 @@ public class CompletionCheckService {
 
         Integer progress = calculateService.calculateDailyProgress(memberId, date);
 
-        if (progress < 100) {
+        if (progress < 80) {
             dailyCompletionLogRepository.delete(logOpt.get());
             statisticsService.onDailyCancelled(memberId, date);
+
         }
     }
 
+    // ========== 주차 ==========
 
-    // 주차 완료 체크
     private void checkWeeklyCompletion(Integer memberId, SubGoal subGoal) {
         if (subGoalCompletionLogRepository.existsBySubGoalIdAndMemberId(subGoal.getId(), memberId)) {
             return;
@@ -95,7 +106,7 @@ public class CompletionCheckService {
 
         Integer progress = calculateService.calculateWeekProgressForMember(subGoal, memberId);
 
-        if (progress >= 100) {
+        if (progress >= 80) {
             subGoalCompletionLogRepository.save(SubGoalCompletionLog.builder()
                     .subGoalId(subGoal.getId())
                     .memberId(memberId)
@@ -104,6 +115,11 @@ public class CompletionCheckService {
                     .build());
 
             statisticsService.onWeeklyCompleted(memberId);
+
+            try {
+                rewardService.giveRewardByType(memberId, RewardType.WEEKLYCLEAR);
+            } catch (Exception ignored) {
+            }
 
             applicationEventPublisher.publishEvent(WeeklyCompletedEvent.builder()
                     .memberId(memberId)
@@ -123,13 +139,14 @@ public class CompletionCheckService {
 
         Integer progress = calculateService.calculateWeekProgressForMember(subGoal, memberId);
 
-        if (progress < 100) {
+        if (progress < 80) {
             subGoalCompletionLogRepository.delete(logOpt.get());
             statisticsService.onWeeklyCancelled(memberId);
         }
     }
 
-    // 미션 완료 체크
+    // ========== 미션 ==========
+
     private void checkMissionCompletion(Integer memberId, Mission mission) {
         if (missionCompletionLogRepository.existsByMissionIdAndMemberId(mission.getId(), memberId)) {
             return;
@@ -137,7 +154,7 @@ public class CompletionCheckService {
 
         Integer progress = calculateService.calculateMissionProgressForMember(mission, memberId);
 
-        if (progress >= 100) {
+        if (progress >= 80) {
             LocalDate today = timeProvider.today();
 
             missionCompletionLogRepository.save(MissionCompletionLog.builder()
@@ -148,6 +165,11 @@ public class CompletionCheckService {
 
             statisticsService.onMissionCompleted(memberId, mission.isPartyMission());
 
+            try {
+                rewardService.giveRewardByType(memberId, RewardType.CHALLENGECLEAR);
+            } catch (Exception ignored) {
+            }
+
             applicationEventPublisher.publishEvent(MissionCompletedEvent.builder()
                     .missionId(mission.getId())
                     .memberId(memberId)
@@ -155,6 +177,7 @@ public class CompletionCheckService {
                     .partyId(mission.isPartyMission() ? mission.getParty().getId() : null)
                     .completedDate(today)
                     .build());
+
 
             if (!mission.isPartyMission() && !mission.isCompleted()) {
                 mission.setCompleted(true);
@@ -170,9 +193,10 @@ public class CompletionCheckService {
 
         Integer progress = calculateService.calculateMissionProgressForMember(mission, memberId);
 
-        if (progress < 100) {
+        if (progress < 80) {
             missionCompletionLogRepository.delete(logOpt.get());
             statisticsService.onMissionCancelled(memberId, mission.isPartyMission());
+
 
             if (!mission.isPartyMission()) {
                 mission.setCompleted(false);
