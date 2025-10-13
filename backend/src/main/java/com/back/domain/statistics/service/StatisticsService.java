@@ -6,6 +6,8 @@ import com.back.domain.mission.repository.DailyCompletionLogRepository;
 import com.back.domain.mission.repository.MissionCompletionLogRepository;
 import com.back.domain.mission.repository.SubGoalCompletionLogRepository;
 import com.back.domain.mission.repository.TaskLogRepository;
+import com.back.domain.reward.entity.RewardType;
+import com.back.domain.reward.service.RewardService;
 import com.back.domain.statistics.entity.MemberStatistics;
 import com.back.domain.statistics.repository.MemberStatisticsRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,8 @@ public class StatisticsService {
     private final SubGoalCompletionLogRepository subGoalCompletionLogRepository;
     private final MissionCompletionLogRepository missionCompletionLogRepository;
     private final TaskLogRepository taskLogRepository;
+    private final RewardService rewardService;
+
 
     @Transactional(readOnly = true)
     public MemberStatistics getStatistics(Integer memberId) {
@@ -37,6 +41,7 @@ public class StatisticsService {
     // 데일리 완료 시
     public void onDailyCompleted(Integer memberId, LocalDate date) {
         MemberStatistics stats = getOrCreate(memberId);
+        int previousCount = stats.getDailyTotalCount();
 
         Long totalCount = dailyCompletionLogRepository.countByMemberId(memberId);
         stats.setDailyTotalCount(totalCount.intValue());
@@ -45,10 +50,16 @@ public class StatisticsService {
         updateMaxDailyTaskCount(stats, memberId, date);
 
         memberStatisticsRepository.save(stats);
+
+        //  누적 보상 지급
+        rewardService.giveAccumulatedRewards(memberId, previousCount,
+                stats.getDailyTotalCount(), RewardType.DAILY);
     }
+
 
     public void onDailyCancelled(Integer memberId, LocalDate date) {
         MemberStatistics stats = getOrCreate(memberId);
+        int previousCount = stats.getDailyTotalCount();
 
         Long totalCount = dailyCompletionLogRepository.countByMemberId(memberId);
         stats.setDailyTotalCount(totalCount.intValue());
@@ -56,30 +67,50 @@ public class StatisticsService {
         recalculateStreak(stats, memberId);
 
         memberStatisticsRepository.save(stats);
+
+        if (stats.getDailyTotalCount() < previousCount) {
+            rewardService.revokeAccumulatedRewards(memberId, previousCount,
+                    stats.getDailyTotalCount(), RewardType.DAILY);
+        }
     }
 
     // 주차 완료 시
+
     public void onWeeklyCompleted(Integer memberId) {
         MemberStatistics stats = getOrCreate(memberId);
+        int previousCount = stats.getWeeklyTotalCount();
 
         Long totalCount = subGoalCompletionLogRepository.countByMemberId(memberId);
         stats.setWeeklyTotalCount(totalCount.intValue());
 
         memberStatisticsRepository.save(stats);
+
+        rewardService.giveAccumulatedRewards(memberId, previousCount,
+                stats.getWeeklyTotalCount(), RewardType.WEEKLY);
     }
 
     public void onWeeklyCancelled(Integer memberId) {
         MemberStatistics stats = getOrCreate(memberId);
+        int previousCount = stats.getWeeklyTotalCount();
 
         Long totalCount = subGoalCompletionLogRepository.countByMemberId(memberId);
         stats.setWeeklyTotalCount(totalCount.intValue());
 
         memberStatisticsRepository.save(stats);
+
+        //  누적 보상 회수
+        if (stats.getWeeklyTotalCount() < previousCount) {
+            rewardService.revokeAccumulatedRewards(memberId, previousCount,
+                    stats.getWeeklyTotalCount(), RewardType.WEEKLY);
+        }
     }
+
+
 
     // 미션 완료 시
     public void onMissionCompleted(Integer memberId, boolean isParty) {
         MemberStatistics stats = getOrCreate(memberId);
+        int previousCount = stats.getMissionTotalCount();
 
         Long totalCount = missionCompletionLogRepository.countByMemberId(memberId);
         stats.setMissionTotalCount(totalCount.intValue());
@@ -91,10 +122,14 @@ public class StatisticsService {
         }
 
         memberStatisticsRepository.save(stats);
+
+        rewardService.giveAccumulatedRewards(memberId, previousCount,
+                stats.getMissionTotalCount(), RewardType.CHALLENGE);
     }
 
     public void onMissionCancelled(Integer memberId, boolean isParty) {
         MemberStatistics stats = getOrCreate(memberId);
+        int previousCount = stats.getMissionTotalCount();
 
         Long totalCount = missionCompletionLogRepository.countByMemberId(memberId);
         stats.setMissionTotalCount(totalCount.intValue());
@@ -106,9 +141,14 @@ public class StatisticsService {
         }
 
         memberStatisticsRepository.save(stats);
+
+        if (stats.getMissionTotalCount() < previousCount) {
+            rewardService.revokeAccumulatedRewards(memberId, previousCount,
+                    stats.getMissionTotalCount(), RewardType.CHALLENGE);
+        }
     }
 
-    // 🆕 하루 최대 Task 개수 업데이트
+    //  하루 최대 Task 개수 업데이트
     private void updateMaxDailyTaskCount(MemberStatistics stats, Integer memberId, LocalDate date) {
         // 오늘 완료한 Task 개수
         Long todayCount = taskLogRepository.countByMemberIdAndDateAndStatus(
