@@ -28,7 +28,8 @@ public class ItemService {
         Item item = new Item(
                 createItemDto.itemType(),
                 createItemDto.name(),
-                imageBaseUrl + createItemDto.name() + ".png"
+                imageBaseUrl + createItemDto.name() + ".png",
+                createItemDto.price()
         );
         return new ItemDto(itemRepository.save(item));
     }
@@ -55,6 +56,7 @@ public class ItemService {
         item.setName(itemDto.name());
         item.setImg(itemDto.img());
         item.setType(itemDto.itemType());
+        item.setPrice(itemDto.price());
         itemRepository.save(item);
         return new ItemDto(item);
     }
