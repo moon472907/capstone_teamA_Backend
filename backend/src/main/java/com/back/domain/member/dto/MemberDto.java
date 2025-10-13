@@ -30,7 +30,7 @@ public record MemberDto(
                 member.getXpReq(),
                 member.getMoney(),
                 member.getTitle() != null ? member.getTitle().getContent() : null,
-                member.getTitle() != null ? member.getItem().getImg() : null
+                member.getItem() != null ? member.getItem().getImg() : null
         );
     }
 }
