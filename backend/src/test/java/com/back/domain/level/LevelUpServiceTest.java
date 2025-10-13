@@ -42,10 +42,10 @@ class LevelUpServiceTest {
     void setupData() {
         // 테스트 전 LevelXP 데이터 초기화 (Level 1, Level 2)
         // Level 1 데이터 (시작 누적 XP: 0L, 다음 레벨 필요 XP: 1500)
-        levelXPRepository.save(new LevelXP(INITIAL_LEVEL, 500, 0L));
+        levelXPRepository.save(new LevelXP(INITIAL_LEVEL, 500));
         // Level 2 데이터 (시작 누적 XP: 1500L, 다음 레벨 필요 XP: 1500 + X)
         long REQUIRED_XP_FOR_LEVEL2 = 1500L;
-        levelXPRepository.save(new LevelXP(NEXT_LEVEL, 1000, REQUIRED_XP_FOR_LEVEL2));
+        levelXPRepository.save(new LevelXP(NEXT_LEVEL, 1000));
     }
 
 

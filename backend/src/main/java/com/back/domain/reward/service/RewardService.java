@@ -1,5 +1,6 @@
 package com.back.domain.reward.service;
 
+import com.back.domain.level.service.LevelUpService;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.service.MemberService;
 import com.back.domain.reward.entity.ContentType;
@@ -17,6 +18,7 @@ import java.util.List;
 public class RewardService {
     private  final RewardRepository rewardRepository;
     private final MemberService  memberService;
+    private final LevelUpService levelUpService;
 
   public void createReward (RewardType rewardType, List<RewardContent> rewardContents, int requiredValue )
 
@@ -64,9 +66,10 @@ public class RewardService {
             {
                 if(rewardContent.getContentType() == ContentType.XP)
                 {
-                    memberService.modifyStatus(member,0,0,0);
+                    member.setXp(member.getXp() + rewardContent.getRewardValue());
 
-                    //TODO: XP 보상 로직 추가
+                    levelUpService.checkLevelUp(member.getId());
+
                 }
                 else if(rewardContent.getContentType() == ContentType.MONEY)
                 {
