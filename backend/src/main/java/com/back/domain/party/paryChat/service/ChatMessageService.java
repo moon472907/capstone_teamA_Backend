@@ -26,7 +26,7 @@ public class ChatMessageService {
 
     @Transactional
     @CacheEvict(value = "chatHistory", key = "#chatMessageDto.partyId")
-    public void saveMessage(ChatMessageDto chatMessageDto) {
+    public ChatMessageDto saveMessage(ChatMessageDto chatMessageDto) {
         // 엔티티를 가져와 메시지를 생성
         ChatMessage chatMessage = ChatMessage.builder()
                 .content(chatMessageDto.getContent())
@@ -35,7 +35,10 @@ public class ChatMessageService {
                 .sender(memberRepository.findByEmail(chatMessageDto.getSenderEmail())
                         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "멤버를 찾을 수 없습니다.")))
                 .build();
-        chatMessageRepository.save(chatMessage);
+
+        ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
+
+        return new ChatMessageDto(savedMessage);
     }
 
     @Transactional

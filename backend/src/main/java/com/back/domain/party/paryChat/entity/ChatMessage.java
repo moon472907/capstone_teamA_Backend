@@ -30,4 +30,7 @@ public class ChatMessage extends BaseEntity {
     private Member sender;
 
     private String content;
+
+    @Column(name = "deleted_at")
+    private java.time.LocalDateTime deletedAt;
 }
