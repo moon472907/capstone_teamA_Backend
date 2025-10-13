@@ -93,7 +93,10 @@ public class CompletionCheckService {
         if (progress < 80) {
             dailyCompletionLogRepository.delete(logOpt.get());
             statisticsService.onDailyCancelled(memberId, date);
-
+            try {
+                rewardService.revokeRewardByType(memberId, RewardType.DAILYCLEAR);
+            } catch (Exception ignored) {
+            }
         }
     }
 
