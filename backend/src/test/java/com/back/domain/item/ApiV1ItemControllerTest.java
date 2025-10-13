@@ -58,11 +58,11 @@ public class ApiV1ItemControllerTest {
     void findAllItems_Success() {
 
         CreateItemDto createItemDto1 = new CreateItemDto(
-                "테스트1", ItemType.SPECIAL);
+                "테스트1", ItemType.SPECIAL,10);
         CreateItemDto createItemDto2 = new CreateItemDto(
-                "테스트2", ItemType.SPORTS);
+                "테스트2", ItemType.SPORTS,10);
         CreateItemDto createItemDto3 = new CreateItemDto(
-                "테스트3", ItemType.SPORTS);
+                "테스트3", ItemType.SPORTS,10);
 
         HttpEntity<CreateItemDto> request1 = new HttpEntity<>(createItemDto1, headers);
         restTemplate.exchange(baseUrl, HttpMethod.POST, request1, String.class);
@@ -94,11 +94,11 @@ public class ApiV1ItemControllerTest {
             num = itemList.getLast().getId();
         }
         CreateItemDto createItemDto1 = new CreateItemDto(
-                "테스트1", ItemType.SPECIAL);
+                "테스트1", ItemType.SPECIAL,10);
         CreateItemDto createItemDto2 = new CreateItemDto(
-                "테스트2", ItemType.SPORTS);
+                "테스트2", ItemType.SPORTS,10);
         CreateItemDto createItemDto3 = new CreateItemDto(
-                "테스트3", ItemType.SPORTS);
+                "테스트3", ItemType.SPORTS,10);
 
         HttpEntity<CreateItemDto> request1 = new HttpEntity<>(createItemDto1, headers);
 
@@ -135,11 +135,11 @@ public class ApiV1ItemControllerTest {
     void findItemsByItemType_Success() {
 
         CreateItemDto createItemDto1 = new CreateItemDto(
-                "테스트1", ItemType.SPECIAL);
+                "테스트1", ItemType.SPECIAL,10);
         CreateItemDto createItemDto2 = new CreateItemDto(
-                "테스트2", ItemType.SPORTS);
+                "테스트2", ItemType.SPORTS,10);
         CreateItemDto createItemDto3 = new CreateItemDto(
-                "테스트3", ItemType.SPORTS);
+                "테스트3", ItemType.SPORTS,10);
 
 
         HttpEntity<CreateItemDto> request1 = new HttpEntity<>(createItemDto1, headers);
@@ -181,11 +181,11 @@ public class ApiV1ItemControllerTest {
             num = itemList.getLast().getId();
         }
         CreateItemDto createItemDto1 = new CreateItemDto(
-                "테스트1", ItemType.SPECIAL);
+                "테스트1", ItemType.SPECIAL,10);
         CreateItemDto createItemDto2 = new CreateItemDto(
-                "테스트2", ItemType.SPORTS);
+                "테스트2", ItemType.SPORTS,10);
         CreateItemDto createItemDto3 = new CreateItemDto(
-                "테스트3", ItemType.SPORTS);
+                "테스트3", ItemType.SPORTS,10);
 
         HttpEntity<CreateItemDto> request1 = new HttpEntity<>(createItemDto1, headers);
         restTemplate.exchange(baseUrl, HttpMethod.POST, request1, String.class);
@@ -198,7 +198,7 @@ public class ApiV1ItemControllerTest {
 
         num++;
         CreateItemDto updateDto1 = new CreateItemDto(
-                "업데이트1", ItemType.FESTIVAL);
+                "업데이트1", ItemType.FESTIVAL,10);
         HttpEntity<CreateItemDto> updateRequest1 = new HttpEntity<>(updateDto1, headers);
         ResponseEntity<String> response1 = restTemplate.exchange(baseUrl + "/" + num, HttpMethod.PUT, updateRequest1, String.class);
         assertThat(response1.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -209,7 +209,7 @@ public class ApiV1ItemControllerTest {
 
         num++;
         CreateItemDto updateDto2 = new CreateItemDto(
-                "업데이트2", ItemType.FESTIVAL);
+                "업데이트2", ItemType.FESTIVAL,10);
         HttpEntity<CreateItemDto> updateRequest2 = new HttpEntity<>(updateDto2, headers);
         ResponseEntity<String> response2 = restTemplate.exchange(baseUrl + "/" + num, HttpMethod.PUT, updateRequest2, String.class);
         assertThat(response2.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -226,11 +226,11 @@ public class ApiV1ItemControllerTest {
 
 
         CreateItemDto createItemDto1 = new CreateItemDto(
-                "테스트1", ItemType.SPECIAL);
+                "테스트1", ItemType.SPECIAL,10);
         CreateItemDto createItemDto2 = new CreateItemDto(
-                "테스트2", ItemType.SPORTS);
+                "테스트2", ItemType.SPORTS,10);
         CreateItemDto createItemDto3 = new CreateItemDto(
-                "테스트3", ItemType.SPORTS);
+                "테스트3", ItemType.SPORTS,10);
 
         List<Item> itemList1 = itemRepository.findAll();
 
