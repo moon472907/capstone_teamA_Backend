@@ -60,8 +60,8 @@ public class ApiV1MemberControllerTest {
 
     @BeforeEach
     void setUp() {
-        item1 = itemRepository.save(new Item(ItemType.SPECIAL, "아이템1", ""));
-        item2 = itemRepository.save(new Item(ItemType.SPECIAL, "아이템2", ""));
+        item1 = itemRepository.save(new Item(ItemType.SPECIAL, "아이템1", "",10));
+        item2 = itemRepository.save(new Item(ItemType.SPECIAL, "아이템2", "",10));
         title1 = titleRepository.save(new Title("칭호1", "",""));
         title2 = titleRepository.save(new Title("칭호2","", ""));
 

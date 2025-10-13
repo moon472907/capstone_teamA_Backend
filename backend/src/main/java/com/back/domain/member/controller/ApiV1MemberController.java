@@ -190,6 +190,21 @@ public class ApiV1MemberController {
                 );
     }
 
+    @GetMapping("/me/statistic")
+    @Operation(summary = "회원 통계 확인", description = "클리어한 미션 카운트")
+    public ResponseEntity<ApiResponse<StatisticDto>> meStatistic() {
+        Member actor = rq.getActorFromDb();
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 사용자 통계 확인 (%s)".formatted(actor.getEmail()),
+                                new StatisticDto(actor.getStatistic())
+                        )
+                );
+    }
+
     @GetMapping("/me/items")
     @Operation(summary = "보유한 아이템 확인", description = "보유한 아이템 리스트 확인")
     public ResponseEntity<ApiResponse<ItemListDto>> myItems() {
@@ -288,6 +303,24 @@ public class ApiV1MemberController {
                 );
     }
 
+    @PutMapping("/buy/item/{id}")
+    @Operation(summary = "아이템 구매", description = "아이템 획득")
+    public ResponseEntity<ApiResponse<MemberDto>> buyItem(
+            @PathVariable String id
+    ) {
+        Member actor = rq.getActorFromDb();
+        memberService.buyItem(actor, Integer.parseInt(id));
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                                "200",
+                                "[Member] Success: 아이템 구매 (%s)".formatted(id),
+                                new MemberDto(actor)
+                        )
+                );
+    }
+
     @PutMapping("/obtain/item/{id}")
     @Operation(summary = "[Test] 아이템 획득", description = "아이템 획득")
     public ResponseEntity<ApiResponse<MemberDto>> obtainItem(
@@ -320,21 +353,6 @@ public class ApiV1MemberController {
                                 "200",
                                 "[Member] Success: 칭호 획득",
                                 new MemberDto(actor)
-                        )
-                );
-    }
-
-    @GetMapping("/me/statistic")
-    @Operation(summary = "회원 통계 확인", description = "클리어한 미션 카운트")
-    public ResponseEntity<ApiResponse<StatisticDto>> meStatistic() {
-        Member actor = rq.getActorFromDb();
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(new ApiResponse<>(
-                                "200",
-                                "[Member] Success: 사용자 통계 확인 (%s)".formatted(actor.getEmail()),
-                                new StatisticDto(actor.getStatistic())
                         )
                 );
     }

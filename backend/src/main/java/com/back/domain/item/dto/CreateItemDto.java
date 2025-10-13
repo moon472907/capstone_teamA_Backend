@@ -5,20 +5,25 @@ import com.back.domain.item.entity.ItemType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-public record CreateItemDto (
+public record CreateItemDto(
         @NotBlank String name,
-        @NotNull ItemType itemType   )
-{
+        @NotNull ItemType itemType,
+        @NotNull int price) {
 
-    public CreateItemDto(String name, ItemType itemType) {
+    public CreateItemDto(String name, ItemType itemType, int price) {
+
         this.name = name;
         this.itemType = itemType;
+        this.price = price;
     }
-    public CreateItemDto(Item item)
-    {
+
+    public CreateItemDto(Item item) {
+
         this(
                 item.getName(),
-                item.getType()
+                item.getType(),
+                item.getPrice()
         );
     }
+
 }

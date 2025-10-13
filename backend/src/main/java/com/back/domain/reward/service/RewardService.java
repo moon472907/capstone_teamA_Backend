@@ -1,5 +1,6 @@
 package com.back.domain.reward.service;
 
+import com.back.domain.level.service.LevelUpService;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.service.MemberService;
 import com.back.domain.reward.entity.ContentType;
@@ -8,7 +9,8 @@ import com.back.domain.reward.entity.RewardContent;
 import com.back.domain.reward.entity.RewardType;
 import com.back.domain.reward.repository.RewardRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,7 +20,10 @@ import java.util.List;
 public class RewardService {
     private  final RewardRepository rewardRepository;
     private final MemberService  memberService;
-    private final ApplicationEventPublisher eventPublisher;
+
+    @Lazy
+    @Autowired
+    private LevelUpService levelUpService;
 
   public void createReward (RewardType rewardType, List<RewardContent> rewardContents, int requiredValue )
 
@@ -66,9 +71,10 @@ public class RewardService {
             {
                 if(rewardContent.getContentType() == ContentType.XP)
                 {
-                    memberService.modifyStatus(member,0,0,0);
+                    member.setXp(member.getXp() + rewardContent.getRewardValue());
 
-                    //TODO: XP 보상 로직 추가
+                    levelUpService.checkLevelUp(member.getId());
+
                 }
                 else if(rewardContent.getContentType() == ContentType.MONEY)
                 {

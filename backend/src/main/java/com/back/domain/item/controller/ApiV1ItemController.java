@@ -27,7 +27,7 @@ public class ApiV1ItemController {
     @Operation(summary = "테스트용 아이템 생성 ")
     public ApiResponse<ItemDto> CreateItem(@RequestBody CreateItemDto createItemDto) {
 
-        ItemDto data = itemService.createItem(new CreateItemDto(createItemDto.name(), createItemDto.itemType()));
+        ItemDto data = itemService.createItem(new CreateItemDto(createItemDto.name(), createItemDto.itemType(),createItemDto.price()));
         return new ApiResponse<>("200", "아이템 생성 성공", data);
     }
 
