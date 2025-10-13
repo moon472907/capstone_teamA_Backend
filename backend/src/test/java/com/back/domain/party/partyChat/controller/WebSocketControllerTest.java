@@ -21,12 +21,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -61,7 +59,6 @@ class WebSocketControllerTest {
     private ChatMessage chatMessage2;
     private Party party;
     private Member sender;
-    private User user;
     private final Integer partyId = 1;
 
     @BeforeEach
@@ -71,7 +68,6 @@ class WebSocketControllerTest {
         // Mock 객체 생성
         party = mock(Party.class);
         sender = mock(Member.class);
-        user = new User("test@example.com", "password", Collections.emptyList());
 
         // Mock 객체 동작 설정
         lenient().when(party.getId()).thenReturn(partyId);
@@ -103,17 +99,17 @@ class WebSocketControllerTest {
         String messageJson = "{\"id\":null,\"senderEmail\":\"test@example.com\",\"content\":\"Hello, world!\",\"partyId\":1}";
         when(objectMapper.writeValueAsString(any(ChatMessageDto.class))).thenReturn(messageJson);
 
-        webSocketController.sendMessage(chatMessageDto, user);
+        // 1. Controller 메서드 호출
+        webSocketController.sendMessage(chatMessageDto);
 
-        // 1. 메시지 브로드캐스트 검증
+        // 2. 메시지 브로드캐스트 검증
         verify(messagingTemplate, times(1)).convertAndSend(
                 eq("/topic/party/" + partyId), eq(chatMessageDto)
         );
 
-        // 2. ChatMessageService.saveMessage 호출 대신 KafkaTemplate.send 호출 검증
+        // 3. KafkaTemplate.send 호출 검증
         verify(kafkaTemplate, times(1)).send(
                 eq("chat-messages"), // 토픽 이름
-                eq(partyId.toString()), // 키 (파티 ID)
                 eq(messageJson) // 메시지 내용
         );
         verify(chatMessageService, never()).saveMessage(any(ChatMessageDto.class)); // saveMessage가 호출되지 않았는지 확인
@@ -133,7 +129,7 @@ class WebSocketControllerTest {
                 .build();
         when(chatMessageService.updateMessage(any(ChatMessageDto.class))).thenReturn(updatedChatMessage);
 
-        webSocketController.updateMessage(chatMessageDto, user);
+        webSocketController.updateMessage(chatMessageDto);
 
         verify(chatMessageService, times(1)).updateMessage(
                 eq(chatMessageDto)
@@ -153,12 +149,11 @@ class WebSocketControllerTest {
         ChatMessageDto deleteDto = new ChatMessageDto();
         deleteDto.setId(messageId);
         deleteDto.setPartyId(partyId);
-
-        User user = new User(senderEmail, "", Collections.emptyList());
+        deleteDto.setSenderEmail(senderEmail);
 
         doNothing().when(chatMessageService).deleteMessage(eq(deleteDto.getId()), eq(senderEmail));
 
-        webSocketController.deleteMessage(deleteDto, user);
+        webSocketController.deleteMessage(deleteDto);
 
         verify(chatMessageService, times(1)).deleteMessage(
                 eq(deleteDto.getId()), eq(senderEmail)
