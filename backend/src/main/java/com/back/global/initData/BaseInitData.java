@@ -216,7 +216,6 @@ public class BaseInitData {
 
         }
 
-    @Autowired
-    private RewardRepository rewardRepository;
+
 
 }
