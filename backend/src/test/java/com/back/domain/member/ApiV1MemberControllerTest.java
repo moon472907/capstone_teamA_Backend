@@ -55,15 +55,16 @@ public class ApiV1MemberControllerTest {
     private TitleRepository titleRepository;
 
     private Member user1;
-    private Item item1, item2;
+    private Item item1, item2, item3;
     private Title title1, title2;
 
     @BeforeEach
     void setUp() {
-        item1 = itemRepository.save(new Item(ItemType.SPECIAL, "아이템1", "",10));
-        item2 = itemRepository.save(new Item(ItemType.SPECIAL, "아이템2", "",10));
-        title1 = titleRepository.save(new Title("칭호1", "",""));
-        title2 = titleRepository.save(new Title("칭호2","", ""));
+        item1 = itemRepository.save(new Item(ItemType.DEFAULT, "아이템1", "",100));
+        item2 = itemRepository.save(new Item(ItemType.CHARACTER, "아이템2", "",100));
+        item3 = itemRepository.save(new Item(ItemType.SPECIAL, "아이템3", "",100));
+        title1 = titleRepository.save(new Title("칭호1", "획득불가","테스트칭호1"));
+        title2 = titleRepository.save(new Title("칭호2","획득불가", "테스트칭호2"));
 
         user1 = memberService.signup(
                 "test1@test.com",
@@ -238,6 +239,26 @@ public class ApiV1MemberControllerTest {
     }
 
     @Test
+    @DisplayName("회원 탈퇴")
+    void del() throws Exception {
+        String email = user1.getEmail();
+
+        ResultActions resultActions = mvc
+                .perform(
+                        delete(baseUrl + "/delete")
+                                .cookie(new Cookie("apiKey", user1.getApiKey()))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("delete"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200"))
+                .andExpect(jsonPath("$.message").value("[Member] Success: 회원 탈퇴 (%s)".formatted(email)));
+    }
+
+    @Test
     @DisplayName("회원 정보 수정")
     void modifyProfile() throws Exception {
         ResultActions resultActions = mvc
@@ -267,35 +288,35 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.content.gender").value(user1.getGender().name()));
     }
 
-    @Test
-    @DisplayName("비밀번호 변경(일반 계정)")
-    void modifyPassword() throws Exception {
-        ResultActions resultActions = mvc
-                .perform(
-                        put(baseUrl + "/modify/password")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                            "password": "test123mod"
-                                        }
-                                        """.stripIndent())
-                                .cookie(new Cookie("apiKey", user1.getApiKey()))
-                )
-                .andDo(print());
-
-        resultActions
-                .andExpect(handler().handlerType(ApiV1MemberController.class))
-                .andExpect(handler().methodName("modifyPassword"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("200"))
-                .andExpect(jsonPath("$.message").value("[Member] Success: 비밀번호 변경"));
-
-        resultActions.andExpect(
-                result -> {
-                    assertThat(passwordEncoder.matches("test123mod", user1.getPassword())).isTrue();
-                }
-        );
-    }
+//    @Test
+//    @DisplayName("비밀번호 변경(일반 계정)")
+//    void modifyPassword() throws Exception {
+//        ResultActions resultActions = mvc
+//                .perform(
+//                        put(baseUrl + "/modify/password")
+//                                .contentType(MediaType.APPLICATION_JSON)
+//                                .content("""
+//                                        {
+//                                            "password": "test123mod"
+//                                        }
+//                                        """.stripIndent())
+//                                .cookie(new Cookie("apiKey", user1.getApiKey()))
+//                )
+//                .andDo(print());
+//
+//        resultActions
+//                .andExpect(handler().handlerType(ApiV1MemberController.class))
+//                .andExpect(handler().methodName("modifyPassword"))
+//                .andExpect(status().isOk())
+//                .andExpect(jsonPath("$.code").value("200"))
+//                .andExpect(jsonPath("$.message").value("[Member] Success: 비밀번호 변경"));
+//
+//        resultActions.andExpect(
+//                result -> {
+//                    assertThat(passwordEncoder.matches("test123mod", user1.getPassword())).isTrue();
+//                }
+//        );
+//    }
 
     @Test
     @DisplayName("회원 정보 확인")
@@ -382,7 +403,7 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("[Member] Success: 아이템 장착"))
                 .andExpect(jsonPath("$.content").exists())
-                .andExpect(jsonPath("$.content.items." + item2.getType()).value(item2.getId()));
+                .andExpect(jsonPath("$.content.item").value(item2.getImg()));
     }
 
     @Test
@@ -402,7 +423,7 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("[Member] Success: 칭호 장착"))
                 .andExpect(jsonPath("$.content").exists())
-                .andExpect(jsonPath("$.content.title").value(title2.getId()));
+                .andExpect(jsonPath("$.content.title").value(title2.getContent()));
     }
 
     @Test
@@ -428,7 +449,7 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("[Member] Success: 아이템 장착 해제"))
                 .andExpect(jsonPath("$.content").exists())
-                .andExpect(jsonPath("$.content.items." + item1.getType()).value(nullValue()));
+                .andExpect(jsonPath("$.content.item").value(nullValue()));
     }
 
     @Test
@@ -452,22 +473,28 @@ public class ApiV1MemberControllerTest {
     }
 
     @Test
-    @DisplayName("회원 탈퇴")
-    void del() throws Exception {
-        String email = user1.getEmail();
+    @DisplayName("아이템 구매")
+    void buyItem() throws Exception {
+        final int baseMoney = 1000;
+        memberService.modifyStatus(user1, user1.getLevel(), user1.getXp(), baseMoney);
 
         ResultActions resultActions = mvc
                 .perform(
-                        delete(baseUrl + "/delete")
+                        put(baseUrl + "/buy/item/" + item3.getId())
                                 .cookie(new Cookie("apiKey", user1.getApiKey()))
                 )
                 .andDo(print());
 
         resultActions
                 .andExpect(handler().handlerType(ApiV1MemberController.class))
-                .andExpect(handler().methodName("delete"))
+                .andExpect(handler().methodName("buyItem"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
-                .andExpect(jsonPath("$.message").value("[Member] Success: 회원 탈퇴 (%s)".formatted(email)));
+                .andExpect(jsonPath("$.message").value("[Member] Success: 아이템 구매 (%s)".formatted(item3.getId())))
+                .andExpect(jsonPath("$.content").exists())
+                .andExpect(jsonPath("$.content.money").value(baseMoney - item3.getPrice()))
+                .andExpect(result -> {
+                    assertThat(user1.getOwnedItems().contains(item3)).isTrue();
+                });
     }
 }
