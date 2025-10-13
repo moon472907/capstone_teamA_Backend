@@ -93,7 +93,10 @@ public class LevelUpService {
             // 3. 레벨업 보상 지급
             List<Reward> rewards = rewardService.findByRewardTypeAndRequireValue(RewardType.LEVELUP, currentLevel);
             if (!rewards.isEmpty()) {
-                 rewardService.giveReward(member.getId(), currentLevel, rewards.getFirst().getId());
+                for (Reward reward : rewards) {
+                    rewardService.giveReward(member.getId(), currentLevel, reward.getId());
+                    log.info("    [Reward Given] Given Reward ID {} for reaching Level {}", reward.getId(), currentLevel);
+                }
             }
         }
     }
