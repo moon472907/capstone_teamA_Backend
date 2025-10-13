@@ -426,7 +426,7 @@ public class ApiV1MemberControllerTest {
                 .andExpect(handler().methodName("unequipItem"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200"))
-                .andExpect(jsonPath("$.message").value("[Member] Success: 아이템 장착 해제 (%s)".formatted(item1.getType())))
+                .andExpect(jsonPath("$.message").value("[Member] Success: 아이템 장착 해제"))
                 .andExpect(jsonPath("$.content").exists())
                 .andExpect(jsonPath("$.content.items." + item1.getType()).value(nullValue()));
     }
