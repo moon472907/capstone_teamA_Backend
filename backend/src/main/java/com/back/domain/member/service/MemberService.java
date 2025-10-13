@@ -1,7 +1,6 @@
 package com.back.domain.member.service;
 
 import com.back.domain.item.entity.Item;
-import com.back.domain.item.entity.ItemType;
 import com.back.domain.item.repository.ItemRepository;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.entity.MemberGender;
@@ -132,8 +131,8 @@ public class MemberService {
     }
 
     // *** 아이템&칭호 장착 해제***
-    public void unequipItem(Member member, ItemType type) {
-        member.getItems().put(type, null);
+    public void unequipItem(Member member) {
+        member.setItem(null);
     }
 
     public void unequipTitle(Member member) {

@@ -1,6 +1,5 @@
 package com.back.domain.member.controller;
 
-import com.back.domain.item.entity.ItemType;
 import com.back.domain.member.dto.*;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.service.MemberService;
@@ -93,6 +92,7 @@ public class ApiV1MemberController {
                                 "200",
                                 "[Member] Success: 가입 완료 검사",
                                 new ValidResDto(valid)
+                        
                         )
                 );
     }
@@ -256,20 +256,17 @@ public class ApiV1MemberController {
                 );
     }
 
-    public record ItemUnequipReqDto(ItemType type) {}
     @PutMapping("/unequip/item")
     @Operation(summary = "아이템 장착 해제", description = "현재 장착한 아이템 해제")
-    public ResponseEntity<ApiResponse<MemberDto>> unequipItem(
-            @Valid @RequestBody ItemUnequipReqDto reqBody
-    ) {
+    public ResponseEntity<ApiResponse<MemberDto>> unequipItem() {
         Member actor = rq.getActorFromDb();
-        memberService.unequipItem(actor, reqBody.type());
+        memberService.unequipItem(actor);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(new ApiResponse<>(
                                 "200",
-                                "[Member] Success: 아이템 장착 해제 (%s)".formatted(reqBody.type()),
+                                "[Member] Success: 아이템 장착 해제",
                                 new MemberDto(actor)
                         )
                 );

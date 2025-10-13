@@ -59,18 +59,21 @@ public class BaseInitData {
 
     private void createItem() {
         if(itemService.count() > 0) return;
-        //TODO 아이템 데이터 수정,추가 필요
-        itemService.createItem(new CreateItemDto("아바타1", ItemType.SPECIAL));
-
-        itemService.createItem(new CreateItemDto("아바타2", ItemType.SPECIAL));
-
-        itemService.createItem(new CreateItemDto("아바타3", ItemType.SPECIAL));
-
-        itemService.createItem(new CreateItemDto("아바타4", ItemType.SPECIAL));
-
-        itemService.createItem(new CreateItemDto("아바타5", ItemType.SPECIAL));
-
-        itemService.createItem(new CreateItemDto("아바타6", ItemType.SPECIAL));
+        itemService.createItem(new CreateItemDto("기본 너츠", ItemType.DEFAULT));
+        itemService.createItem(new CreateItemDto("가을 옷", ItemType.NATURE));
+        itemService.createItem(new CreateItemDto("스노쿨링 옷", ItemType.NATURE));
+        itemService.createItem(new CreateItemDto("겨울 옷", ItemType.NATURE));
+        itemService.createItem(new CreateItemDto("산타 옷", ItemType.FESTIVAL));
+        itemService.createItem(new CreateItemDto("할로윈 옷", ItemType.FESTIVAL));
+        itemService.createItem(new CreateItemDto("수영복", ItemType.SPORTS));
+        itemService.createItem(new CreateItemDto("복싱 트렁크", ItemType.SPORTS));
+        itemService.createItem(new CreateItemDto("야구 유니폼", ItemType.SPORTS));
+        itemService.createItem(new CreateItemDto("농구 유니폼", ItemType.SPORTS));
+        itemService.createItem(new CreateItemDto("배트맨 옷", ItemType.CHARACTER));
+        itemService.createItem(new CreateItemDto("슈퍼맨 옷", ItemType.CHARACTER));
+        itemService.createItem(new CreateItemDto("토끼 후드", ItemType.CHARACTER));
+        itemService.createItem(new CreateItemDto("왕관 너츠", ItemType.SPECIAL));
+        itemService.createItem(new CreateItemDto("꼬마 너츠", ItemType.SPECIAL));
 
     }
 

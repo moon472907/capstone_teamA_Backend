@@ -7,21 +7,28 @@ import com.back.domain.item.entity.Item;
 import com.back.domain.item.entity.ItemType;
 import com.back.domain.item.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ItemService {
     private final ItemRepository itemRepository;
+
+
+    @Value("${app.image.base-url}")
+    private String imageBaseUrl;
 
     public ItemDto createItem(CreateItemDto createItemDto)
     {
         Item item = new Item(
                 createItemDto.itemType(),
                 createItemDto.name(),
-                "localhost:8080/images/" + createItemDto.name() + ".jpg"
+                imageBaseUrl + createItemDto.name() + ".png"
         );
         return new ItemDto(itemRepository.save(item));
     }
