@@ -1,13 +1,9 @@
 package com.back.domain.member.dto;
 
-import com.back.domain.item.entity.Item;
-import com.back.domain.item.entity.ItemType;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.entity.MemberGender;
 
 import java.time.LocalDate;
-import java.util.EnumMap;
-import java.util.Map;
 
 public record MemberDto(
         Integer id,
@@ -20,7 +16,7 @@ public record MemberDto(
         Integer xpReq,
         Integer money,
         String title,
-        Map<ItemType, Integer> items
+        String item
 ) {
     public MemberDto(Member member) {
         this(
@@ -34,16 +30,7 @@ public record MemberDto(
                 member.getXpReq(),
                 member.getMoney(),
                 member.getTitle() != null ? member.getTitle().getContent() : null,
-                buildItems(member)
+                member.getTitle() != null ? member.getItem().getImg() : null
         );
-    }
-
-    private static Map<ItemType, Integer> buildItems(Member member) {
-        Map<ItemType, Integer> map = new EnumMap<>(ItemType.class);
-        for (ItemType type : ItemType.values()) {
-            Item item = member.getItems().get(type);
-            map.put(type, item != null ? item.getId() : null);
-        }
-        return map;
     }
 }

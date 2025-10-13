@@ -1,7 +1,6 @@
 package com.back.domain.member.entity;
 
 import com.back.domain.item.entity.Item;
-import com.back.domain.item.entity.ItemType;
 import com.back.domain.title.entity.Title;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -38,9 +37,8 @@ public class Member extends BaseEntity {
     // *** 장착한 칭호/아이템 정보 ***
     @ManyToOne(fetch = FetchType.LAZY)
     private Title title;
-    @OneToMany(fetch = FetchType.LAZY)
-    @MapKey(name = "type")
-    private Map<ItemType, Item> items;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Item item;
 
     // *** 보유한 칭호/아이템 정보 ***
     @ManyToMany(fetch = FetchType.LAZY)
@@ -62,10 +60,7 @@ public class Member extends BaseEntity {
         this.name = name;
 
         this.title = null;
-        this.items = new EnumMap<>(ItemType.class);
-        for(ItemType type : ItemType.values()) {
-            this.items.put(type, null);
-        }
+        this.item = null;
         this.ownedTitles = new HashSet<>();
         this.ownedItems = new HashSet<>();
 
@@ -76,11 +71,6 @@ public class Member extends BaseEntity {
     public Member(int id, String email) {
         setId(id);
         this.email = email;
-    }
-
-    //아이템 장착
-    public void setItem(Item item) {
-        this.items.put(item.getType(), item);
     }
 
     //칭호 획득
