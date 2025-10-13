@@ -10,6 +10,7 @@ import com.back.domain.member.service.MemberService;
 import com.back.domain.reward.entity.ContentType;
 import com.back.domain.reward.entity.RewardContent;
 import com.back.domain.reward.entity.RewardType;
+import com.back.domain.reward.repository.RewardRepository;
 import com.back.domain.reward.service.RewardService;
 import com.back.domain.title.dto.CreateTitleDto;
 import com.back.domain.title.service.TitleService;
@@ -36,6 +37,7 @@ public class BaseInitData {
     private final LevelXPRepository levelXPRepository;
     private final TitleService titleService;
     private final RewardService rewardService;
+    private final RewardRepository rewardRepository;
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner() {
@@ -158,6 +160,7 @@ public class BaseInitData {
     }
 
     private void createReward() {
+        if (rewardRepository.count() > 0) return;
         //TODO 미션 데이터 수정 필요
         //데일리 미션
         List<RewardContent> dailyRewardContents = new ArrayList<>();
@@ -212,5 +215,8 @@ public class BaseInitData {
         rewardService.createReward(RewardType.LEVELUP, title8RewardContents, 50);
 
         }
+
+    @Autowired
+    private RewardRepository rewardRepository;
 
 }
