@@ -10,6 +10,7 @@ import com.back.domain.reward.service.RewardService;
 import com.back.global.exception.CustomException;
 import com.back.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,8 @@ public class LevelUpService {
 
     private final MemberRepository memberRepository;
     private final LevelXPRepository levelXPRepository;
+
+    @Lazy
     private final RewardService rewardService;
 
 
