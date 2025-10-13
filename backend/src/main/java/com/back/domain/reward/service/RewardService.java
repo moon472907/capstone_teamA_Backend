@@ -8,6 +8,7 @@ import com.back.domain.reward.entity.RewardContent;
 import com.back.domain.reward.entity.RewardType;
 import com.back.domain.reward.repository.RewardRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.List;
 public class RewardService {
     private  final RewardRepository rewardRepository;
     private final MemberService  memberService;
+    private final ApplicationEventPublisher eventPublisher;
 
   public void createReward (RewardType rewardType, List<RewardContent> rewardContents, int requiredValue )
 

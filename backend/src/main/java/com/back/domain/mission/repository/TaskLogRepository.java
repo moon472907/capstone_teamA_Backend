@@ -19,9 +19,6 @@ public interface TaskLogRepository extends JpaRepository<TaskLog, Integer> {
     boolean existsByTaskIdAndMemberIdAndDate(
             Integer taskId, Integer memberId, LocalDate date);
 
-    boolean existsByTaskIdAndMemberIdAndDateAndStatus(
-            Integer taskId, Integer memberId, LocalDate date, TaskStatus status);
-
     Optional<TaskLog> findTopByTaskIdAndMemberIdOrderByDateDesc(
             Integer taskId, Integer memberId);
 
@@ -86,6 +83,7 @@ public interface TaskLogRepository extends JpaRepository<TaskLog, Integer> {
             @Param("subGoalId") Integer subGoalId,
             @Param("memberId") Integer memberId,
             @Param("status") TaskStatus status);
+
 
     boolean existsByTaskIdAndStatus(Integer taskId, TaskStatus status);
 }
