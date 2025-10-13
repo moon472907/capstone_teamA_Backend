@@ -22,7 +22,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // 웹소켓 연결을 위한 STOMP 엔드포인트 설정
-        registry.addEndpoint("/ws/chat").withSockJS();
+        registry.addEndpoint("/ws/chat")
+                .setAllowedOriginPatterns(
+                "http://localhost:3000",
+                "https://www.nutree.noredsun.com")
+                .withSockJS();
     }
 
     @Override
