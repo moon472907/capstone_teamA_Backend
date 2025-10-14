@@ -101,5 +101,67 @@ public class LevelUpService {
         }
     }
 
+    @Transactional
+    public void checkLevelDown(Integer memberId, int xpBeforeRevoke, int revokedXp) {
+        log.info("### [LEVELDOWN] START checkLevelDown for Member ID: {}", memberId);
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "Member not found with id: " + memberId));
+
+        log.info("    [Current Status] Initial Level: {}, XP Before Revoke: {}, Revoked XP: {}",
+                member.getLevel(), xpBeforeRevoke, revokedXp);
+
+        checkAndProcessLevelDown(member, xpBeforeRevoke, revokedXp);
+
+        memberRepository.save(member);
+
+        log.info("### [LEVELDOWN] END checkLevelDown. Final Level: {}, Final XP: {}, Final XP Req: {}",
+                member.getLevel(), member.getXp(), member.getXpReq());
+    }
+
+    private void checkAndProcessLevelDown(Member member, int xpBeforeRevoke, int revokedXp) {
+        int currentLevel = member.getLevel();
+
+        // 레벨이 1보다 크고, XP가 0이 되어 롤백이 필요한 상황을 가정
+        // (XP가 0이 아닌 다른 값이라면 레벨 다운이 필요 없다고 가정)
+        while (currentLevel > 1 && member.getXp() == 0) {
+
+            int previousLevel = currentLevel - 1;
+
+            Optional<LevelXP> previousLevelXP = levelXPRepository.findById(previousLevel);
+
+            if (previousLevelXP.isEmpty()) {
+                log.warn("    [LEVEL DOWN FAILED] Previous Level XP requirement not found for Level {}. Aborting rollback.", previousLevel);
+                break;
+            }
+
+            int xpToNextOfPreviousLevel = previousLevelXP.get().getXpToNext();
+
+            // 1. XP 복원 계산 (요청된 4990 XP로 복원되는 핵심 로직)
+            // 복원 XP = (이전 레벨 요구 XP) + (회수 전 잔여 XP) - (회수된 XP)
+            // 시나리오: 5000 + 390 - 400 = 4990
+            int restoredXp = xpToNextOfPreviousLevel + xpBeforeRevoke - revokedXp;
+
+            // 2. 레벨 다운 처리
+            currentLevel = previousLevel;
+            member.setLevel(currentLevel);
+
+            // XP 복원 값 설정
+            member.setXp(restoredXp);
+
+            log.info("    [LEVEL DOWN!] Member Leveled Down to {}. Restored XP: {}", currentLevel, restoredXp);
+
+            // 3. 다음 레벨 요구량(xpReq) 업데이트
+            member.setXpReq(xpToNextOfPreviousLevel);
+            log.info("    [XP Req Update] Next XP Required: {}", xpToNextOfPreviousLevel);
+
+            // 4. 레벨 다운 보상 회수 (필요하다면 로직 추가)
+            // levelUpRewardService.revokeReward(member.getId(), previousLevel + 1);
+
+            // 단일 레벨 롤백만 처리하고 루프 종료
+            break;
+        }
+    }
+
 
 }

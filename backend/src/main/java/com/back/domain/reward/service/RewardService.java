@@ -191,8 +191,20 @@ public class RewardService {
     private void revokeRewardContent(Member member, RewardContent content) {
         switch (content.getContentType()) {
             case XP:
-                member.setXp(Math.max(0, member.getXp() - content.getRewardValue()));
+                // 1. XP 회수 전 값과 회수량을 저장
+                int oldXp = member.getXp();
+                int revokedXp = content.getRewardValue();
+
+                // 2. XP 감소 (0 미만 방지)
+                member.setXp(Math.max(0, oldXp - revokedXp));
+
+                // 3. 레벨 다운 검사 로직 추가 및 인자 전달
+                // XP가 실제로 감소했고, 회수량이 Level Up 경계를 넘어섰을 가능성이 있을 때만 호출
+                if (member.getXp() < oldXp) {
+                    levelUpService.checkLevelDown(member.getId(), oldXp, revokedXp);
+                }
                 break;
+
 
             case MONEY:
                 int newMoney = Math.max(0, member.getMoney() - content.getRewardValue());
