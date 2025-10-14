@@ -476,7 +476,7 @@ public class ApiV1MemberControllerTest {
     @DisplayName("아이템 구매")
     void buyItem() throws Exception {
         final int baseMoney = 1000;
-        memberService.modifyStatus(user1, user1.getLevel(), user1.getXp(), baseMoney);
+        memberService.modifyMoney(user1, baseMoney);
 
         ResultActions resultActions = mvc
                 .perform(

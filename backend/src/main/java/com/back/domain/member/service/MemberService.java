@@ -173,9 +173,12 @@ public class MemberService {
         member.setGender(gender);
     }
 
-    public void modifyStatus(Member member, int level, int xp, int money) {
+    public void modifyLevel(Member member, int level, int xp) {
         member.setLevel(level);
         member.setXp(xp);
+    }
+
+    public void modifyMoney(Member member, int money) {
         member.setMoney(money);
     }
 

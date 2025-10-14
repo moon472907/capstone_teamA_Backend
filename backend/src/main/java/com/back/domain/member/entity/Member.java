@@ -36,9 +36,9 @@ public class Member extends BaseEntity {
 
     // *** 장착한 칭호/아이템 정보 ***
     @ManyToOne(fetch = FetchType.LAZY)
-    private Title title;
+    private Title title = null;
     @ManyToOne(fetch = FetchType.LAZY)
-    private Item item;
+    private Item item = null;
 
     // *** 보유한 칭호/아이템 정보 ***
     @ManyToMany(fetch = FetchType.LAZY)
@@ -59,8 +59,6 @@ public class Member extends BaseEntity {
         this.password = password;
         this.name = name;
 
-        this.title = null;
-        this.item = null;
         this.ownedTitles = new HashSet<>();
         this.ownedItems = new HashSet<>();
 
