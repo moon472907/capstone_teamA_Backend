@@ -31,7 +31,7 @@ public class PartyDto {
     private Integer views;
     private String missionTitle;
     private Boolean missionIsCompleted;
-
+    private String myStatus;
 
     public PartyDto(Party party, Mission mission) {
         this.id = party.getId();
@@ -74,6 +74,7 @@ public class PartyDto {
                     );
                 })
                 .collect(Collectors.toList());
+        this.myStatus = null;
     }
 
     public PartyDto(Party party) {
@@ -101,6 +102,12 @@ public class PartyDto {
                 .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED || pm.getStatus() == PartyMemberStatus.COMPLETED)
                 .map(partyMember -> new PartyMemberDto(partyMember.getMember(), partyMember.getStatus().name()))
                 .collect(Collectors.toList());
+        this.myStatus = null;
+
     }
 
+    public PartyDto(Party party, Mission mission, String myStatus) {
+        this(party, mission);
+        this.myStatus = myStatus;
+    }
 }

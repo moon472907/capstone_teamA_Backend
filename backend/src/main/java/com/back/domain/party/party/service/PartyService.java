@@ -28,10 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -355,5 +352,58 @@ public class PartyService {
         }
 
         return partyMemberRepository.findByParty_IdAndStatus(partyId, PartyMemberStatus.PENDING);
+    }
+
+    public Page<PartyDto> getMyPartyList(
+            Integer memberId,
+            String statusFilter, // "ongoing" 또는 "done"
+            Pageable pageable
+    ) {
+        // 1. Repository를 사용하여 파티 목록 조회
+        Page<Party> partyPage = partyRepository.findMyPartiesWithMissionAndMembers(memberId, pageable);
+        List<Party> parties = partyPage.getContent();
+
+        // 2. 필터링 및 DTO 변환
+        List<PartyDto> dtoList = parties.stream()
+                .map(party -> {
+                    // 2-1. 로그인한 멤버의 파티 내 상태 (myStatus) 결정
+                    PartyMemberStatus myStatus;
+                    Optional<PartyMember> memberStatus = partyMemberRepository.findByParty_IdAndMember_Id(party.getId(), memberId);
+
+                    if (memberStatus.isPresent()) {
+                        myStatus = memberStatus.get().getStatus();
+                    } else if (Objects.equals(party.getLeader().getId(), memberId)) {
+                        // 리더인데 PartyMember 행이 없는 경우, ACCEPTED로 간주
+                        myStatus = PartyMemberStatus.ACCEPTED;
+                    } else {
+                        return null; // DB 쿼리에서 걸러져야 하므로, 여기에 도달하면 데이터 이상
+                    }
+
+                    // 2-2. 상태 필터링 조건 확인
+                    if ("ongoing".equalsIgnoreCase(statusFilter)) {
+                        if (myStatus != PartyMemberStatus.ACCEPTED) {
+                            return null; // ongoing 필터: 'ACCEPTED'만 포함
+                        }
+                    } else if ("done".equalsIgnoreCase(statusFilter)) {
+                        // done 필터: 'COMPLETED' 또는 'LEFT'만 포함
+                        Set<PartyMemberStatus> doneStatuses = Set.of(PartyMemberStatus.COMPLETED, PartyMemberStatus.LEFT);
+                        if (!doneStatuses.contains(myStatus)) {
+                            return null;
+                        }
+                    }
+
+                    // 2-3. Mission 정보 조회 및 DTO 생성 (myStatus 포함 생성자 사용)
+                    Optional<Mission> missionOptional = missionRepository.findByPartyId(party.getId()).stream().findFirst();
+
+                    // myStatus를 포함하는 생성자를 호출하여 DTO 생성
+                    PartyDto dto = new PartyDto(party, missionOptional.orElse(null), myStatus.name());
+
+                    return dto;
+                })
+                .filter(Objects::nonNull) // 필터링 조건에 맞지 않아 null이 된 항목 제거
+                .collect(Collectors.toList());
+
+        // 3. 필터링된 리스트를 Page 객체로 다시 변환
+        return new PageImpl<>(dtoList, pageable, dtoList.size());
     }
 }

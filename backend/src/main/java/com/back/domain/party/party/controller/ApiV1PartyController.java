@@ -224,4 +224,20 @@ public class ApiV1PartyController {
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success("200", "가입 신청/초대 목록 조회 성공", requestDtos));
     }
+
+    @GetMapping("/my-parties")
+    @Operation(summary = "내 파티 목록 조회", description = "로그인한 사용자가 리더이거나 멤버인 파티 목록을 조회하고, 상태(ongoing/done) 필터링을 지원합니다.")
+    public ResponseEntity<ApiResponse<Page<PartyDto>>> getMyParties(
+            Authentication authentication,
+            @ParameterObject Pageable pageable,
+            @RequestParam(required = false) String status // ongoing|done
+    ) {
+        Integer memberId = getMemberIdFromAuthentication(authentication);
+
+        Page<PartyDto> partyPage = partyService.getMyPartyList(memberId, status, pageable);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success("200", "내 파티 목록 조회 성공", partyPage));
+    }
 }
