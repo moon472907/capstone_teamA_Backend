@@ -76,7 +76,7 @@ public class RewardService {
                 else if(rewardContent.getContentType() == ContentType.MONEY)
                 {
 
-                    memberService.modifyStatus(member,member.getLevel(),member.getXp(),member.getMoney()+rewardContent.getRewardValue());
+                    member.setMoney(member.getMoney() + rewardContent.getRewardValue());
                 }
                 else if(rewardContent.getContentType() == ContentType.ITEM)
                 {
