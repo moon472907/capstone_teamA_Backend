@@ -1,6 +1,7 @@
 package com.back.domain.party.party.entity;
 
 import com.back.domain.member.entity.Member;
+import com.back.domain.mission.entity.Mission;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -36,4 +37,7 @@ public class Party extends BaseEntity {
 
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyMember> partyMembers = new ArrayList<>();
+
+    @OneToOne(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Mission mission;
 }
