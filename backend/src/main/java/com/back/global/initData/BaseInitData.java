@@ -162,7 +162,6 @@ public class BaseInitData {
 
     private void createReward() {
         if (rewardRepository.count() > 0) return;
-        //TODO 미션 데이터 수정 필요
         //데일리 미션
         List<RewardContent> dailyRewardContents = new ArrayList<>();
         dailyRewardContents.add(new RewardContent(ContentType.XP, 400));
