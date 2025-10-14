@@ -126,7 +126,8 @@ public class BaseInitData {
 
         List<LevelXP> xpList = new ArrayList<>();
 
-        xpList.add(new LevelXP(2, 5000));
+        xpList.add(new LevelXP(1, 5000));
+        xpList.add(new LevelXP(2, 5320));
         xpList.add(new LevelXP(3, 5685));
         xpList.add(new LevelXP(4, 6060));
         xpList.add(new LevelXP(5, 6461));
