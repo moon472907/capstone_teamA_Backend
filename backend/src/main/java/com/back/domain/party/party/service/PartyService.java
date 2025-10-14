@@ -6,6 +6,7 @@ import com.back.domain.mission.entity.Mission;
 import com.back.domain.mission.enums.MissionCategory;
 import com.back.domain.mission.repository.MissionCompletionLogRepository;
 import com.back.domain.mission.repository.MissionRepository;
+import com.back.domain.mission.service.MissionCalculateService;
 import com.back.domain.party.party.dto.PartyDto;
 import com.back.domain.party.party.dto.PartyMemberDto;
 import com.back.domain.party.party.dto.PartyRequestDto;
@@ -41,7 +42,20 @@ public class PartyService {
     private final PartyMemberRepository partyMemberRepository;
     private final MissionRepository missionRepository;
     private final MissionCompletionLogRepository completionLogRepository;
+    private final MissionCalculateService missionCalculateService;
 
+    private Integer calculateMyProgressRate(Integer partyId, Integer memberId) {
+        Optional<Mission> missionOptional = missionRepository.findByPartyId(partyId).stream().findFirst();
+
+        if (missionOptional.isEmpty()) {
+            return 0; // 미션 정보가 없으면 0%
+        }
+
+        Mission mission = missionOptional.get();
+
+        // 기존 MissionCalculateService의 메서드를 사용하여 진행률 계산 (0~100)
+        return missionCalculateService.calculateMissionProgressForMember(mission, memberId);
+    }
 
     public Page<PartyDto> getPublicPartyList(
             Pageable pageable,
@@ -392,18 +406,25 @@ public class PartyService {
                         }
                     }
 
+                    Integer myProgressRate = calculateMyProgressRate(party.getId(), memberId);
+
                     // 2-3. Mission 정보 조회 및 DTO 생성 (myStatus 포함 생성자 사용)
                     Optional<Mission> missionOptional = missionRepository.findByPartyId(party.getId()).stream().findFirst();
 
-                    // myStatus를 포함하는 생성자를 호출하여 DTO 생성
-                    PartyDto dto = new PartyDto(party, missionOptional.orElse(null), myStatus.name());
 
+                    // myStatus를 포함하는 생성자를 호출하여 DTO 생성
+                    PartyDto dto = new PartyDto(
+                            party,
+                            missionOptional.orElse(null),
+                            myStatus.name(),
+                            myProgressRate
+                    );
                     return dto;
                 })
                 .filter(Objects::nonNull) // 필터링 조건에 맞지 않아 null이 된 항목 제거
                 .collect(Collectors.toList());
 
         // 3. 필터링된 리스트를 Page 객체로 다시 변환
-        return new PageImpl<>(dtoList, pageable, dtoList.size());
+        return new PageImpl<>(dtoList, pageable, partyPage.getTotalElements());
     }
 }
