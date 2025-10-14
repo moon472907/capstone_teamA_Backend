@@ -72,6 +72,7 @@ public class RewardService {
                 if(rewardContent.getContentType() == ContentType.XP)
                 {
                     member.setXp(member.getXp() + rewardContent.getRewardValue());
+                    levelUpService.checkLevelUp(member.getId());
                 }
                 else if(rewardContent.getContentType() == ContentType.MONEY)
                 {
