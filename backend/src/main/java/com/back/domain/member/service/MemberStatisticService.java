@@ -14,7 +14,7 @@ public class MemberStatisticService {
     private final MemberStatisticRepository memberStatisticRepository;
 
     public MemberStatistic create(Member member) {
-        return memberStatisticRepository.save(new MemberStatistic(member));
+        return memberStatisticRepository.save(new MemberStatistic());
     }
 
     public void delete(Member member) {
