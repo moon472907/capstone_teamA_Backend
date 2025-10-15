@@ -1,5 +1,6 @@
 package com.back.domain.mission.service;
 
+import com.back.domain.member.service.MemberService;
 import com.back.domain.mission.dto.request.TaskCompleteRequest;
 import com.back.domain.mission.dto.request.WeekTaskUpdateRequest;
 import com.back.domain.mission.dto.response.TaskCompleteResponse;
@@ -40,6 +41,7 @@ public class TaskService {
     private final SubGoalRepository subGoalRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final CompletionCheckService completionCheckService;
+    private final MemberService memberService;
 
     // 태스크 완료/취소 처리 (체크박스 토글)
     // 당일만 처리 가능
@@ -54,6 +56,8 @@ public class TaskService {
 
         // 2. 검증 (요일, 날짜 범위, 권한 등)
         validateTaskCompletion(task, mission, subGoal, today, memberId);
+
+        List<Integer> titlesBefore = memberService.getMemberTitleIds(memberId);
 
         // 3. 기존 기록 확인
         Optional<TaskLog> existingLog = taskLogRepository
@@ -97,8 +101,15 @@ public class TaskService {
             completionCheckService.recheckAfterCancellation(memberId, task, today);
         }
 
+        List<Integer> titleIdsAfter = memberService.getMemberTitleIds(memberId);
+
+        List<Integer> newTitleIds = titleIdsAfter.stream()
+                .filter(titleId -> !titlesBefore.contains(titleId))
+                .toList();
+
+        List<String> newTitleNames = memberService.getTitleNames(newTitleIds);
         // 7. 응답 생성
-        return buildTaskCompleteResponse(task, mission, memberId, today, finalStatus);
+        return buildTaskCompleteResponse(task, mission, memberId, today, finalStatus, newTitleNames);
     }
 
     // 오늘의 태스크 조회
@@ -373,6 +384,20 @@ public class TaskService {
                 .hasBeenEdited(task.getHasBeenEdited())
                 .canEdit(task.canEdit())
                 .editDeadline(task.getEditDeadline())
+                .build();
+    }
+
+    private TaskCompleteResponse buildTaskCompleteResponse(Task task, Mission mission,
+                                                           Integer memberId, LocalDate completedDate,
+                                                           TaskStatus status, List<String> newTitles) {
+        return TaskCompleteResponse.builder()
+                .taskId(task.getId())
+                .status(status)
+                .completedDate(completedDate)
+                .dailyProgressRate(calculateService.calculateDailyProgress(memberId, completedDate))
+                .weeklyProgressRate(calculateService.calculateWeeklyProgress(memberId, mission, completedDate))
+                .missionProgressRate(calculateService.calculateMissionProgressForMember(mission, memberId))
+                .newTitles(newTitles)
                 .build();
     }
 }

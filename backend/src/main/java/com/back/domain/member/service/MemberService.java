@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -211,4 +212,21 @@ public class MemberService {
     public Map<String, Object> payload(String accessToken) {
         return authService.payload(accessToken);
     }
+
+    // 칭호 ID 목록
+    public List<Integer> getMemberTitleIds(Integer memberId) {
+        Member member = findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "[Member] Fail: 존재하지 않는 회원"));
+
+        return member.getOwnedTitles().stream()
+                .map(Title::getId)
+                .toList();
+    }
+    // 칭호 이름 조회
+    public List<String> getTitleNames(List<Integer> titleIds) {
+        return titleRepository.findAllById(titleIds).stream()
+                .map(Title::getContent)
+                .toList();
+    }
+
 }
