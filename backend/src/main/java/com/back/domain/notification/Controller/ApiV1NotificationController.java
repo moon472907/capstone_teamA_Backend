@@ -88,7 +88,6 @@ public class ApiV1NotificationController {
 
     @GetMapping("/me")
     @Transactional
-    @Operation
     @Operation(summary = "현재 로그인된 사용자 에 대한 알림 조회 ")
     public ApiResponse<List<NotificationDto>> findNotificationsByUserId(
     ) {
