@@ -96,7 +96,15 @@ public class TaskService {
 
         // 5. 이벤트 발행 (COMPLETED일 때만 - 보상 처리용)
         if (finalStatus == TaskStatus.COMPLETED) {
+            System.out.println("━━━━━━━━━━━━━━━━━━━━");
+            System.out.println("✅ Task 완료!");
+            System.out.println("memberId: " + memberId);
+            System.out.println("taskId: " + task.getId());
+            System.out.println("checkAllCompletions 호출!");
+
             completionCheckService.checkAllCompletions(memberId, task, today);
+
+            System.out.println("━━━━━━━━━━━━━━━━━━━━");
         } else if (finalStatus == TaskStatus.CANCELLED) {
             completionCheckService.recheckAfterCancellation(memberId, task, today);
         }
