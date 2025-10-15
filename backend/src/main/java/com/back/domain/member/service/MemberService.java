@@ -91,6 +91,7 @@ public class MemberService {
 
     //회원 탈퇴
     public void delete(Member member) {
+        member.setEmail("DELETED_" + member.getEmail());
         memberStatisticService.delete(member);
         memberRepository.delete(member);
     }
