@@ -4,6 +4,7 @@ import com.back.domain.mission.enums.TaskStatus;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -17,4 +18,6 @@ public class TaskCompleteResponse {
     private Integer dailyProgressRate; //일일 진행률
     private Integer weeklyProgressRate; //주차별 진행률
     private Integer missionProgressRate; //전체 미션 진행률
+
+    private List<String> newTitles;
 }
