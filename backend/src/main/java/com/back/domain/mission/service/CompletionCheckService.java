@@ -1,12 +1,14 @@
 package com.back.domain.mission.service;
 
 import com.back.domain.mission.entity.*;
+import com.back.domain.mission.enums.TaskStatus;
 import com.back.domain.mission.event.DailyCompletedEvent;
 import com.back.domain.mission.event.MissionCompletedEvent;
 import com.back.domain.mission.event.WeeklyCompletedEvent;
 import com.back.domain.mission.repository.DailyCompletionLogRepository;
 import com.back.domain.mission.repository.MissionCompletionLogRepository;
 import com.back.domain.mission.repository.SubGoalCompletionLogRepository;
+import com.back.domain.mission.repository.TaskLogRepository;
 import com.back.domain.reward.entity.RewardType;
 import com.back.domain.reward.service.RewardService;
 import com.back.domain.statistics.service.StatisticsService;
@@ -34,7 +36,7 @@ public class CompletionCheckService {
     private final StatisticsService statisticsService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final RewardService rewardService;
-
+    private final TaskLogRepository taskLogRepository;
     public void checkAllCompletions(Integer memberId, Task task, LocalDate date) {
         SubGoal subGoal = task.getSubGoal();
         Mission mission = subGoal.getMission();
@@ -55,59 +57,27 @@ public class CompletionCheckService {
 
     // ========== 데일리 ==========
     private void checkDailyCompletion(Integer memberId, LocalDate date) {
-        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        System.out.println("🔍 checkDailyCompletion 시작");
-        System.out.println("memberId: " + memberId);
-        System.out.println("date: " + date);
-
-        boolean alreadyCompleted = dailyCompletionLogRepository.existsByMemberIdAndCompletedDate(memberId, date);
-        System.out.println("이미 완료?: " + alreadyCompleted);
-
-        if (alreadyCompleted) {
-            System.out.println("❌ 이미 완료됨 - 리턴");
-            System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        if (dailyCompletionLogRepository.existsByMemberIdAndCompletedDate(memberId, date)) {
             return;
         }
 
-        System.out.println("데일리 진행률 계산 중...");
-        Integer progress = calculateService.calculateDailyProgress(memberId, date);
-        System.out.println("데일리 진행률: " + progress + "%");
+        Long completedCount = taskLogRepository.countByMemberIdAndDateAndStatus(
+                memberId, date, TaskStatus.COMPLETED);
 
-        if (progress >= 80) {
-            System.out.println("✅ 진행률 80% 이상!");
-
-            System.out.println("DailyCompletionLog 저장 중...");
+        if (completedCount >= 1) {
             dailyCompletionLogRepository.save(DailyCompletionLog.builder()
                     .memberId(memberId)
                     .completedDate(date)
                     .build());
-            System.out.println("✅ DailyCompletionLog 저장 완료!");
 
-            System.out.println("통계 업데이트 중...");
             statisticsService.onDailyCompleted(memberId, date);
-            System.out.println("✅ 통계 업데이트 완료!");
 
-            System.out.println("데일리 보상 지급 중...");
-            try {
-                rewardService.giveRewardByType(memberId, RewardType.DAILYCLEAR);
-                System.out.println("✅ 데일리 보상 지급 완료!");
-            } catch (Exception e) {
-                System.out.println("❌ 데일리 보상 지급 실패: " + e.getMessage());
-                e.printStackTrace();
-            }
 
-            System.out.println("데일리 이벤트 발행 중...");
             applicationEventPublisher.publishEvent(DailyCompletedEvent.builder()
                     .memberId(memberId)
                     .completedDate(date)
                     .build());
-            System.out.println("✅ 데일리 이벤트 발행 완료!");
-
-            System.out.println("✅✅✅ checkDailyCompletion 전체 완료!");
-        } else {
-            System.out.println("❌ 진행률 부족: " + progress + "% < 80%");
         }
-        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━");
     }
 
     private void recheckDailyCompletion(Integer memberId, LocalDate date) {
@@ -116,15 +86,13 @@ public class CompletionCheckService {
 
         if (logOpt.isEmpty()) return;
 
-        Integer progress = calculateService.calculateDailyProgress(memberId, date);
+        Long completedCount = taskLogRepository.countByMemberIdAndDateAndStatus(
+                memberId, date, TaskStatus.COMPLETED);
 
-        if (progress < 80) {
+        if (completedCount < 1) {
             dailyCompletionLogRepository.delete(logOpt.get());
             statisticsService.onDailyCancelled(memberId, date);
-            try {
-                rewardService.revokeRewardByType(memberId, RewardType.DAILYCLEAR);
-            } catch (Exception ignored) {
-            }
+
         }
     }
 
