@@ -58,13 +58,15 @@ public interface TaskLogRepository extends JpaRepository<TaskLog, Integer> {
             "AND :date BETWEEN sg.startDate AND sg.endDate " +
             "AND m.isCompleted = false " +
             "AND (" +
-            "    m.member.id = :memberId OR " +
-            "    (pm.member.id = :memberId AND pm.status = 'ACCEPTED')" +
+            "    (m.party IS NULL AND m.member.id = :memberId) OR " +  // 개인 미션
+            "    (m.party IS NOT NULL AND pm.member.id = :memberId AND pm.status = 'ACCEPTED')" +  // 파티 미션
             ")")
     Long countDailyTasks(
             @Param("memberId") Integer memberId,
             @Param("date") LocalDate date,
             @Param("dayNum") Integer dayNum);
+
+
 
     Long countByMemberIdAndDateAndStatus(
             Integer memberId, LocalDate date, TaskStatus status);
