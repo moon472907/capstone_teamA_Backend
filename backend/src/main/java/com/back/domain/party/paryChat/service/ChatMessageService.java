@@ -1,5 +1,6 @@
 package com.back.domain.party.paryChat.service;
 
+import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.party.party.repository.PartyRepository;
 import com.back.domain.party.paryChat.dto.ChatMessageDto;
@@ -77,5 +78,11 @@ public class ChatMessageService {
     public Page<ChatMessageDto> getChatHistory(Integer partyId, Pageable pageable) {
         Page<ChatMessage> chatMessages = chatMessageRepository.findByPartyIdOrderByCreateDateDesc(partyId, pageable);
         return chatMessages.map(ChatMessageDto::new);
+    }
+
+    @Transactional
+    @CacheEvict(value = "chatHistory", allEntries = true)
+    public void unlinkSenderFromMessages(Member member) {
+        int updatedCount = chatMessageRepository.setSenderToNullByMember(member);
     }
 }
