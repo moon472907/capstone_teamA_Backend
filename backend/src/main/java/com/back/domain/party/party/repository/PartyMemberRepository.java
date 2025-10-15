@@ -6,6 +6,7 @@ import com.back.domain.party.party.entity.PartyMemberStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,5 +24,8 @@ public interface PartyMemberRepository extends JpaRepository<PartyMember, PartyM
 
     // 파티원 수 조회용 메서드 추가
     long countByParty_IdAndStatus(Integer partyId, PartyMemberStatus status);
+
+    // 특정 파티의 여러 상태에 해당하는 파티원들을 찾는 메서드
+    List<PartyMember> findByParty_IdAndStatusIn(Integer partyId, Collection<PartyMemberStatus> statuses);
 
 }

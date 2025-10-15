@@ -153,44 +153,63 @@ public class ApiV1PartyController {
     }
 
     @PostMapping("/{partyId}/invite")
-    @Operation(summary = "파티 초대 (코드)", description = "파티장이 다른 멤버를 코드를 사용하여 파티에 초대하는 API")
-    public ResponseEntity<ApiResponse<Void>> inviteMember(
+    @Operation(summary = "파티에 멤버 초대", description = "파티장이 멤버 코드로 다른 사용자를 파티에 초대합니다. 상태는 INVITED로 설정됩니다.")
+    public ResponseEntity<ApiResponse<PartyMemberStatusResponse>> inviteMember(
             @PathVariable Integer partyId,
-            @RequestBody @Valid InvitationDto invitationDto,
+            @Valid @RequestBody InvitationDto invitationDto,
             Authentication authentication
     ) {
         Integer leaderId = getMemberIdFromAuthentication(authentication);
-        partyService.inviteMember(partyId, leaderId, invitationDto.getInvitedMemberCode());
+
+        PartyMemberStatusResponse responseContent = partyService.inviteMember(
+                partyId,
+                leaderId,
+                invitationDto.getInvitedMemberCode()
+        );
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.success("200", "파티 초대 성공"));
+                .body(ApiResponse.success("200", "초대 성공", responseContent));
     }
 
     @PostMapping("/{partyId}/accept")
-    @Operation(summary = "초대/신청 수락", description = "초대/신청 대기 중인 멤버를 파티원이 되도록 수락하는 API")
-    public ResponseEntity<ApiResponse<Void>> acceptInvitation(
+    @Operation(summary = "파티 가입 신청/초대 수락", description = "파티장이 대기 중인 멤버의 가입 신청 또는 초대를 수락합니다. (PENDING | INVITED) -> ACCEPTED")
+    public ResponseEntity<ApiResponse<PartyMemberStatusResponse>> acceptInvitation(
             @PathVariable Integer partyId,
+            @Valid @RequestBody MemberIdRequest memberIdRequest,
             Authentication authentication
     ) {
-        Integer memberId = getMemberIdFromAuthentication(authentication);
-        partyService.acceptInvitation(partyId, memberId);
+        Integer leaderId = getMemberIdFromAuthentication(authentication);
+
+        PartyMemberStatusResponse responseContent = partyService.acceptInvitation(
+                partyId,
+                memberIdRequest.getMemberId(),
+                leaderId
+        );
+
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.success("200", "초대/신청 수락 성공"));
+                .body(ApiResponse.success("200", "초대/신청 수락 성공", responseContent));
     }
 
     @PostMapping("/{partyId}/reject")
-    @Operation(summary = "초대/신청 거절", description = "초대/신청 대기 중인 멤버를 거절하는 API")
-    public ResponseEntity<ApiResponse<Void>> rejectInvitation(
+    @Operation(summary = "파티 가입 신청/초대 거절 (소프트 삭제)", description = "파티장이 대기 중인 멤버의 신청 또는 초대를 거절하고 상태를 REJECTED로 변경합니다. (PENDING | INVITED) -> REJECTED")
+    public ResponseEntity<ApiResponse<PartyMemberStatusResponse>> rejectInvitation(
             @PathVariable Integer partyId,
+            @Valid @RequestBody MemberIdRequest memberIdRequest,
             Authentication authentication
     ) {
-        Integer memberId = getMemberIdFromAuthentication(authentication);
-        partyService.rejectInvitation(partyId, memberId);
+        Integer leaderId = getMemberIdFromAuthentication(authentication);
+
+        PartyMemberStatusResponse responseContent = partyService.rejectInvitation(
+                partyId,
+                memberIdRequest.getMemberId(),
+                leaderId
+        );
+
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.success("200", "초대/신청 거절 성공"));
+                .body(ApiResponse.success("200", "초대/신청 거절 성공", responseContent));
     }
 
     @DeleteMapping("/{partyId}/members/{kickedMemberId}")
@@ -209,7 +228,7 @@ public class ApiV1PartyController {
     }
 
     @GetMapping("/{partyId}/requests")
-    @Operation(summary = "파티 가입 신청/초대 목록 조회", description = "파티장이 가입 신청 또는 초대 대기 중인 멤버 목록을 조회하는 API")
+    @Operation(summary = "파티 가입 신청/초대 목록 조회", description = "파티장이 PENDING(신청) 또는 INVITED(초대) 대기 중인 멤버 목록을 조회합니다. 응답에 status 필드가 포함됩니다.")
     public ResponseEntity<ApiResponse<List<PartyMemberDto>>> getPendingJoinRequests(
             @PathVariable Integer partyId,
             Authentication authentication
@@ -217,7 +236,7 @@ public class ApiV1PartyController {
         Integer leaderId = getMemberIdFromAuthentication(authentication);
         List<PartyMember> pendingRequests = partyService.getPendingJoinRequests(partyId, leaderId);
         List<PartyMemberDto> requestDtos = pendingRequests.stream()
-                .map(pm -> new PartyMemberDto(pm.getMember()))
+                .map(pm -> new PartyMemberDto(pm.getMember(), pm.getStatus().name()))
                 .collect(Collectors.toList());
 
         return ResponseEntity

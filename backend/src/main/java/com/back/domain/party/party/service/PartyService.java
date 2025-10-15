@@ -7,10 +7,7 @@ import com.back.domain.mission.enums.MissionCategory;
 import com.back.domain.mission.repository.MissionCompletionLogRepository;
 import com.back.domain.mission.repository.MissionRepository;
 import com.back.domain.mission.service.MissionCalculateService;
-import com.back.domain.party.party.dto.PartyDto;
-import com.back.domain.party.party.dto.PartyMemberDto;
-import com.back.domain.party.party.dto.PartyRequestDto;
-import com.back.domain.party.party.dto.PartyUpdateRequestDto;
+import com.back.domain.party.party.dto.*;
 import com.back.domain.party.party.entity.Party;
 import com.back.domain.party.party.entity.PartyMember;
 import com.back.domain.party.party.entity.PartyMemberStatus;
@@ -96,7 +93,7 @@ public class PartyService {
     private void checkPartyCapacity(Party party) {
         long acceptedMembers = partyMemberRepository.countByParty_IdAndStatus(party.getId(), PartyMemberStatus.ACCEPTED);
         if (acceptedMembers >= party.getMaxMembers()) {
-            throw new CustomException(ErrorCode.CONFLICT, "파티의 정원이 가득 찼습니다.");
+            throw new CustomException(ErrorCode.PARTY_CAPACITY_FULL);
         }
     }
 
@@ -124,10 +121,10 @@ public class PartyService {
     }
 
     @Transactional
-    @CacheEvict(value = {"partyList", "partyDetails"}, allEntries = true)
+    @CacheEvict(value = {"partyList", "partyDetails", "pendingRequests"}, allEntries = true)
     public void joinParty(Integer partyId, Integer memberId) {
         Party party = partyRepository.findById(partyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
 
@@ -136,9 +133,22 @@ public class PartyService {
             throw new CustomException(ErrorCode.BAD_REQUEST, "비공개 파티는 초대로만 가입할 수 있습니다.");
         }
 
-        // 2. 이미 가입되어 있거나 신청/초대 대기 중인지 확인
-        if (partyMemberRepository.findByParty_IdAndMember_Id(partyId, memberId).isPresent()) {
-            throw new CustomException(ErrorCode.CONFLICT, "이미 가입되어 있거나 신청/초대 대기 중인 파티입니다.");
+        // 2. 이미 가입되어 있거나 신청/초대 대기 중인지 확인 (및 REJECTED 재신청 처리)
+        Optional<PartyMember> partyMemberOptional = partyMemberRepository.findByParty_IdAndMember_Id(partyId, memberId);
+
+        if (partyMemberOptional.isPresent()) {
+            PartyMember existingPartyMember = partyMemberOptional.get();
+            PartyMemberStatus currentStatus = existingPartyMember.getStatus();
+
+            // REJECTED 상태였다면 PENDING으로 재전환 허용
+            if (currentStatus == PartyMemberStatus.REJECTED) {
+                existingPartyMember.setStatus(PartyMemberStatus.PENDING);
+                partyMemberRepository.save(existingPartyMember);
+                return;
+            }
+
+            // 그 외 유효하거나 대기 중인 상태(ACCEPTED, PENDING, INVITED 등)라면 예외 처리
+            throw new CustomException(ErrorCode.ALREADY_PARTY_MEMBER);
         }
 
         // 3. 파티의 정원이 가득 찼는지 확인
@@ -157,7 +167,7 @@ public class PartyService {
     @CacheEvict(value = {"partyList", "partyDetails"}, key = "#partyId")
     public void leaveParty(Integer partyId, Integer memberId) {
         PartyMember leavingMember = partyMemberRepository.findByParty_IdAndMember_Id(partyId, memberId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_MEMBER_NOT_FOUND));
 
         Party party = leavingMember.getParty();
 
@@ -188,11 +198,11 @@ public class PartyService {
     @CacheEvict(value = {"partyList", "partyDetails"}, key = "#partyId")
     public void updateParty(Integer partyId, PartyUpdateRequestDto requestDto, Integer memberId) {
         Party party = partyRepository.findById(partyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
 
         // 요청한 멤버가 파티장이 맞는지 확인
         if (!Objects.equals(party.getLeader().getId(), memberId)) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED, "파티 수정 권한이 없습니다.");
+            throw new CustomException(ErrorCode.PARTY_FORBIDDEN);
         }
 
         // DTO에서 변경된 값이 있으면 파티 엔티티에 반영
@@ -200,9 +210,12 @@ public class PartyService {
             party.setName(requestDto.getName());
         }
         if (requestDto.getMaxMembers() != null) {
-            // 새로운 최대 인원이 현재 멤버 수보다 적으면 예외 발생
-            if (requestDto.getMaxMembers() < party.getPartyMembers().size()) {
-                throw new CustomException(ErrorCode.BAD_REQUEST, "새로운 최대 인원은 현재 멤버 수보다 적을 수 없습니다.");
+            // 새로운 최대 인원이 현재 ACCEPTED 멤버 수보다 적으면 예외 발생
+            long acceptedMembers = party.getPartyMembers().stream()
+                    .filter(pm -> pm.getStatus() == PartyMemberStatus.ACCEPTED)
+                    .count();
+            if (requestDto.getMaxMembers() < acceptedMembers) {
+                throw new CustomException(ErrorCode.BAD_REQUEST, "새로운 최대 인원은 현재 활동 중인 멤버 수보다 적을 수 없습니다.");
             }
             party.setMaxMembers(requestDto.getMaxMembers());
         }
@@ -215,11 +228,11 @@ public class PartyService {
     @CacheEvict(value = {"partyList", "partyDetails"}, allEntries = true)
     public void deleteParty(Integer partyId, Integer memberId) {
         Party party = partyRepository.findById(partyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
 
         // 요청한 멤버가 파티장이 맞는지 확인
         if (!Objects.equals(party.getLeader().getId(), memberId)) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED, "파티 삭제 권한이 없습니다.");
+            throw new CustomException(ErrorCode.PARTY_FORBIDDEN);
         }
 
         partyRepository.delete(party);
@@ -235,7 +248,7 @@ public class PartyService {
     @Transactional(readOnly = true)
     public PartyDto getPartyDetails(Integer partyId) {
         Party party = partyRepository.findById(partyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "파티를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
 
         party.incrementViews();
 
@@ -266,13 +279,13 @@ public class PartyService {
     }
 
     @Transactional
-    @CacheEvict(value = {"partyList", "partyDetails"}, key = "#partyId")
-    public void inviteMember(Integer partyId, Integer leaderId, String invitedMemberCode) {
+    @CacheEvict(value = {"partyList", "partyDetails", "pendingRequests"}, allEntries = true)
+    public PartyMemberStatusResponse inviteMember(Integer partyId, Integer leaderId, String invitedMemberCode) {
         Party party = partyRepository.findById(partyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
 
         if (!Objects.equals(party.getLeader().getId(), leaderId)) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED, "파티 초대 권한이 없습니다.");
+            throw new CustomException(ErrorCode.PARTY_FORBIDDEN);
         }
 
         // 정원 확인
@@ -280,61 +293,99 @@ public class PartyService {
 
         // 코드로 멤버를 조회합니다.
         Member invitedMember = memberRepository.findByCode(invitedMemberCode)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "해당 코드를 가진 멤버를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND_BY_CODE));
 
-        if (partyMemberRepository.findByParty_IdAndMember_Id(partyId, invitedMember.getId()).isPresent()) {
-            throw new CustomException(ErrorCode.CONFLICT, "이미 파티에 가입되어 있거나 초대 대기 중인 멤버입니다.");
+        Optional<PartyMember> partyMemberOptional = partyMemberRepository.findByParty_IdAndMember_Id(partyId, invitedMember.getId());
+
+        PartyMember partyMember;
+        PartyMemberStatus newStatus = PartyMemberStatus.INVITED;
+
+        if (partyMemberOptional.isPresent()) {
+            partyMember = partyMemberOptional.get();
+            PartyMemberStatus currentStatus = partyMember.getStatus();
+
+            // REJECTED 상태였던 경우 INVITED로 재전환 허용
+            if (currentStatus == PartyMemberStatus.REJECTED || currentStatus == PartyMemberStatus.LEFT || currentStatus == PartyMemberStatus.COMPLETED) {
+                partyMember.setStatus(newStatus);
+                partyMemberRepository.save(partyMember);
+            } else {
+                // 이미 ACCEPTED, PENDING, INVITED 등 유효한 상태면 예외 처리
+                throw new CustomException(ErrorCode.ALREADY_PARTY_MEMBER);
+            }
+        } else {
+            // 신규 초대: INVITED 상태로 생성
+            partyMember = new PartyMember();
+            partyMember.setParty(party);
+            partyMember.setMember(invitedMember);
+            partyMember.setStatus(newStatus);
+            partyMember.setJoinedAt(LocalDateTime.now());
+            partyMemberRepository.save(partyMember);
         }
 
-        PartyMember partyMember = new PartyMember();
-        partyMember.setParty(party);
-        partyMember.setMember(invitedMember);
-        partyMember.setStatus(PartyMemberStatus.PENDING);
-        partyMember.setJoinedAt(LocalDateTime.now());
-        partyMemberRepository.save(partyMember);
+        return new PartyMemberStatusResponse(invitedMember.getId(), newStatus.name());
     }
 
     @Transactional
-    @CacheEvict(value = {"partyList", "partyDetails"}, key = "#partyId")
-    public void acceptInvitation(Integer partyId, Integer memberId) {
-        PartyMember partyMember = partyMemberRepository.findByParty_IdAndMember_Id(partyId, memberId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "초대 정보를 찾을 수 없습니다."));
+    @CacheEvict(value = {"partyList", "partyDetails", "pendingRequests"}, allEntries = true)
+    public PartyMemberStatusResponse acceptInvitation(Integer partyId, Integer memberIdToAccept, Integer leaderId) {
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
 
-        if (partyMember.getStatus() != PartyMemberStatus.PENDING) {
-            throw new CustomException(ErrorCode.BAD_REQUEST, "초대 대기 상태가 아닙니다.");
+        if (!Objects.equals(party.getLeader().getId(), leaderId)) {
+            throw new CustomException(ErrorCode.PARTY_FORBIDDEN);
+        }
+
+        PartyMember partyMember = partyMemberRepository.findByParty_IdAndMember_Id(partyId, memberIdToAccept)
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_MEMBER_NOT_FOUND));
+
+        // PENDING 또는 INVITED 상태만 수락 가능
+        if (partyMember.getStatus() != PartyMemberStatus.PENDING && partyMember.getStatus() != PartyMemberStatus.INVITED) {
+            throw new CustomException(ErrorCode.INVALID_PARTY_MEMBER_STATUS);
         }
 
         // 파티 정원 확인
-        long acceptedMembers = partyMemberRepository.countByParty_IdAndStatus(partyMember.getParty().getId(), PartyMemberStatus.ACCEPTED);
-        if (acceptedMembers >= partyMember.getParty().getMaxMembers()) {
-            throw new CustomException(ErrorCode.CONFLICT, "파티의 정원이 가득 찼습니다.");
-        }
+        checkPartyCapacity(party);
 
         partyMember.setStatus(PartyMemberStatus.ACCEPTED);
+        partyMemberRepository.save(partyMember);
+
+        return new PartyMemberStatusResponse(memberIdToAccept, PartyMemberStatus.ACCEPTED.name());
     }
 
     @Transactional
-    @CacheEvict(value = {"partyList", "partyDetails"}, key = "#partyId")
-    public void rejectInvitation(Integer partyId, Integer memberId) {
-        PartyMember partyMember = partyMemberRepository.findByParty_IdAndMember_Id(partyId, memberId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "초대 정보를 찾을 수 없습니다."));
+    @CacheEvict(value = "pendingRequests", allEntries = true)
+    public PartyMemberStatusResponse rejectInvitation(Integer partyId, Integer memberIdToReject, Integer leaderId) { // [memberIdToReject, leaderId 추가
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
 
-        if (partyMember.getStatus() != PartyMemberStatus.PENDING) {
-            throw new CustomException(ErrorCode.BAD_REQUEST, "초대 대기 상태가 아닙니다.");
+        if (!Objects.equals(party.getLeader().getId(), leaderId)) {
+            throw new CustomException(ErrorCode.PARTY_FORBIDDEN);
         }
 
-        partyMemberRepository.delete(partyMember);
+        PartyMember partyMember = partyMemberRepository.findByParty_IdAndMember_Id(partyId, memberIdToReject)
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_MEMBER_NOT_FOUND));
+
+        // PENDING 또는 INVITED 상태만 거절 가능
+        if (partyMember.getStatus() != PartyMemberStatus.PENDING && partyMember.getStatus() != PartyMemberStatus.INVITED) {
+            throw new CustomException(ErrorCode.INVALID_PARTY_MEMBER_STATUS);
+        }
+
+        PartyMemberStatus newStatus = PartyMemberStatus.REJECTED;
+        partyMember.setStatus(newStatus);
+        partyMemberRepository.save(partyMember);
+
+        return new PartyMemberStatusResponse(memberIdToReject, newStatus.name());
     }
 
     @Transactional
     @CacheEvict(value = {"partyList", "partyDetails"}, key = "#partyId")
     public void kickMember(Integer partyId, Integer leaderId, Integer kickedMemberId) {
         Party party = partyRepository.findById(partyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "파티를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
 
         // 1. 추방을 요청한 멤버가 파티장인지 확인
         if (!Objects.equals(party.getLeader().getId(), leaderId)) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED, "파티원 추방 권한이 없습니다.");
+            throw new CustomException(ErrorCode.PARTY_FORBIDDEN);
         }
 
         // 2. 파티장 자신을 추방하는 것 방지
@@ -344,11 +395,11 @@ public class PartyService {
 
         // 3. 추방하려는 멤버가 해당 파티에 속해 있는지 확인
         PartyMember kickedMember = partyMemberRepository.findByParty_IdAndMember_Id(partyId, kickedMemberId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "해당 파티원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_MEMBER_NOT_FOUND));
 
         // 4. 멤버 상태가 ACCEPTED인지 확인
         if (kickedMember.getStatus() != PartyMemberStatus.ACCEPTED) {
-            throw new CustomException(ErrorCode.BAD_REQUEST, "가입이 완료된 파티원만 추방할 수 있습니다.");
+            throw new CustomException(ErrorCode.INVALID_PARTY_MEMBER_STATUS, "가입이 완료된 파티원만 추방할 수 있습니다.");
         }
 
         // 5. 파티원 삭제
@@ -359,15 +410,18 @@ public class PartyService {
     @Transactional(readOnly = true)
     public List<PartyMember> getPendingJoinRequests(Integer partyId, Integer leaderId) {
         Party party = partyRepository.findById(partyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "파티를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTY_NOT_FOUND));
 
         if (!Objects.equals(party.getLeader().getId(), leaderId)) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED, "권한이 없습니다.");
+            throw new CustomException(ErrorCode.PARTY_FORBIDDEN);
         }
 
-        return partyMemberRepository.findByParty_IdAndStatus(partyId, PartyMemberStatus.PENDING);
+        // PENDING과 INVITED 상태를 동시에 조회
+        return partyMemberRepository.findByParty_IdAndStatusIn(
+                partyId,
+                List.of(PartyMemberStatus.PENDING, PartyMemberStatus.INVITED)
+        );
     }
-
     public Page<PartyDto> getMyPartyList(
             Integer memberId,
             String statusFilter, // "ongoing" 또는 "done"
