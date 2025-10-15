@@ -17,6 +17,8 @@ import com.back.domain.mission.repository.SubGoalRepository;
 import com.back.domain.mission.repository.TaskLogRepository;
 import com.back.domain.mission.repository.TaskRepository;
 import com.back.domain.party.party.entity.PartyMemberStatus;
+import com.back.domain.reward.entity.RewardType;
+import com.back.domain.reward.service.RewardService;
 import com.back.global.util.TimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -42,6 +44,7 @@ public class TaskService {
     private final ApplicationEventPublisher eventPublisher;
     private final CompletionCheckService completionCheckService;
     private final MemberService memberService;
+    private final RewardService rewardService;
 
     // 태스크 완료/취소 처리 (체크박스 토글)
     // 당일만 처리 가능
@@ -94,19 +97,45 @@ public class TaskService {
         // 4. 저장
         taskLogRepository.save(taskLog);
 
-        // 5. 이벤트 발행 (COMPLETED일 때만 - 보상 처리용)
+        // 🆕 5. Task 완료/취소 시 즉시 보상 처리
         if (finalStatus == TaskStatus.COMPLETED) {
             System.out.println("━━━━━━━━━━━━━━━━━━━━");
             System.out.println("✅ Task 완료!");
             System.out.println("memberId: " + memberId);
             System.out.println("taskId: " + task.getId());
+
+            // 🆕 Task 완료 즉시 보상 지급
+            System.out.println("🎁 Task 완료 보상 지급 중...");
+            try {
+                rewardService.giveRewardByType(memberId, RewardType.DAILYCLEAR);
+                System.out.println("✅ Task 완료 보상 지급 완료! (XP +400, 골드 +10)");
+            } catch (Exception e) {
+                System.out.println("❌ Task 완료 보상 지급 실패: " + e.getMessage());
+                e.printStackTrace();
+            }
+
             System.out.println("checkAllCompletions 호출!");
-
             completionCheckService.checkAllCompletions(memberId, task, today);
-
             System.out.println("━━━━━━━━━━━━━━━━━━━━");
+
         } else if (finalStatus == TaskStatus.CANCELLED) {
+            System.out.println("━━━━━━━━━━━━━━━━━━━━");
+            System.out.println("❌ Task 취소!");
+            System.out.println("memberId: " + memberId);
+            System.out.println("taskId: " + task.getId());
+
+            // 🆕 Task 취소 시 보상 회수
+            System.out.println("🔙 Task 취소 보상 회수 중...");
+            try {
+                rewardService.revokeRewardByType(memberId, RewardType.DAILYCLEAR);
+                System.out.println("✅ Task 취소 보상 회수 완료! (XP -400, 골드 -10)");
+            } catch (Exception e) {
+                System.out.println("❌ Task 취소 보상 회수 실패: " + e.getMessage());
+                e.printStackTrace();
+            }
+
             completionCheckService.recheckAfterCancellation(memberId, task, today);
+            System.out.println("━━━━━━━━━━━━━━━━━━━━");
         }
 
         List<Integer> titleIdsAfter = memberService.getMemberTitleIds(memberId);
@@ -116,10 +145,10 @@ public class TaskService {
                 .toList();
 
         List<String> newTitleNames = memberService.getTitleNames(newTitleIds);
+
         // 7. 응답 생성
         return buildTaskCompleteResponse(task, mission, memberId, today, finalStatus, newTitleNames);
     }
-
     // 오늘의 태스크 조회
     @Transactional(readOnly = true)
     public List<TaskResponse> getTodayTasks(Integer memberId) {

@@ -66,10 +66,14 @@ public interface TaskLogRepository extends JpaRepository<TaskLog, Integer> {
             @Param("date") LocalDate date,
             @Param("dayNum") Integer dayNum);
 
-
-
+    @Query("SELECT COUNT(tl) FROM TaskLog tl " +
+            "WHERE tl.memberId = :memberId " +
+            "AND tl.date = :date " +
+            "AND tl.status = :status")
     Long countByMemberIdAndDateAndStatus(
-            Integer memberId, LocalDate date, TaskStatus status);
+            @Param("memberId") Integer memberId,
+            @Param("date") LocalDate date,
+            @Param("status") TaskStatus status);
 
     // 완료된 태스크 수 조회 (미션 진행률용)
     @Query("SELECT COUNT(tl) FROM TaskLog tl " +
