@@ -3,6 +3,7 @@ package com.back.domain.mission.repository;
 import com.back.domain.mission.entity.Task;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,19 +16,22 @@ import java.util.List;
 public interface TaskRepository extends JpaRepository<Task, Integer> {
     List<Task> findBySubGoalId(Integer subGoalId);
     @Query("""
-    SELECT DISTINCT t FROM Task t
-    JOIN FETCH t.subGoal sg
-    JOIN FETCH sg.mission m
-    LEFT JOIN m.party p
-    LEFT JOIN p.partyMembers pm
-    WHERE (m.member.id = :memberId 
-           OR (pm.member.id = :memberId AND pm.status = 'ACCEPTED'))
-    AND m.isCompleted = false
-    AND t.dayNum = :dayNum
-    AND :date BETWEEN sg.startDate AND sg.endDate
-    AND :date BETWEEN m.startDate AND m.endDate
-    ORDER BY m.id, sg.orderNum, t.dayNum
-    """)
+SELECT DISTINCT t FROM Task t
+JOIN t.subGoal sg
+JOIN sg.mission m
+LEFT JOIN m.party p
+LEFT JOIN p.partyMembers pm ON pm.member.id = :memberId AND pm.status = 'ACCEPTED'
+WHERE m.isCompleted = false
+AND t.dayNum = :dayNum
+AND :date BETWEEN sg.startDate AND sg.endDate
+AND :date BETWEEN m.startDate AND m.endDate
+AND (
+    (m.party IS NULL AND m.member.id = :memberId) OR
+    (m.party IS NOT NULL AND pm IS NOT NULL)
+)
+ORDER BY m.id, sg.orderNum, t.dayNum
+""")
+    @EntityGraph(attributePaths = {"subGoal", "subGoal.mission"})
     List<Task> findTodayTasks(
             @Param("memberId") Integer memberId,
             @Param("date") LocalDate date,
