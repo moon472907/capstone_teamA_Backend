@@ -52,10 +52,15 @@ public interface TaskLogRepository extends JpaRepository<TaskLog, Integer> {
     @Query("SELECT COUNT(DISTINCT t.id) FROM Task t " +
             "JOIN t.subGoal sg " +
             "JOIN sg.mission m " +
-            "WHERE m.member.id = :memberId " +
-            "AND t.dayNum = :dayNum " +
+            "LEFT JOIN m.party p " +
+            "LEFT JOIN p.partyMembers pm " +
+            "WHERE t.dayNum = :dayNum " +
             "AND :date BETWEEN sg.startDate AND sg.endDate " +
-            "AND m.isCompleted = false")
+            "AND m.isCompleted = false " +
+            "AND (" +
+            "    m.member.id = :memberId OR " +
+            "    (pm.member.id = :memberId AND pm.status = 'ACCEPTED')" +
+            ")")
     Long countDailyTasks(
             @Param("memberId") Integer memberId,
             @Param("date") LocalDate date,

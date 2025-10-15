@@ -54,32 +54,60 @@ public class CompletionCheckService {
     }
 
     // ========== 데일리 ==========
-
     private void checkDailyCompletion(Integer memberId, LocalDate date) {
-        if (dailyCompletionLogRepository.existsByMemberIdAndCompletedDate(memberId, date)) {
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        System.out.println("🔍 checkDailyCompletion 시작");
+        System.out.println("memberId: " + memberId);
+        System.out.println("date: " + date);
+
+        boolean alreadyCompleted = dailyCompletionLogRepository.existsByMemberIdAndCompletedDate(memberId, date);
+        System.out.println("이미 완료?: " + alreadyCompleted);
+
+        if (alreadyCompleted) {
+            System.out.println("❌ 이미 완료됨 - 리턴");
+            System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━");
             return;
         }
 
+        System.out.println("데일리 진행률 계산 중...");
         Integer progress = calculateService.calculateDailyProgress(memberId, date);
+        System.out.println("데일리 진행률: " + progress + "%");
 
         if (progress >= 80) {
+            System.out.println("✅ 진행률 80% 이상!");
+
+            System.out.println("DailyCompletionLog 저장 중...");
             dailyCompletionLogRepository.save(DailyCompletionLog.builder()
                     .memberId(memberId)
                     .completedDate(date)
                     .build());
+            System.out.println("✅ DailyCompletionLog 저장 완료!");
 
+            System.out.println("통계 업데이트 중...");
             statisticsService.onDailyCompleted(memberId, date);
+            System.out.println("✅ 통계 업데이트 완료!");
 
+            System.out.println("데일리 보상 지급 중...");
             try {
                 rewardService.giveRewardByType(memberId, RewardType.DAILYCLEAR);
-            } catch (Exception ignored) {
+                System.out.println("✅ 데일리 보상 지급 완료!");
+            } catch (Exception e) {
+                System.out.println("❌ 데일리 보상 지급 실패: " + e.getMessage());
+                e.printStackTrace();
             }
 
+            System.out.println("데일리 이벤트 발행 중...");
             applicationEventPublisher.publishEvent(DailyCompletedEvent.builder()
                     .memberId(memberId)
                     .completedDate(date)
                     .build());
+            System.out.println("✅ 데일리 이벤트 발행 완료!");
+
+            System.out.println("✅✅✅ checkDailyCompletion 전체 완료!");
+        } else {
+            System.out.println("❌ 진행률 부족: " + progress + "% < 80%");
         }
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━");
     }
 
     private void recheckDailyCompletion(Integer memberId, LocalDate date) {
@@ -151,6 +179,7 @@ public class CompletionCheckService {
     // ========== 미션 ==========
 
     private void checkMissionCompletion(Integer memberId, Mission mission) {
+
         if (missionCompletionLogRepository.existsByMissionIdAndMemberId(mission.getId(), memberId)) {
             return;
         }
