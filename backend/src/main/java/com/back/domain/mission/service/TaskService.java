@@ -155,13 +155,29 @@ public class TaskService {
         LocalDate today = timeProvider.today();
         int todayDayNum = today.getDayOfWeek().getValue();
 
+        System.out.println("━━━━━━━━━━━━━━━━━━━━");
+        System.out.println("🔍 getTodayTasks");
+        System.out.println("memberId: " + memberId);
+        System.out.println("today: " + today);
+        System.out.println("todayDayNum: " + todayDayNum);
+
         List<Task> tasks = taskRepository.findTodayTasks(memberId, today, todayDayNum);
+
+        System.out.println("조회된 Task 개수: " + tasks.size());
+        tasks.forEach(task -> {
+            System.out.println("  - Task ID: " + task.getId());
+            System.out.println("    Title: " + task.getTitle());
+            System.out.println("    DayNum: " + task.getDayNum());
+            System.out.println("    Mission ID: " + task.getSubGoal().getMission().getId());
+            System.out.println("    isPartyMission: " + task.getSubGoal().getMission().isPartyMission());
+            System.out.println("    Mission Owner: " + task.getSubGoal().getMission().getMember().getId());
+        });
+        System.out.println("━━━━━━━━━━━━━━━━━━━━");
 
         return tasks.stream()
                 .map(task -> convertToTaskResponseForToday(task, memberId, today))
                 .collect(Collectors.toList());
     }
-
     // 특정 날짜의 태스크 조회
     @Transactional(readOnly = true)
     public List<TaskResponse> getTasksByDate(Integer memberId, LocalDate date) {
