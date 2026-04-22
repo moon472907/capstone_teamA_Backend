@@ -97,24 +97,6 @@ public class ApiV1MemberController {
                 );
     }
 
-    @PutMapping("/valid")
-    @Operation(summary = "가입 완료 처리", description = "가입 절차 완료 처리")
-    public ResponseEntity<ApiResponse<MemberDto>> valid_set(
-            @Valid @RequestBody ModifyReqDto reqBody
-    ) {
-        Member actor = rq.getActorFromDb();
-        memberService.modifyProfile(actor, reqBody.name(), reqBody.birth(), reqBody.gender());
-        memberService.genCode(actor);
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(new ApiResponse<>(
-                                "200",
-                                "[Member] Success: 가입 완료 처리",
-                                new MemberDto(actor)
-                        )
-                );
-    }
 
     @DeleteMapping("/delete")
     @Operation(summary = "회원 탈퇴", description = "회원 탈퇴")
@@ -145,7 +127,7 @@ public class ApiV1MemberController {
             @Valid @RequestBody ModifyReqDto reqBody
     ) {
         Member actor = rq.getActorFromDb();
-        memberService.modifyProfile(actor, reqBody.name(), reqBody.birth(), reqBody.gender());
+        memberService.modifyProfile(actor, reqBody.name(), reqBody.birth());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
