@@ -1,32 +1,14 @@
 spring:
-  autoconfigure:
-    exclude:
-  data:
-    redis:
-      host: redis_1
-      password: ${SPRING__DATA__REDIS__PASSWORD}
   datasource:
     url: jdbc:mysql://mysql_1:3306/${SPRING__DATASOURCE__URL___DB_NAME}
     username: lldjlocal
     password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
-  kafka:
-    #bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:broker-1.prod-kafka.com:19092}
-    bootstrap-servers: redpanda-0:9092
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-    consumer:
-      group-id: chat-db-saver-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-    dlq:
-      topic: chat-messages-dlq
   jpa:
     show-sql: true
     hibernate:
       ddl-auto: update
+
 logging:
   level:
     org.hibernate.orm.jdbc.bind: INFO
@@ -40,9 +22,3 @@ custom:
     frontUrl: "${custom.prod.frontUrl}"
     backUrl: "${custom.prod.backUrl}"
     name: nutree
-app:
-  image:
-    base-url: "http://api.nutree.noredsun.com/images/"
-
-
-

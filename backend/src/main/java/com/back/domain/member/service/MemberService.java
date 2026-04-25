@@ -1,6 +1,5 @@
 package com.back.domain.member.service;
 
-
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.global.exception.CustomException;
@@ -23,7 +22,6 @@ public class MemberService {
     private final AuthService authService;
     private final MemberRepository memberRepository;
 
-    //가입 (일반)
     public Member signup(String email, String password, String name) {
         findByEmail(email)
                 .ifPresent(_member -> {
@@ -33,36 +31,25 @@ public class MemberService {
         password = passwordEncoder.encode(password);
         Member member = new Member(email, password, name);
 
-
         return memberRepository.save(member);
     }
 
-    //로그인 (일반)
     public Member login(String email, String password) {
         Member member = findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "[Member] Fail: 잘못된 이메일"));
-        if(!passwordEncoder.matches(password, member.getPassword())) {
+        if (!passwordEncoder.matches(password, member.getPassword())) {
             throw new CustomException(ErrorCode.UNAUTHORIZED, "[Member] Fail: 잘못된 비밀번호");
         }
 
         return member;
     }
-/*
-    //로그인 (소셜 계정)
-    public Member social_login(String email, String name, String socialAccessToken) {
-        Member member = findByEmail(email).orElse(null);
 
-        //최초 로그인일 경우 가입 처리
-        if(member == null) {
-            member = signup(email, "", name);
-        }
-
-        member.setSocialAccessToken(socialAccessToken);
-
-        return member;
+    public void delete(Member member) {
+        member.setEmail("[DELETED_%d]%s".formatted(member.getId(), member.getEmail()));
+        memberRepository.saveAndFlush(member);
+        memberRepository.delete(member);
     }
-*/
-    //식별코드 생성
+
     public void genCode(Member member) {
         final String CHAR_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         final SecureRandom random = new SecureRandom();
@@ -70,38 +57,20 @@ public class MemberService {
         String code;
         do {
             StringBuilder sb = new StringBuilder(6);
-            for(int i=0; i<6; i++) {
+            for (int i = 0; i < 6; i++) {
                 sb.append(CHAR_POOL.charAt(random.nextInt(CHAR_POOL.length())));
             }
             code = sb.toString();
-        } while(memberRepository.existsByCode(code));
+        } while (memberRepository.existsByCode(code));
 
         member.setCode(code);
     }
-/*
-    //회원 탈퇴
-    public void delete(Member member) {
-        member.setEmail("[DELETED_%d]%s".formatted(member.getId(), member.getEmail()));
-        memberRepository.saveAndFlush(member);
-        memberStatisticService.delete(member);
-        memberRepository.delete(member);
-    }
 
-    //회원 탈퇴 (소셜 계정)
-    public void delete_social(Member member) {
-        String provider = member.getEmail().substring(1, member.getEmail().indexOf("]"));
-        authService.delete_social(provider, member.getSocialAccessToken());
-    }
-
-*/
-    // *** Modify 메서드 ***
-    public void modifyProfile(Member member, String name, LocalDate age ) {
+    public void modifyProfile(Member member, String name, LocalDate birth) {
         member.setName(name);
-        member.setBirth(age);
-
+        member.setBirth(birth);
     }
 
-    // *** Find 메서드 ***
     public Optional<Member> findById(int id) {
         return memberRepository.findById(id);
     }
@@ -113,13 +82,7 @@ public class MemberService {
     public Optional<Member> findByCode(String code) {
         return memberRepository.findByCode(code);
     }
-/*
-    public Optional<Member> findByApiKey(String apiKey) {
-        return memberRepository.findByApiKey(apiKey);
-    }
-*/
 
-    // *** 인증/인가 관련 메서드 ***
     public String genAccessToken(Member member) {
         return authService.genAccessToken(member);
     }
@@ -127,5 +90,4 @@ public class MemberService {
     public Map<String, Object> payload(String accessToken) {
         return authService.payload(accessToken);
     }
-
 }

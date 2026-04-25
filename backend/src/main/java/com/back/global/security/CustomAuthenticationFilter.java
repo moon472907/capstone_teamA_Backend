@@ -29,8 +29,6 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        logger.debug("Processing request for " + request.getRequestURI());
-
         try {
             work(request, response, filterChain);
         } catch (CustomException e) {
@@ -40,74 +38,31 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void work(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        // API 요청이 아니라면 패스
         if (!request.getRequestURI().startsWith("/api/")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 인증, 인가가 필요없는 API 요청이라면 패스
         if (List.of("/api/v1/members/signup", "/api/v1/members/login").contains(request.getRequestURI())) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String apiKey;
-        String accessToken;
+        String accessToken = resolveToken(request);
 
-        String headerAuthorization = rq.getHeader("Authorization", "");
-
-        if (!headerAuthorization.isBlank()) {
-            if (!headerAuthorization.startsWith("Bearer "))
-                throw new CustomException(ErrorCode.UNAUTHORIZED, "[Security] Fail: Authorization 헤더가 Bearer 형식이 아님");
-
-            String[] headerAuthorizationBits = headerAuthorization.split(" ", 3);
-
-            apiKey = headerAuthorizationBits[1];
-            accessToken = headerAuthorizationBits.length == 3 ? headerAuthorizationBits[2] : "";
-        } else {
-            apiKey = rq.getCookieValue("apiKey", "");
-            accessToken = rq.getCookieValue("accessToken", "");
-        }
-
-        logger.debug("apiKey : " + apiKey);
-        logger.debug("accessToken : " + accessToken);
-
-        boolean isApiKeyExists = !apiKey.isBlank();
-        boolean isAccessTokenExists = !accessToken.isBlank();
-
-        if (!isApiKeyExists && !isAccessTokenExists) {
+        if (accessToken == null || accessToken.isBlank()) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        Member member = null;
-        boolean isAccessTokenValid = false;
-
-        if (isAccessTokenExists) {
-            Map<String, Object> payload = memberService.payload(accessToken);
-
-            if (payload != null) {
-                int id = (int) payload.get("id");
-                String email = (String) payload.get("email");
-                member = new Member(id, email);
-
-                isAccessTokenValid = true;
-            }
+        Map<String, Object> payload = memberService.payload(accessToken);
+        if (payload == null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED, "[Security] Fail: 유효하지 않은 토큰");
         }
 
-        if (member == null) {
-            member = memberService
-                    .findByApiKey(apiKey)
-                    .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED, "[Security] Fail: API 키 유효하지 않음"));
-        }
-
-        if (isAccessTokenExists && !isAccessTokenValid) {
-            String actorAccessToken = memberService.genAccessToken(member);
-
-            rq.setCookie("accessToken", actorAccessToken);
-            rq.setHeader("Authorization", actorAccessToken);
-        }
+        int id = (int) payload.get("id");
+        String email = (String) payload.get("email");
+        Member member = new Member(id, email);
 
         UserDetails user = new SecurityUser(
                 member.getId(),
@@ -122,11 +77,17 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
                 user.getAuthorities()
         );
 
-        // 이 시점 이후부터는 시큐리티가 이 요청을 인증된 사용자의 요청이다.
-        SecurityContextHolder
-                .getContext()
-                .setAuthentication(authentication);
-
+        SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);
+    }
+
+    private String resolveToken(HttpServletRequest request) {
+        String header = rq.getHeader("Authorization", "");
+        if (!header.isBlank()) {
+            if (!header.startsWith("Bearer "))
+                throw new CustomException(ErrorCode.UNAUTHORIZED, "[Security] Fail: Authorization 헤더가 Bearer 형식이 아님");
+            return header.substring(7).trim();
+        }
+        return rq.getCookieValue("accessToken", "");
     }
 }

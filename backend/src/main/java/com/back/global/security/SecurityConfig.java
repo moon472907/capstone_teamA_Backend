@@ -8,7 +8,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -22,14 +21,12 @@ import static org.springframework.security.config.http.SessionCreationPolicy.STA
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final CustomAuthenticationFilter customAuthenticationFilter;
-    private final AuthenticationSuccessHandler customOAuth2LoginSuccessHandler;
-    private final CustomOAuth2AuthorizationRequestResolver customOAuth2AuthorizationRequestResolver;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)   // CSRF 비활성화
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))  //CORS 설정
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(
                         auth -> auth
                                 .requestMatchers(
@@ -41,30 +38,18 @@ public class SecurityConfig {
                                         "/swagger-resources/**",
                                         "/webjars/**",
                                         "/v3/api-docs/**",
-                                        "/api/**",
-                                        "/images/**",
-                                        "/ws/chat/**"
-
+                                        "/api/**"
                                 ).permitAll()
                                 .anyRequest().permitAll()
                 )
                 .headers(
                         headers -> headers
-                                .frameOptions(
-                                        HeadersConfigurer.FrameOptionsConfig::sameOrigin
-                                )
-                ).csrf(AbstractHttpConfigurer::disable)
+                                .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
+                )
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(STATELESS))
-                .oauth2Login(oauth2Login -> oauth2Login
-                        .successHandler(customOAuth2LoginSuccessHandler)
-                        .authorizationEndpoint(
-                                authorizationEndpoint -> authorizationEndpoint
-                                        .authorizationRequestResolver(customOAuth2AuthorizationRequestResolver)
-                        )
-                )
+                .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
                 .addFilterBefore(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
@@ -75,18 +60,11 @@ public class SecurityConfig {
         final String frontUrl = "https://www.nutree.noredsun.com/";
 
         CorsConfiguration configuration = new CorsConfiguration();
-
-        // 허용할 오리진 설정
         configuration.setAllowedOrigins(List.of(frontDevUrl, frontUrl));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
-
-        // 자격 증명 허용 설정
         configuration.setAllowCredentials(true);
-
-        // 허용할 헤더 설정
         configuration.setAllowedHeaders(List.of("*"));
 
-        // CORS 설정을 소스에 등록
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", configuration);
 
