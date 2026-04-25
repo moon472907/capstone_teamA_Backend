@@ -1,4 +1,8 @@
 spring:
+  data:
+    redis:
+      host: redis_1
+      password: ${SPRING__DATA__REDIS__PASSWORD}
   datasource:
     url: jdbc:mysql://mysql_1:3306/${SPRING__DATASOURCE__URL___DB_NAME}
     username: lldjlocal
