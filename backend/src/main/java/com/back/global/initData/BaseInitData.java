@@ -24,5 +24,6 @@ public class BaseInitData {
 
     @Transactional
     public void initAllData() {
+
     }
 }
