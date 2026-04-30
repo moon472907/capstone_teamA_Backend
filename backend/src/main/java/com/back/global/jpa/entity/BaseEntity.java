@@ -19,7 +19,7 @@ import static lombok.AccessLevel.PROTECTED;
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @Getter
-public abstract class BaseEntity {
+public abstract class  BaseEntity {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Setter(PROTECTED)

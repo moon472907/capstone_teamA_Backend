@@ -5,12 +5,29 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public enum ErrorCode {
+
+    // Generic
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "INPUT-400", "요청이 올바르지 않습니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH-401", "인증되지 않았습니다."),
     NOT_FOUND(HttpStatus.NOT_FOUND, "USER-404", "리소스를 찾을 수 없습니다."),
     INVALID_PARTY_MEMBER_STATUS(HttpStatus.BAD_REQUEST, "PM-400", "현재 파티 멤버 상태로는 요청하신 작업을 수행할 수 없습니다."),
     CONFLICT(HttpStatus.CONFLICT, "CONFLICT-409", "요청이 충돌합니다"),
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER-500", "서버 내부 오류가 발생하였습니다.");
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER-500", "서버 내부 오류가 발생하였습니다."),
+
+    // Game
+    GAME_NOT_FOUND(HttpStatus.NOT_FOUND, "GAME-404", "게임을 찾을 수 없습니다."),
+    GAME_NOT_WAITING(HttpStatus.BAD_REQUEST, "GAME-400-01", "게임이 대기 상태가 아닙니다."),
+    GAME_FULL(HttpStatus.BAD_REQUEST, "GAME-400-02", "게임 정원이 찼습니다."),
+    GAME_NOT_IN_PROGRESS(HttpStatus.BAD_REQUEST, "GAME-400-03", "게임이 진행 중이 아닙니다."),
+    GAME_ALREADY_FINISHED(HttpStatus.BAD_REQUEST, "GAME-400-04", "이미 종료된 게임입니다."),
+    GAME_NOT_ENOUGH_PLAYERS(HttpStatus.BAD_REQUEST, "GAME-400-05", "최소 2명이 필요합니다."),
+    NOT_YOUR_TURN(HttpStatus.FORBIDDEN, "GAME-403-01", "현재 당신의 턴이 아닙니다."),
+    INVALID_STATE_TRANSITION(HttpStatus.BAD_REQUEST, "GAME-400-06", "현재 게임 상태에서 허용되지 않는 요청입니다."),
+    PLAYER_ALREADY_IN_GAME(HttpStatus.CONFLICT, "GAME-409-01", "이미 해당 게임에 참여 중입니다."),
+    GAME_ACTION_LOCKED(HttpStatus.CONFLICT, "GAME-409-02", "다른 액션이 처리 중입니다. 잠시 후 다시 시도해주세요."),
+
+    // Board
+    BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "BOARD-404", "보드를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

@@ -1,21 +1,57 @@
 package com.back.domain.game.entity;
 
-
 import com.back.domain.player.entity.Player;
 import com.back.domain.world.entity.World;
 import com.back.global.jpa.entity.BaseEntity;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Game extends BaseEntity {
-    World world;
-    Player[]  players =  new Player[4];
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private GameState state;
+
+    @Column(nullable = false)
+    private int maxPlayers;
+
+    @Column(nullable = false)
+    private int maxRounds;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "world_id", nullable = false)
+    private World world;
+
+    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<Player> players = new ArrayList<>();
+
+    public int getPlayerCount() {
+        return players.size();
+    }
+
+    public boolean isFull() {
+        return players.size() >= maxPlayers;
+    }
 }
