@@ -31,8 +31,10 @@ public class GameStateSnapshotDto {
     public static class PlayerSnapshotDto {
         private Integer playerId;
         private String nickname;
+        private String characterKey;
         private Integer tileId;
         private int coins;
+        private int gpa;
         private boolean connected;
     }
 
@@ -41,8 +43,10 @@ public class GameStateSnapshotDto {
                 .map(p -> PlayerSnapshotDto.builder()
                         .playerId(p.getPlayerId())
                         .nickname(p.getNickname())
+                        .characterKey(p.getCharacterKey())
                         .tileId(p.getTileId())
                         .coins(p.getCoins())
+                        .gpa(p.getGpa())
                         .connected(p.isConnected())
                         .build())
                 .toList();

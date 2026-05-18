@@ -11,6 +11,7 @@
 build/
 .gradle/
 out/
+*.jar
 
 # ── IntelliJ IDEA ────────────────────────────────────
 .idea/
@@ -23,6 +24,15 @@ out/
 
 # ── Claude Code ──────────────────────────────────────
 .claude/
+
+# ── Postman (로컬 관리) ──────────────────────────────
+*.postman_collection.json
+*.postman_environment.json
+
+# ── 다이어그램 (로컬 관리) ───────────────────────────
+*.drawio
+*.drawio.bkp
+.*.drawio.bkp
 
 # ── OS 파일 ──────────────────────────────────────────
 .DS_Store

@@ -1,5 +1,7 @@
 package com.back.global.initData;
 
+import com.back.domain.character.entity.GameCharacter;
+import com.back.domain.character.repository.CharacterRepository;
 import com.back.domain.member.service.MemberService;
 import com.back.domain.world.entity.Edge;
 import com.back.domain.world.entity.Node;
@@ -31,6 +33,7 @@ public class BaseInitData {
     private final MemberService memberService;
     private final WorldRepository worldRepository;
     private final NodeRepository nodeRepository;
+    private final CharacterRepository characterRepository;
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner() {
@@ -39,9 +42,25 @@ public class BaseInitData {
 
     @Transactional
     public void initAllData() {
+        if (characterRepository.count() == 0) {
+            initCharacters();
+        }
         if (worldRepository.count() == 0) {
             initDefaultBoard();
         }
+    }
+
+    private void initCharacters() {
+        List<GameCharacter> characters = List.of(
+                GameCharacter.builder().characterKey("gomduri").name("곰두리").icon("🐻‍❄️").description("강원대 대표 마스코트").build(),
+                GameCharacter.builder().characterKey("narae").name("나래").icon("🕊️").description("하늘을 나는 비둘기").build(),
+                GameCharacter.builder().characterKey("daramji").name("다람쥐").icon("🐿️").description("캠퍼스 다람쥐").build(),
+                GameCharacter.builder().characterKey("bunny").name("토끼").icon("🐰").description("춘천 옥토끼").build(),
+                GameCharacter.builder().characterKey("fox").name("여우").icon("🦊").description("영리한 산여우").build(),
+                GameCharacter.builder().characterKey("cat").name("고양이").icon("🐱").description("캠퍼스 길고양이").build()
+        );
+        characterRepository.saveAll(characters);
+        log.info("Characters initialised: {} characters", characters.size());
     }
 
     /**

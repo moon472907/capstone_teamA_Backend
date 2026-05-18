@@ -24,6 +24,7 @@ public class TurnTimeoutService {
         gameRepository.findByState(GameState.IN_PROGRESS).forEach(game -> {
             try {
                 gameService.autoRollIfTimeout(game.getId());
+                gameService.autoSelectBranchIfTimeout(game.getId());
             } catch (Exception e) {
                 log.error("Timeout check failed for game {}", game.getId(), e);
             }

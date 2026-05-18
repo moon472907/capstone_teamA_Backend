@@ -1,6 +1,8 @@
 package com.back.domain.game.controller;
 
+import com.back.domain.game.dto.BranchSelectReqDto;
 import com.back.domain.game.dto.CreateGameReqDto;
+import com.back.domain.game.dto.GameRoomDto;
 import com.back.domain.game.dto.GameStateSnapshotDto;
 import com.back.domain.game.dto.JoinGameReqDto;
 import com.back.domain.game.dto.RollResultDto;
@@ -22,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @Tag(name = "Game", description = "멀티플레이어 보드 게임 API")
 @RestController
 @RequestMapping("/api/v1/games")
@@ -30,6 +34,16 @@ public class GameController {
 
     private final GameService gameService;
     private final Rq rq;
+
+    /**
+     * GET /api/v1/games
+     * Returns all game rooms currently in WAITING state.
+     */
+    @Operation(summary = "대기 중인 방 목록 조회")
+    @GetMapping
+    public ApiResponse<List<GameRoomDto>> listWaitingGames() {
+        return ApiResponse.success("200", "대기 중인 방 목록입니다.", gameService.listWaitingGames());
+    }
 
     /**
      * POST /api/v1/games
@@ -56,8 +70,31 @@ public class GameController {
     }
 
     /**
+     * POST /api/v1/games/{gameId}/leave
+     * Leaves the waiting room. Host transfer occurs if the host leaves.
+     * Deletes the game if no players remain.
+     */
+    @Operation(summary = "방 나가기")
+    @PostMapping("/{gameId}/leave")
+    public ApiResponse<Void> leaveGame(@PathVariable Integer gameId) {
+        gameService.leaveGame(gameId, rq.getActor());
+        return ApiResponse.success("200", "방에서 나갔습니다.");
+    }
+
+    /**
+     * POST /api/v1/games/{gameId}/ready
+     * Toggles the calling player's ready status. Broadcasts PLAYER_READY event.
+     */
+    @Operation(summary = "레디 토글")
+    @PostMapping("/{gameId}/ready")
+    public ApiResponse<Void> ready(@PathVariable Integer gameId) {
+        gameService.ready(gameId, rq.getActor());
+        return ApiResponse.success("200", "레디 상태가 변경되었습니다.");
+    }
+
+    /**
      * POST /api/v1/games/{gameId}/start
-     * Starts the game. Requires at least 2 players.
+     * Starts the game. Requires all 4 players to have joined.
      */
     @Operation(summary = "게임 시작")
     @PostMapping("/{gameId}/start")
@@ -77,6 +114,18 @@ public class GameController {
     public ApiResponse<RollResultDto> rollDice(@PathVariable Integer gameId) {
         RollResultDto result = gameService.rollDice(gameId, rq.getActor());
         return ApiResponse.success("200", "주사위를 굴렸습니다.", result);
+    }
+
+    /**
+     * POST /api/v1/games/{gameId}/branch
+     * Current player selects a branch path. Only valid in BRANCH_SELECT state.
+     */
+    @Operation(summary = "분기점 선택")
+    @PostMapping("/{gameId}/branch")
+    public ApiResponse<RollResultDto> selectBranch(@PathVariable Integer gameId,
+                                                    @Valid @RequestBody BranchSelectReqDto req) {
+        RollResultDto result = gameService.selectBranch(gameId, rq.getActor(), req);
+        return ApiResponse.success("200", "분기점을 선택했습니다.", result);
     }
 
     /**

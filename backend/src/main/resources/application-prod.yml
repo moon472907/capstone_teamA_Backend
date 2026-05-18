@@ -5,13 +5,13 @@ spring:
       password: ${SPRING__DATA__REDIS__PASSWORD}
   datasource:
     url: jdbc:mysql://mysql_1:3306/${SPRING__DATASOURCE__URL___DB_NAME}
-    username: lldjlocal
-    password: 1234
+    username: ${SPRING__DATASOURCE__USERNAME}
+    password: ${SPRING__DATASOURCE__PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
 
 logging:
   level:

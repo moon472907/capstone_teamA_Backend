@@ -29,6 +29,12 @@ import java.util.List;
 @Builder
 public class Game extends BaseEntity {
 
+    @Column(nullable = false)
+    private String title;
+
+    @Column(nullable = false)
+    private Integer hostMemberId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private GameState state;

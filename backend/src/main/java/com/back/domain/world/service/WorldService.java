@@ -2,6 +2,8 @@ package com.back.domain.world.service;
 
 import com.back.domain.world.entity.World;
 import com.back.domain.world.repository.WorldRepository;
+import com.back.global.exception.CustomException;
+import com.back.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,6 @@ public class WorldService {
     @Transactional(readOnly = true)
     public World findById(Integer id) {
         return worldRepository.findByIdWithNodes(id)
-                .orElseThrow(() -> new IllegalArgumentException("World not found: " + id));
+                .orElseThrow(() -> new CustomException(ErrorCode.BOARD_NOT_FOUND));
     }
 }

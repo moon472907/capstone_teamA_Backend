@@ -1,6 +1,10 @@
 package com.back.domain.game.service;
 
+import com.back.domain.character.entity.GameCharacter;
+import com.back.domain.character.repository.CharacterRepository;
+import com.back.domain.game.dto.BranchSelectReqDto;
 import com.back.domain.game.dto.CreateGameReqDto;
+import com.back.domain.game.dto.GameRoomDto;
 import com.back.domain.game.dto.GameStateSnapshotDto;
 import com.back.domain.game.dto.JoinGameReqDto;
 import com.back.domain.game.dto.RollResultDto;
@@ -43,14 +47,17 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class GameService {
 
+    private static final int MAX_PLAYERS = 4;
     private static final int MAX_ROUNDS = 8;
     private static final int INITIAL_COINS = 10;
     private static final int TURN_TIMEOUT_SECONDS = 30;
+    private static final int BRANCH_TIMEOUT_SECONDS = 20;
 
     private final GameRepository gameRepository;
     private final PlayerRepository playerRepository;
     private final WorldRepository worldRepository;
     private final NodeRepository nodeRepository;
+    private final CharacterRepository characterRepository;
     private final RedisGameStateService redisGameStateService;
     private final RedisLockService redisLockService;
     private final TileEventHandlerFactory tileEventHandlerFactory;
@@ -58,26 +65,115 @@ public class GameService {
     private final Random random = new Random();
 
     // ─────────────────────────────────────────────
+    //  List Waiting Games
+    // ─────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public List<GameRoomDto> listWaitingGames() {
+        return gameRepository.findByState(GameState.WAITING)
+                .stream()
+                .map(GameRoomDto::from)
+                .toList();
+    }
+
+    // ─────────────────────────────────────────────
     //  Create Game
     // ─────────────────────────────────────────────
 
     @Transactional
     public Game createGame(Member host, CreateGameReqDto req) {
+        GameCharacter character = resolveCharacter(req.characterKey());
+
         World world = resolveBoard(req.boardId());
 
         Game game = Game.builder()
+                .title(req.title())
+                .hostMemberId(host.getId())
                 .state(GameState.WAITING)
-                .maxPlayers(req.maxPlayers())
+                .maxPlayers(MAX_PLAYERS)
                 .maxRounds(MAX_ROUNDS)
                 .world(world)
                 .build();
         Game saved = gameRepository.save(game);
 
-        // Host joins immediately
-        joinGameInternal(saved, world, host, req.hostNickname());
+        joinGameInternal(saved, world, host, req.hostNickname(), character.getCharacterKey());
 
-        log.info("Game created: id={}, maxPlayers={}", saved.getId(), req.maxPlayers());
+        log.info("Game created: id={}, maxPlayers={}", saved.getId(), MAX_PLAYERS);
         return saved;
+    }
+
+    // ─────────────────────────────────────────────
+    //  Leave Game
+    // ─────────────────────────────────────────────
+
+    @Transactional
+    public void leaveGame(Integer gameId, Member member) {
+        Game game = findGame(gameId);
+        if (game.getState() != GameState.WAITING) {
+            throw new CustomException(ErrorCode.GAME_NOT_WAITING);
+        }
+
+        Player player = playerRepository.findByGameIdAndMemberId(gameId, member.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.GAME_NOT_FOUND));
+
+        String nickname = player.getNickname();
+        playerRepository.delete(player);
+
+        List<Player> remaining = playerRepository.findByGameId(gameId);
+
+        if (remaining.isEmpty()) {
+            gameRepository.delete(game);
+            return;
+        }
+
+        // 방장이 나갔으면 playerIndex가 가장 낮은 플레이어에게 위임
+        if (game.getHostMemberId().equals(member.getId())) {
+            Player newHost = remaining.stream()
+                    .min(Comparator.comparingInt(Player::getPlayerIndex))
+                    .orElseThrow();
+            game.setHostMemberId(newHost.getMember().getId());
+            gameRepository.save(game);
+
+            broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_LEFT, gameId,
+                    Map.of("memberId", member.getId(),
+                            "nickname", nickname,
+                            "newHostMemberId", newHost.getMember().getId(),
+                            "newHostNickname", newHost.getNickname(),
+                            "remainingCount", remaining.size())));
+        } else {
+            broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_LEFT, gameId,
+                    Map.of("memberId", member.getId(),
+                            "nickname", nickname,
+                            "remainingCount", remaining.size())));
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    //  Ready
+    // ─────────────────────────────────────────────
+
+    @Transactional
+    public void ready(Integer gameId, Member member) {
+        Game game = findGame(gameId);
+        if (game.getState() != GameState.WAITING) {
+            throw new CustomException(ErrorCode.GAME_NOT_WAITING);
+        }
+
+        Player player = playerRepository.findByGameIdAndMemberId(gameId, member.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.GAME_NOT_FOUND));
+
+        player.setReady(!player.isReady());
+        playerRepository.save(player);
+
+        List<Player> players = playerRepository.findByGameId(gameId);
+        long readyCount = players.stream().filter(Player::isReady).count();
+
+        broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_READY, gameId,
+                Map.of("memberId", member.getId(),
+                        "nickname", player.getNickname(),
+                        "ready", player.isReady(),
+                        "readyCount", readyCount,
+                        "totalCount", players.size())));
     }
 
     // ─────────────────────────────────────────────
@@ -98,8 +194,15 @@ public class GameService {
             throw new CustomException(ErrorCode.PLAYER_ALREADY_IN_GAME);
         }
 
+        GameCharacter character = resolveCharacter(req.characterKey());
+        boolean characterTaken = playerRepository.findByGameId(gameId).stream()
+                .anyMatch(p -> req.characterKey().equals(p.getCharacterKey()));
+        if (characterTaken) {
+            throw new CustomException(ErrorCode.CHARACTER_ALREADY_TAKEN);
+        }
+
         World world = game.getWorld();
-        Player player = joinGameInternal(game, world, member, req.nickname());
+        Player player = joinGameInternal(game, world, member, req.nickname(), character.getCharacterKey());
 
         broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_JOINED, gameId,
                 Map.of("playerId", player.getId(),
@@ -111,7 +214,7 @@ public class GameService {
         return player;
     }
 
-    private Player joinGameInternal(Game game, World world, Member member, String nickname) {
+    private Player joinGameInternal(Game game, World world, Member member, String nickname, String characterKey) {
         int playerIndex = game.getPlayerCount();
         Node startNode = world.getStartNode();
 
@@ -119,6 +222,7 @@ public class GameService {
                 .game(game)
                 .member(member)
                 .nickname(nickname)
+                .characterKey(characterKey)
                 .playerIndex(playerIndex)
                 .startTileId(startNode.getId())
                 .build();
@@ -136,10 +240,17 @@ public class GameService {
         if (game.getState() != GameState.WAITING) {
             throw new CustomException(ErrorCode.GAME_NOT_WAITING);
         }
+        if (!game.getHostMemberId().equals(requester.getId())) {
+            throw new CustomException(ErrorCode.NOT_HOST);
+        }
 
         List<Player> players = playerRepository.findByGameId(gameId);
-        if (players.size() < 2) {
+        if (players.size() < MAX_PLAYERS) {
             throw new CustomException(ErrorCode.GAME_NOT_ENOUGH_PLAYERS);
+        }
+        boolean allReady = players.stream().allMatch(Player::isReady);
+        if (!allReady) {
+            throw new CustomException(ErrorCode.GAME_NOT_ALL_READY);
         }
 
         Node startNode = game.getWorld().getStartNode();
@@ -150,6 +261,7 @@ public class GameService {
                         .playerId(p.getId())
                         .memberId(p.getMember().getId())
                         .nickname(p.getNickname())
+                        .characterKey(p.getCharacterKey())
                         .tileId(startNode.getId())
                         .coins(INITIAL_COINS)
                         .connected(true)
@@ -218,7 +330,165 @@ public class GameService {
 
         // ── 2. Move ──────────────────────────────
         session.setState(GameState.MOVE);
-        Node destination = traverseGraph(fromTileId, diceValue);
+        TraversalResult traversal = traverseGraph(fromTileId, diceValue);
+
+        if (traversal.isBranchRequired()) {
+            currentPlayer.setTileId(traversal.currentNodeId());
+            session.setState(GameState.BRANCH_SELECT);
+            session.setPendingBranchNodeIds(traversal.branchNodeIds());
+            session.setPendingRemainingSteps(traversal.remainingSteps());
+            session.setBranchSelectStartTime(System.currentTimeMillis());
+            session.setBranchTimeoutSeconds(BRANCH_TIMEOUT_SECONDS);
+            redisGameStateService.saveSession(session);
+
+            broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_MOVED, gameId, Map.of(
+                    "playerId", currentPlayer.getPlayerId(),
+                    "fromTileId", fromTileId,
+                    "toTileId", traversal.currentNodeId())));
+
+            broadcastToGame(gameId, GameMessage.of(MessageType.BRANCH_REQUIRED, gameId, Map.of(
+                    "playerId", currentPlayer.getPlayerId(),
+                    "branchOptions", traversal.branchNodeIds(),
+                    "timeoutSeconds", BRANCH_TIMEOUT_SECONDS)));
+
+            return RollResultDto.builder()
+                    .diceValue(diceValue)
+                    .fromTileId(fromTileId)
+                    .toTileId(traversal.currentNodeId())
+                    .nextState(GameState.BRANCH_SELECT)
+                    .gameEnded(false)
+                    .branchOptions(traversal.branchNodeIds())
+                    .build();
+        }
+
+        return completeTurn(session, gameId, currentPlayer, fromTileId, diceValue, traversal.destination());
+    }
+
+    // ─────────────────────────────────────────────
+    //  Get Snapshot  (reconnection support)
+    // ─────────────────────────────────────────────
+
+    public GameStateSnapshotDto getSnapshot(Integer gameId, Member member) {
+        GameSession session = loadActiveSession(gameId);
+
+        session.getPlayers().stream()
+                .filter(p -> p.getMemberId().equals(member.getId()))
+                .findFirst()
+                .ifPresent(p -> p.setConnected(true));
+
+        redisGameStateService.saveSession(session);
+        return GameStateSnapshotDto.from(session);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Branch Select
+    // ─────────────────────────────────────────────
+
+    @Transactional
+    public RollResultDto selectBranch(Integer gameId, Member member, BranchSelectReqDto req) {
+        String lockValue = UUID.randomUUID().toString();
+        if (!redisLockService.tryLock(gameId, lockValue)) {
+            throw new CustomException(ErrorCode.GAME_ACTION_LOCKED);
+        }
+        try {
+            GameSession session = loadActiveSession(gameId);
+            requireState(session, GameState.BRANCH_SELECT);
+            requireCurrentPlayer(session, member);
+
+            if (!session.getPendingBranchNodeIds().contains(req.selectedNodeId())) {
+                throw new CustomException(ErrorCode.INVALID_BRANCH_SELECTION);
+            }
+
+            PlayerSession currentPlayer = session.getCurrentPlayer();
+            int fromTileId = currentPlayer.getTileId();
+
+            TraversalResult traversal = traverseGraph(req.selectedNodeId(), session.getPendingRemainingSteps());
+
+            if (traversal.isBranchRequired()) {
+                currentPlayer.setTileId(traversal.currentNodeId());
+                session.setPendingBranchNodeIds(traversal.branchNodeIds());
+                session.setPendingRemainingSteps(traversal.remainingSteps());
+                session.setBranchSelectStartTime(System.currentTimeMillis());
+                redisGameStateService.saveSession(session);
+
+                broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_MOVED, gameId, Map.of(
+                        "playerId", currentPlayer.getPlayerId(),
+                        "fromTileId", fromTileId,
+                        "toTileId", traversal.currentNodeId())));
+
+                broadcastToGame(gameId, GameMessage.of(MessageType.BRANCH_REQUIRED, gameId, Map.of(
+                        "playerId", currentPlayer.getPlayerId(),
+                        "branchOptions", traversal.branchNodeIds(),
+                        "timeoutSeconds", BRANCH_TIMEOUT_SECONDS)));
+
+                return RollResultDto.builder()
+                        .fromTileId(fromTileId)
+                        .toTileId(traversal.currentNodeId())
+                        .nextState(GameState.BRANCH_SELECT)
+                        .gameEnded(false)
+                        .branchOptions(traversal.branchNodeIds())
+                        .build();
+            }
+
+            return completeTurn(session, gameId, currentPlayer, fromTileId, 0, traversal.destination());
+        } finally {
+            redisLockService.unlock(gameId, lockValue);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    //  Auto-roll on timeout  (called by scheduler)
+    // ─────────────────────────────────────────────
+
+    @Transactional
+    public void autoSelectBranchIfTimeout(Integer gameId) {
+        GameSession session = redisGameStateService.loadSession(gameId).orElse(null);
+        if (session == null || session.getState() != GameState.BRANCH_SELECT) return;
+
+        long elapsed = System.currentTimeMillis() - session.getBranchSelectStartTime();
+        if (elapsed < (long) session.getBranchTimeoutSeconds() * 1000) return;
+
+        PlayerSession current = session.getCurrentPlayer();
+        List<Integer> options = session.getPendingBranchNodeIds();
+        int randomNodeId = options.get(random.nextInt(options.size()));
+
+        log.info("Branch timeout auto-select: gameId={}, player={}, nodeId={}", gameId, current.getNickname(), randomNodeId);
+
+        Member autoMember = new Member(current.getMemberId(), "");
+        try {
+            selectBranch(gameId, autoMember, new BranchSelectReqDto(randomNodeId));
+        } catch (Exception e) {
+            log.error("Auto branch select failed: gameId={}", gameId, e);
+        }
+    }
+
+    @Transactional
+    public void autoRollIfTimeout(Integer gameId) {
+        GameSession session = redisGameStateService.loadSession(gameId).orElse(null);
+        if (session == null || session.getState() != GameState.TURN_START) return;
+
+        long elapsed = System.currentTimeMillis() - session.getTurnStartTime();
+        if (elapsed < (long) session.getTurnTimeoutSeconds() * 1000) return;
+
+        PlayerSession current = session.getCurrentPlayer();
+        log.info("Timeout auto-roll: gameId={}, player={}", gameId, current.getNickname());
+
+        // Create a synthetic member representing the current player for validation bypass
+        Member autoMember = new Member(current.getMemberId(), "");
+        try {
+            rollDice(gameId, autoMember);
+        } catch (Exception e) {
+            log.error("Auto-roll failed: gameId={}", gameId, e);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    //  Internal helpers
+    // ─────────────────────────────────────────────
+
+    private RollResultDto completeTurn(GameSession session, Integer gameId,
+                                       PlayerSession currentPlayer, int fromTileId,
+                                       int diceValue, Node destination) {
         currentPlayer.setTileId(destination.getId());
 
         broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_MOVED, gameId, Map.of(
@@ -227,7 +497,6 @@ public class GameService {
                 "toTileId", destination.getId(),
                 "tileIndex", destination.getTileIndex())));
 
-        // ── 3. Tile event ─────────────────────────
         session.setState(GameState.TILE_EVENT);
         TileEventResult eventResult = tileEventHandlerFactory
                 .getHandler(destination.getTileType())
@@ -235,10 +504,9 @@ public class GameService {
 
         applyTileEffect(currentPlayer, eventResult);
 
-        broadcastToGame(gameId, GameMessage.of(MessageType.TILE_TRIGGERED, gameId, buildTilePayload(
-                currentPlayer, destination, eventResult)));
+        broadcastToGame(gameId, GameMessage.of(MessageType.TILE_TRIGGERED, gameId,
+                buildTilePayload(currentPlayer, destination, eventResult)));
 
-        // ── 4. Turn end & advance ─────────────────
         session.setState(GameState.TURN_END);
         boolean gameOver = session.isGameComplete();
 
@@ -267,66 +535,46 @@ public class GameService {
                 .build();
     }
 
-    // ─────────────────────────────────────────────
-    //  Get Snapshot  (reconnection support)
-    // ─────────────────────────────────────────────
-
-    public GameStateSnapshotDto getSnapshot(Integer gameId, Member member) {
-        GameSession session = loadActiveSession(gameId);
-
-        session.getPlayers().stream()
-                .filter(p -> p.getMemberId().equals(member.getId()))
-                .findFirst()
-                .ifPresent(p -> p.setConnected(true));
-
-        redisGameStateService.saveSession(session);
-        return GameStateSnapshotDto.from(session);
-    }
-
-    // ─────────────────────────────────────────────
-    //  Auto-roll on timeout  (called by scheduler)
-    // ─────────────────────────────────────────────
-
-    @Transactional
-    public void autoRollIfTimeout(Integer gameId) {
-        GameSession session = redisGameStateService.loadSession(gameId).orElse(null);
-        if (session == null || session.getState() != GameState.TURN_START) return;
-
-        long elapsed = System.currentTimeMillis() - session.getTurnStartTime();
-        if (elapsed < (long) session.getTurnTimeoutSeconds() * 1000) return;
-
-        PlayerSession current = session.getCurrentPlayer();
-        log.info("Timeout auto-roll: gameId={}, player={}", gameId, current.getNickname());
-
-        // Create a synthetic member representing the current player for validation bypass
-        Member autoMember = new Member(current.getMemberId(), "");
-        try {
-            rollDice(gameId, autoMember);
-        } catch (Exception e) {
-            log.error("Auto-roll failed: gameId={}", gameId, e);
-        }
-    }
-
-    // ─────────────────────────────────────────────
-    //  Internal helpers
-    // ─────────────────────────────────────────────
-
     /**
-     * Traverses the board graph {@code steps} times starting from {@code startNodeId}.
-     * At each branch point a random edge is chosen.
+     * Traverses the board graph step by step.
+     * Stops at the first branch point and returns options + remaining steps.
+     * If no branch is encountered, returns the final destination.
      */
-    private Node traverseGraph(Integer startNodeId, int steps) {
+    private TraversalResult traverseGraph(Integer startNodeId, int steps) {
         Node current = nodeRepository.findByIdWithEdges(startNodeId)
                 .orElseThrow(() -> new CustomException(ErrorCode.BOARD_NOT_FOUND));
 
         for (int i = 0; i < steps; i++) {
             List<Node> nextNodes = current.getNextNodes();
             if (nextNodes.isEmpty()) break;
-            Node next = nextNodes.get(random.nextInt(nextNodes.size()));
-            current = nodeRepository.findByIdWithEdges(next.getId())
-                    .orElse(next);
+
+            if (nextNodes.size() > 1) {
+                // Branch point — stop and return options
+                List<Integer> branchNodeIds = nextNodes.stream()
+                        .map(Node::getId)
+                        .toList();
+                return TraversalResult.branch(current.getId(), branchNodeIds, steps - i - 1);
+            }
+
+            Node next = nextNodes.get(0);
+            current = nodeRepository.findByIdWithEdges(next.getId()).orElse(next);
         }
-        return current;
+        return TraversalResult.completed(current);
+    }
+
+    private record TraversalResult(Node destination, Integer currentNodeId,
+                                   List<Integer> branchNodeIds, int remainingSteps) {
+        static TraversalResult completed(Node destination) {
+            return new TraversalResult(destination, null, null, 0);
+        }
+
+        static TraversalResult branch(Integer currentNodeId, List<Integer> options, int remaining) {
+            return new TraversalResult(null, currentNodeId, options, remaining);
+        }
+
+        boolean isBranchRequired() {
+            return branchNodeIds != null;
+        }
     }
 
     private void applyTileEffect(PlayerSession player, TileEventResult result) {
@@ -365,6 +613,7 @@ public class GameService {
             int finalRank = rank + 1;
             playerRepository.findById(ps.getPlayerId()).ifPresent(p -> {
                 p.setFinalCoins(ps.getCoins());
+                p.setFinalGpa(ps.getGpa());
                 p.setFinalRank(finalRank);
                 playerRepository.save(p);
             });
@@ -414,6 +663,11 @@ public class GameService {
     private Game findGame(Integer gameId) {
         return gameRepository.findById(gameId)
                 .orElseThrow(() -> new CustomException(ErrorCode.GAME_NOT_FOUND));
+    }
+
+    private GameCharacter resolveCharacter(String characterKey) {
+        return characterRepository.findByCharacterKey(characterKey)
+                .orElseThrow(() -> new CustomException(ErrorCode.CHARACTER_NOT_FOUND));
     }
 
     private World resolveBoard(Integer boardId) {

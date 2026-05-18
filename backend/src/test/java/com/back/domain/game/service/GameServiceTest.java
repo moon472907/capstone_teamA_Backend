@@ -56,6 +56,8 @@ class GameServiceTest {
 
     private Member member1;
     private Member member2;
+    private Member member3;
+    private Member member4;
     private World world;
     private Node startNode;
 
@@ -63,6 +65,8 @@ class GameServiceTest {
     void setUp() {
         member1 = new Member(1, "player1@test.com");
         member2 = new Member(2, "player2@test.com");
+        member3 = new Member(3, "player3@test.com");
+        member4 = new Member(4, "player4@test.com");
 
         startNode = Node.builder()
                 .tileIndex(0)
@@ -81,14 +85,16 @@ class GameServiceTest {
     // ── startGame ──────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("게임 시작 시 Redis에 TURN_START 세션이 생성된다")
+    @DisplayName("4명이 모두 참여하면 게임이 정상 시작된다")
     void startGame_createsSessionInRedisWithTurnStartState() {
-        Game game = buildWaitingGame(2);
+        Game game = buildWaitingGame();
         Player p1 = buildPlayer(game, member1, 0);
         Player p2 = buildPlayer(game, member2, 1);
+        Player p3 = buildPlayer(game, member3, 2);
+        Player p4 = buildPlayer(game, member4, 3);
 
         given(gameRepository.findById(anyInt())).willReturn(Optional.of(game));
-        given(playerRepository.findByGameId(anyInt())).willReturn(List.of(p1, p2));
+        given(playerRepository.findByGameId(anyInt())).willReturn(List.of(p1, p2, p3, p4));
         given(gameRepository.save(any())).willReturn(game);
 
         gameService.startGame(1, member1);
@@ -97,23 +103,25 @@ class GameServiceTest {
     }
 
     @Test
-    @DisplayName("플레이어가 1명이면 게임 시작을 거부한다")
-    void startGame_rejectsIfOnlyOnePlayer() {
-        Game game = buildWaitingGame(4);
+    @DisplayName("3명 이하이면 게임 시작을 거부한다")
+    void startGame_rejectsIfLessThan4Players() {
+        Game game = buildWaitingGame();
         Player p1 = buildPlayer(game, member1, 0);
+        Player p2 = buildPlayer(game, member2, 1);
+        Player p3 = buildPlayer(game, member3, 2);
 
         given(gameRepository.findById(anyInt())).willReturn(Optional.of(game));
-        given(playerRepository.findByGameId(anyInt())).willReturn(List.of(p1));
+        given(playerRepository.findByGameId(anyInt())).willReturn(List.of(p1, p2, p3));
 
         assertThatThrownBy(() -> gameService.startGame(1, member1))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining("최소 2명");
+                .hasMessageContaining("4명이 모두");
     }
 
     @Test
     @DisplayName("이미 진행 중인 게임은 시작을 거부한다")
     void startGame_rejectsIfNotWaiting() {
-        Game game = buildWaitingGame(4);
+        Game game = buildWaitingGame();
         game.setState(GameState.IN_PROGRESS);
 
         given(gameRepository.findById(anyInt())).willReturn(Optional.of(game));
@@ -164,9 +172,9 @@ class GameServiceTest {
     // ── GameSession state machine ──────────────────────────────────────────────
 
     @Test
-    @DisplayName("advanceTurn: 마지막 플레이어 이후 라운드가 증가한다")
+    @DisplayName("advanceTurn: 마지막 플레이어(index=3) 이후 라운드가 증가한다")
     void gameSession_advanceTurnIncrementsRound() {
-        GameSession session = buildSession(GameState.TURN_START, 1); // 2 players, last one
+        GameSession session = buildSession(GameState.TURN_START, 3); // 4 players, last one
         int prevRound = session.getRound();
 
         session.advanceTurn();
@@ -188,9 +196,9 @@ class GameServiceTest {
     }
 
     @Test
-    @DisplayName("8라운드 마지막 플레이어 이후 게임 완료로 판정된다")
+    @DisplayName("8라운드 마지막 플레이어(index=3) 이후 게임 완료로 판정된다")
     void gameSession_isGameCompleteAfterLastPlayerLastRound() {
-        GameSession session = buildSession(GameState.TURN_START, 1);
+        GameSession session = buildSession(GameState.TURN_START, 3);
         session.setRound(8);
         session.setMaxRounds(8);
 
@@ -208,7 +216,7 @@ class GameServiceTest {
     }
 
     @Test
-    @DisplayName("8라운드 2명: 총 16번의 턴 후 게임 완료 판정이 된다")
+    @DisplayName("8라운드 4명: 총 32번의 턴 후 게임 완료 판정이 된다")
     void gameSession_simulateFull8Rounds() {
         GameSession session = buildSession(GameState.TURN_START, 0);
         session.setRound(1);
@@ -221,16 +229,16 @@ class GameServiceTest {
             if (session.isGameComplete()) break;
             session.advanceTurn();
         }
-        // 2 players × 8 rounds = 16 turns total
-        assertThat(turnCount).isEqualTo(16);
+        // 4 players × 8 rounds = 32 turns total
+        assertThat(turnCount).isEqualTo(32);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private Game buildWaitingGame(int maxPlayers) {
+    private Game buildWaitingGame() {
         Game game = Game.builder()
                 .state(GameState.WAITING)
-                .maxPlayers(maxPlayers)
+                .maxPlayers(4)
                 .maxRounds(8)
                 .world(world)
                 .players(new ArrayList<>())
@@ -259,12 +267,18 @@ class GameServiceTest {
         players.add(PlayerSession.builder()
                 .playerId(101).memberId(member2.getId())
                 .nickname("Player2").tileId(10).coins(10).connected(true).build());
+        players.add(PlayerSession.builder()
+                .playerId(102).memberId(member3.getId())
+                .nickname("Player3").tileId(10).coins(10).connected(true).build());
+        players.add(PlayerSession.builder()
+                .playerId(103).memberId(member4.getId())
+                .nickname("Player4").tileId(10).coins(10).connected(true).build());
 
         return GameSession.builder()
                 .gameId(1).boardId(1)
                 .state(state)
                 .currentPlayerIndex(currentPlayerIndex)
-                .round(1).maxRounds(8).maxPlayers(2)
+                .round(1).maxRounds(8).maxPlayers(4)
                 .turnStartTime(System.currentTimeMillis())
                 .turnTimeoutSeconds(30)
                 .players(players)

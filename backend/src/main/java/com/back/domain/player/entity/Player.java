@@ -32,14 +32,22 @@ public class Player extends BaseEntity {
 
     private String nickname;
 
+    private String characterKey;
+
     /** Turn order within the game (0-based). */
     private int playerIndex;
+
+    /** Whether this player has pressed ready in the waiting room. */
+    private boolean ready;
 
     /** Starting tile ID (set at game start). */
     private int startTileId;
 
     /** Final coin count — populated when game ends. */
     private int finalCoins;
+
+    /** Final GPA score — populated when game ends. */
+    private int finalGpa;
 
     /** Final rank (1 = winner) — populated when game ends. */
     private int finalRank;

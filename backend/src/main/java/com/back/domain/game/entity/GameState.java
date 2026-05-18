@@ -6,6 +6,7 @@ public enum GameState {
     TURN_START,
     DICE_ROLL,
     MOVE,
+    BRANCH_SELECT,
     TILE_EVENT,
     TURN_END,
     GAME_END

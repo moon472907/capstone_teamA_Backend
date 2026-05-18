@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Getter
 @Builder
 @NoArgsConstructor
@@ -21,4 +23,6 @@ public class RollResultDto {
     private String tileEventDescription;
     private GameState nextState;
     private boolean gameEnded;
+    // BRANCH_SELECT 상태일 때만 값이 채워짐
+    private List<Integer> branchOptions;
 }

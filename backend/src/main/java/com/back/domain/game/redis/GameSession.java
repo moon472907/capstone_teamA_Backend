@@ -14,7 +14,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GameSession {
+public class
+GameSession {
 
     private Integer gameId;
     private Integer boardId;
@@ -26,6 +27,12 @@ public class GameSession {
     private long turnStartTime;
     private int turnTimeoutSeconds;
     private List<PlayerSession> players;
+
+    // 분기점 선택 대기 상태
+    private List<Integer> pendingBranchNodeIds;
+    private int pendingRemainingSteps;
+    private long branchSelectStartTime;
+    private int branchTimeoutSeconds;
 
     public PlayerSession getCurrentPlayer() {
         return players.get(currentPlayerIndex);
