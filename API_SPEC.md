@@ -1,7 +1,7 @@
 # 강대마블 API 명세서
 
 > 프론트엔드 연동 기준 문서  
-> Base URL: `http://localhost:8080` (개발) / `https://api.nutree.noredsun.com` (운영)  
+> Base URL: `http://localhost:8080` (개발) / `https://api.everyknu.com` (운영)  
 > 최종 업데이트: 2026-05-18
 
 ---

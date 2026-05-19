@@ -85,7 +85,7 @@ public class Rq {
         cookie.setSecure(true);
         cookie.setAttribute("SameSite", "None");
         if(AppConfig.isProd()) {
-            cookie.setDomain("nutree.noredsun.com");
+            cookie.setDomain("game.everyknu.com");
         }
         else {
             cookie.setDomain("localhost");
