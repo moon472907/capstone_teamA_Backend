@@ -1,6 +1,7 @@
 package com.back.global.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -23,6 +24,9 @@ public class SecurityConfig {
 
     private final CustomAuthenticationFilter customAuthenticationFilter;
     private final JsonAuthenticationEntryPoint jsonAuthenticationEntryPoint;
+
+    @Value("${custom.site.frontUrl}")
+    private String frontUrl;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -60,7 +64,7 @@ public class SecurityConfig {
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedOrigins(List.of(frontUrl));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
         configuration.setAllowCredentials(true);
         configuration.setAllowedHeaders(List.of("*"));

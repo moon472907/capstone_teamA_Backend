@@ -1,15 +1,74 @@
 version: "3.9"
 
 services:
-  redis:
+  mysql_1:
+    image: mysql:8.0
+    container_name: mysql_1
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${SPRING__DATASOURCE__URL___DB_NAME}
+      MYSQL_USER: ${SPRING__DATASOURCE__USERNAME}
+      MYSQL_PASSWORD: ${SPRING__DATASOURCE__PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis_1:
     image: redis:7.2-alpine
-    container_name: game-redis
-    ports:
-      - "6379:6379"
+    container_name: redis_1
     volumes:
       - redis-data:/data
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass ${SPRING__DATA__REDIS__PASSWORD}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${SPRING__DATA__REDIS__PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: ${APP_IMAGE}
+    container_name: app
+    environment:
+      CUSTOM__JWT__SECRET_KEY: ${CUSTOM__JWT__SECRET_KEY}
+      SPRING__DATA__REDIS__PASSWORD: ${SPRING__DATA__REDIS__PASSWORD}
+      SPRING__DATASOURCE__URL___DB_NAME: ${SPRING__DATASOURCE__URL___DB_NAME}
+      SPRING__DATASOURCE__USERNAME: ${SPRING__DATASOURCE__USERNAME}
+      SPRING__DATASOURCE__PASSWORD: ${SPRING__DATASOURCE__PASSWORD}
+    depends_on:
+      mysql_1:
+        condition: service_healthy
+      redis_1:
+        condition: service_healthy
     restart: unless-stopped
 
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certbot/conf:/etc/letsencrypt:ro
+      - ./nginx/certbot/www:/var/www/certbot:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./nginx/certbot/conf:/etc/letsencrypt
+      - ./nginx/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
 volumes:
+  mysql-data:
   redis-data:

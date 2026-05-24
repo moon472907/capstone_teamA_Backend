@@ -41,3 +41,9 @@ Thumbs.db
 # ── 로그 ─────────────────────────────────────────────
 *.log
 logs/
+
+# ── Terraform ─────────────────────────────────────────
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/terraform.tfvars
