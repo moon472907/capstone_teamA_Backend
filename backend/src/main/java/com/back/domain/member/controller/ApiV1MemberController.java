@@ -67,6 +67,22 @@ public class ApiV1MemberController {
                 .body(new ApiResponse<>("200", "[Member] Success: 로그아웃"));
     }
 
+    @PostMapping("/refresh")
+    @Operation(summary = "토큰 갱신", description = "현재 토큰을 새 20분 토큰으로 갱신 (게임 중 만료 5분 전 호출 권장)")
+    public ResponseEntity<ApiResponse<LoginResDto>> refresh() {
+        Member actor = rq.getActorFromDb();
+        String newToken = memberService.genAccessToken(actor);
+        rq.setCookie("accessToken", newToken);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new ApiResponse<>(
+                        "200",
+                        "[Member] Success: 토큰 갱신",
+                        new LoginResDto(new MemberDto(actor), newToken)
+                ));
+    }
+
     public record ValidResDto(boolean valid) {}
 
     @GetMapping("/valid")

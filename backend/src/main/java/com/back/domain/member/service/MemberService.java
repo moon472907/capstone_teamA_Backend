@@ -90,4 +90,8 @@ public class MemberService {
     public Map<String, Object> payload(String accessToken) {
         return authService.payload(accessToken);
     }
+
+    public void invalidateTokens(int memberId) {
+        authService.invalidateMemberTokens(memberId);
+    }
 }

@@ -2,14 +2,17 @@ package com.back.global.security;
 
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.service.MemberService;
+import com.back.global.common.ApiResponse;
 import com.back.global.exception.CustomException;
 import com.back.global.exception.ErrorCode;
 import com.back.global.rq.Rq;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,15 +29,22 @@ import java.util.Map;
 public class CustomAuthenticationFilter extends OncePerRequestFilter {
     private final MemberService memberService;
     private final Rq rq;
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
             work(request, response, filterChain);
         } catch (CustomException e) {
-            response.setContentType("application/json;charset=UTF-8");
-            response.setStatus(e.getHttpStatus().value());
+            writeJsonError(response, e.getHttpStatus().value(), e.getCode(), e.getMessageKey());
         }
+    }
+
+    private void writeJsonError(HttpServletResponse response, int status, String code, String message) throws IOException {
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        objectMapper.writeValue(response.getWriter(), ApiResponse.fail(code, message));
     }
 
     private void work(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -56,9 +66,6 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         }
 
         Map<String, Object> payload = memberService.payload(accessToken);
-        if (payload == null) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED, "[Security] Fail: 유효하지 않은 토큰");
-        }
 
         int id = (int) payload.get("id");
         String email = (String) payload.get("email");

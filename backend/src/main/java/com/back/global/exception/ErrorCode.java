@@ -9,6 +9,8 @@ public enum ErrorCode {
     // Generic
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "INPUT-400", "요청이 올바르지 않습니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH-401", "인증되지 않았습니다."),
+    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH-401-01", "토큰이 만료되었습니다. 다시 로그인 해주세요."),
+    TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "AUTH-401-02", "유효하지 않은 토큰입니다."),
     NOT_FOUND(HttpStatus.NOT_FOUND, "USER-404", "리소스를 찾을 수 없습니다."),
     INVALID_PARTY_MEMBER_STATUS(HttpStatus.BAD_REQUEST, "PM-400", "현재 파티 멤버 상태로는 요청하신 작업을 수행할 수 없습니다."),
     CONFLICT(HttpStatus.CONFLICT, "CONFLICT-409", "요청이 충돌합니다"),

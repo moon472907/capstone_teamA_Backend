@@ -14,6 +14,7 @@ import com.back.domain.game.redis.GameSession;
 import com.back.domain.game.redis.PlayerSession;
 import com.back.domain.game.repository.GameRepository;
 import com.back.domain.member.entity.Member;
+import com.back.domain.member.service.MemberService;
 import com.back.domain.player.entity.Player;
 import com.back.domain.player.repository.PlayerRepository;
 import com.back.domain.world.entity.Node;
@@ -62,6 +63,7 @@ public class GameService {
     private final RedisLockService redisLockService;
     private final TileEventHandlerFactory tileEventHandlerFactory;
     private final SimpMessagingTemplate messagingTemplate;
+    private final MemberService memberService;
     private final Random random = new Random();
 
     // ─────────────────────────────────────────────
@@ -633,6 +635,12 @@ public class GameService {
             entry.put("coins", ps.getCoins());
             entry.put("rank", i + 1);
             results.add(entry);
+        }
+
+        // 게임 종료된 플레이어들의 기존 토큰을 모두 무효화한 뒤 결과를 broadcast.
+        // 순서가 뒤집히면 클라이언트가 GAME_ENDED 수신 직후 /refresh 로 토큰을 연장할 수 있음.
+        for (PlayerSession ps : ranked) {
+            memberService.invalidateTokens(ps.getMemberId());
         }
 
         broadcastToGame(gameId, GameMessage.of(MessageType.GAME_ENDED, gameId, Map.of("results", results)));
