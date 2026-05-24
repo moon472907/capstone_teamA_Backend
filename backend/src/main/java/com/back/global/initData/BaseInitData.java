@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
@@ -64,50 +65,37 @@ public class BaseInitData {
     }
 
     /**
-     * Creates a 20-tile board with a branch path.
+     * Creates the 46-tile campus board matching the frontend Tiled map
+     * (public/assets/map_data.json).
      *
-     * Main ring: 0 → 1 → 2 → … → 19 → 0
-     * Branch at tile 5: 5 also connects to tile 10 (shortcut, skips 6-9)
+     * Mapping: tileIndex i  ↔  Phaser "node{i+1}"  (node1 = start at index 0,
+     * node46 = finish at index 45). Edge order is [next, next2] so branch
+     * options line up with the client's "1번 길 / 2번 길" buttons.
      *
-     * Tile types:
-     *   NORMAL        : 0,1,3,6,7,9,11,12,14,16,19
-     *   RANDOM_REWARD : 2,10,13,18
-     *   TRAP          : 4,8,17
-     *   TELEPORT      : 5,15
+     * The map is a race graph (node1 → node46) with several branch points.
+     * Orphan nodes (14, 31, 32, 33, 34) exist in the Tiled file with no
+     * outgoing edges; they are recreated here to keep index alignment but
+     * are unreachable.
      */
     private void initDefaultBoard() {
+        final int NODE_COUNT = 46;
+
         World world = World.builder()
-                .mapName("기본 보드")
+                .mapName("강대마블 캠퍼스 보드")
                 .nodes(new ArrayList<>())
                 .build();
         worldRepository.save(world);
 
-        TileType[] types = {
-                TileType.NORMAL,        // 0  start
-                TileType.NORMAL,        // 1
-                TileType.RANDOM_REWARD, // 2
-                TileType.NORMAL,        // 3
-                TileType.TRAP,          // 4
-                TileType.TELEPORT,      // 5  branch point
-                TileType.NORMAL,        // 6
-                TileType.NORMAL,        // 7
-                TileType.TRAP,          // 8
-                TileType.NORMAL,        // 9
-                TileType.RANDOM_REWARD, // 10 merge point / shortcut target from 5
-                TileType.NORMAL,        // 11
-                TileType.NORMAL,        // 12
-                TileType.RANDOM_REWARD, // 13
-                TileType.NORMAL,        // 14
-                TileType.TELEPORT,      // 15
-                TileType.NORMAL,        // 16
-                TileType.TRAP,          // 17
-                TileType.RANDOM_REWARD, // 18
-                TileType.NORMAL,        // 19
-        };
+        // Tile types (1-based node numbers). Default NORMAL, with a spread of
+        // reward/trap tiles to drive the coin economy.
+        TileType[] types = new TileType[NODE_COUNT];
+        Arrays.fill(types, TileType.NORMAL);
+        for (int n : new int[]{3, 9, 16, 22, 26, 35, 42}) types[n - 1] = TileType.RANDOM_REWARD;
+        for (int n : new int[]{5, 12, 19, 27, 36, 44}) types[n - 1] = TileType.TRAP;
 
-        // Create and save all 20 nodes first (no edges yet)
+        // Create and save all nodes first (no edges yet)
         List<Node> nodes = new ArrayList<>();
-        for (int i = 0; i < types.length; i++) {
+        for (int i = 0; i < NODE_COUNT; i++) {
             Node node = Node.builder()
                     .world(world)
                     .tileIndex(i)
@@ -117,22 +105,66 @@ public class BaseInitData {
             nodes.add(nodeRepository.save(node));
         }
 
-        // Wire edges: circular ring  (i → i+1, last → 0)
-        for (int i = 0; i < nodes.size(); i++) {
-            Node from = nodes.get(i);
-            Node to = nodes.get((i + 1) % nodes.size());
-            addEdge(from, to);
+        // Edges keyed by 1-based node number → [next, next2] (Tiled map graph)
+        int[][] edges = new int[NODE_COUNT + 1][];
+        edges[1]  = new int[]{8, 2};
+        edges[2]  = new int[]{3};
+        edges[3]  = new int[]{4};
+        edges[4]  = new int[]{5};
+        edges[5]  = new int[]{6};
+        edges[6]  = new int[]{7};
+        edges[7]  = new int[]{13, 12};
+        edges[8]  = new int[]{9};
+        edges[9]  = new int[]{30, 10};
+        edges[10] = new int[]{19};
+        edges[11] = new int[]{10};
+        edges[12] = new int[]{17, 11};
+        edges[13] = new int[]{15, 17};
+        // node14 orphan
+        edges[15] = new int[]{16};
+        edges[16] = new int[]{18};
+        edges[17] = new int[]{18};
+        edges[18] = new int[]{22};
+        edges[19] = new int[]{20};
+        edges[20] = new int[]{21};
+        edges[21] = new int[]{23};
+        edges[22] = new int[]{23};
+        edges[23] = new int[]{24};
+        edges[24] = new int[]{25, 29};
+        edges[25] = new int[]{26};
+        edges[26] = new int[]{27};
+        edges[27] = new int[]{28};
+        edges[28] = new int[]{45};
+        edges[29] = new int[]{45};
+        edges[30] = new int[]{35};
+        // node31~34 orphans
+        edges[35] = new int[]{36};
+        edges[36] = new int[]{37};
+        edges[37] = new int[]{38, 39};
+        edges[38] = new int[]{18, 13};
+        edges[39] = new int[]{41, 40};
+        edges[40] = new int[]{13, 18};
+        edges[41] = new int[]{42};
+        edges[42] = new int[]{43};
+        edges[43] = new int[]{44};
+        edges[44] = new int[]{45};
+        edges[45] = new int[]{46};
+        // node46 finish (no outgoing edge)
+
+        for (int num = 1; num <= NODE_COUNT; num++) {
+            int[] targets = edges[num];
+            if (targets == null) continue;
+            Node from = nodes.get(num - 1);
+            for (int t : targets) {
+                addEdge(from, nodes.get(t - 1));
+            }
         }
 
-        // Extra branch: tile 5 → tile 10 (shortcut)
-        addEdge(nodes.get(5), nodes.get(10));
-
-        // Persist edge changes
         for (Node node : nodes) {
             nodeRepository.save(node);
         }
 
-        log.info("Default board initialised: '{}', {} tiles", world.getMapName(), nodes.size());
+        log.info("Campus board initialised: '{}', {} tiles", world.getMapName(), nodes.size());
     }
 
     private void addEdge(Node from, Node to) {

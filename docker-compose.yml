@@ -9,6 +9,8 @@ services:
       MYSQL_DATABASE: ${SPRING__DATASOURCE__URL___DB_NAME}
       MYSQL_USER: ${SPRING__DATASOURCE__USERNAME}
       MYSQL_PASSWORD: ${SPRING__DATASOURCE__PASSWORD}
+    ports:
+      - "127.0.0.1:3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     restart: unless-stopped
