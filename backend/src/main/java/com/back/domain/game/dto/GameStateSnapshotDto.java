@@ -17,6 +17,7 @@ import java.util.List;
 public class GameStateSnapshotDto {
 
     private Integer gameId;
+    private Integer boardId;
     private GameState state;
     private int round;
     private int maxRounds;
@@ -55,6 +56,7 @@ public class GameStateSnapshotDto {
 
         return GameStateSnapshotDto.builder()
                 .gameId(session.getGameId())
+                .boardId(session.getBoardId())
                 .state(session.getState())
                 .round(session.getRound())
                 .maxRounds(session.getMaxRounds())

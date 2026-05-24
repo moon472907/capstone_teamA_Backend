@@ -1,6 +1,6 @@
 package com.back.domain.world.service;
 
-import com.back.domain.world.entity.World;
+import com.back.domain.world.dto.WorldDto;
 import com.back.domain.world.repository.WorldRepository;
 import com.back.global.exception.CustomException;
 import com.back.global.exception.ErrorCode;
@@ -17,13 +17,16 @@ public class WorldService {
     private final WorldRepository worldRepository;
 
     @Transactional(readOnly = true)
-    public List<World> findAll() {
-        return worldRepository.findAll();
+    public List<WorldDto> findAll() {
+        return worldRepository.findAll().stream()
+                .map(WorldDto::summary)
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public World findById(Integer id) {
+    public WorldDto findById(Integer id) {
         return worldRepository.findByIdWithNodes(id)
+                .map(WorldDto::full)
                 .orElseThrow(() -> new CustomException(ErrorCode.BOARD_NOT_FOUND));
     }
 }

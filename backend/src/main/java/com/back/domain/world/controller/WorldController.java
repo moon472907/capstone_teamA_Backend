@@ -1,6 +1,6 @@
 package com.back.domain.world.controller;
 
-import com.back.domain.world.entity.World;
+import com.back.domain.world.dto.WorldDto;
 import com.back.domain.world.service.WorldService;
 import com.back.global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,13 +23,13 @@ public class WorldController {
 
     @Operation(summary = "보드 목록 조회")
     @GetMapping
-    public ApiResponse<List<World>> getWorlds() {
+    public ApiResponse<List<WorldDto>> getWorlds() {
         return ApiResponse.success("200", "보드 목록을 조회했습니다.", worldService.findAll());
     }
 
-    @Operation(summary = "보드 상세 조회")
+    @Operation(summary = "보드 상세 조회 (노드/엣지 포함)")
     @GetMapping("/{worldId}")
-    public ApiResponse<World> getWorld(@PathVariable Integer worldId) {
+    public ApiResponse<WorldDto> getWorld(@PathVariable Integer worldId) {
         return ApiResponse.success("200", "보드를 조회했습니다.", worldService.findById(worldId));
     }
 }
