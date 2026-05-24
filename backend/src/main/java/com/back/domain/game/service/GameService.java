@@ -98,7 +98,9 @@ public class GameService {
                 .build();
         Game saved = gameRepository.save(game);
 
-        joinGameInternal(saved, world, host, req.hostNickname(), character.getCharacterKey());
+        Player hostPlayer = joinGameInternal(saved, world, host, req.hostNickname(), character.getCharacterKey());
+        hostPlayer.setReady(true);
+        playerRepository.save(hostPlayer);
 
         log.info("Game created: id={}, maxPlayers={}", saved.getId(), MAX_PLAYERS);
         return saved;
