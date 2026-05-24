@@ -1,6 +1,7 @@
 package com.back.domain.game.redis;
 
 import com.back.domain.game.entity.GameState;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,6 +35,7 @@ GameSession {
     private long branchSelectStartTime;
     private int branchTimeoutSeconds;
 
+    @JsonIgnore
     public PlayerSession getCurrentPlayer() {
         return players.get(currentPlayerIndex);
     }
@@ -41,6 +43,7 @@ GameSession {
     /**
      * Returns true if every player in the current round has taken their turn.
      */
+    @JsonIgnore
     public boolean isRoundComplete() {
         return currentPlayerIndex >= players.size() - 1;
     }
@@ -48,6 +51,7 @@ GameSession {
     /**
      * Returns true when the last player finishes the final round.
      */
+    @JsonIgnore
     public boolean isGameComplete() {
         return round >= maxRounds && isRoundComplete();
     }
