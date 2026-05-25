@@ -20,9 +20,21 @@ public class RollResultDto {
     private String tileType;
     private int coinsChange;
     private int totalCoins;
+    private int starsChange;
+    private int totalStars;
     private String tileEventDescription;
     private GameState nextState;
     private boolean gameEnded;
     // BRANCH_SELECT 상태일 때만 값이 채워짐
     private List<Integer> branchOptions;
+
+    // CARD 타일 — 뽑은 카드 정보
+    private String cardKey;
+    private String cardType;
+    private String cardTitle;
+    private String cardDescription;
+    // CARD_TARGET_SELECT 상태일 때만 — 지정 가능한 상대 playerId 목록
+    private List<Integer> targetOptions;
+    // BUS_SELECT 상태일 때만 — 이동 가능한 정류장 tileId 목록
+    private List<Integer> busOptions;
 }

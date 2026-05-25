@@ -35,6 +35,21 @@ GameSession {
     private long branchSelectStartTime;
     private int branchTimeoutSeconds;
 
+    // 이벤트 카드 대기 상태 (CARD_TARGET_SELECT / CARD_DEFENSE)
+    private String pendingCardKey;
+    private String pendingCardType;        // ATTACK / DEFENSE / SCHOLARSHIP
+    private String pendingCardTitle;
+    private String pendingCardDescription;
+    private int pendingCardStars;          // 적용할 스타 증감 (예: -2)
+    private Integer pendingTargetPlayerId; // 공격 대상으로 지정된 플레이어
+    private long cardActionStartTime;
+    private int cardTimeoutSeconds;
+
+    // 두리버스 대기 상태 (BUS_SELECT)
+    private List<Integer> pendingBusStops; // 이동 가능한 정류장 tileId 목록
+    private long busSelectStartTime;
+    private int busTimeoutSeconds;
+
     @JsonIgnore
     public PlayerSession getCurrentPlayer() {
         return players.get(currentPlayerIndex);

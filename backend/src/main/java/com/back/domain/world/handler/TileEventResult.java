@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TileEventResult {
     private int coinsChange;
+    private int starsChange;
     private Integer teleportTileId;
     private String description;
 }

@@ -46,6 +46,9 @@ public class Player extends BaseEntity {
     /** Final coin count — populated when game ends. */
     private int finalCoins;
 
+    /** Final star count (= score) — populated when game ends. */
+    private int finalStars;
+
     /** Final GPA score — populated when game ends. */
     private int finalGpa;
 

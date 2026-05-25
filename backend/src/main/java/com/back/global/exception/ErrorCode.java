@@ -28,6 +28,10 @@ public enum ErrorCode {
     NOT_HOST(HttpStatus.FORBIDDEN, "GAME-403-02", "방장만 게임을 시작할 수 있습니다."),
     INVALID_BRANCH_SELECTION(HttpStatus.BAD_REQUEST, "GAME-400-08", "선택할 수 없는 분기점입니다."),
     INVALID_STATE_TRANSITION(HttpStatus.BAD_REQUEST, "GAME-400-06", "현재 게임 상태에서 허용되지 않는 요청입니다."),
+    INVALID_CARD_TARGET(HttpStatus.BAD_REQUEST, "GAME-400-09", "지정할 수 없는 카드 대상입니다."),
+    INVALID_BUS_DESTINATION(HttpStatus.BAD_REQUEST, "GAME-400-10", "이동할 수 없는 정류장입니다."),
+    NO_DEFENSE_CARD(HttpStatus.BAD_REQUEST, "GAME-400-11", "보유한 방어 카드가 없습니다."),
+    NOT_DEFENSE_TARGET(HttpStatus.FORBIDDEN, "GAME-403-03", "방어 대상 플레이어가 아닙니다."),
     PLAYER_ALREADY_IN_GAME(HttpStatus.CONFLICT, "GAME-409-01", "이미 해당 게임에 참여 중입니다."),
     GAME_ACTION_LOCKED(HttpStatus.CONFLICT, "GAME-409-02", "다른 액션이 처리 중입니다. 잠시 후 다시 시도해주세요."),
 

@@ -35,6 +35,8 @@ public class GameStateSnapshotDto {
         private String characterKey;
         private Integer tileId;
         private int coins;
+        private int stars;
+        private int defenseCards;
         private int gpa;
         private boolean connected;
     }
@@ -47,6 +49,8 @@ public class GameStateSnapshotDto {
                         .characterKey(p.getCharacterKey())
                         .tileId(p.getTileId())
                         .coins(p.getCoins())
+                        .stars(p.getStars())
+                        .defenseCards(p.getDefenseCards())
                         .gpa(p.getGpa())
                         .connected(p.isConnected())
                         .build())

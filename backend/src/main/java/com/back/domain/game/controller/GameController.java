@@ -1,7 +1,10 @@
 package com.back.domain.game.controller;
 
 import com.back.domain.game.dto.BranchSelectReqDto;
+import com.back.domain.game.dto.BusRideReqDto;
+import com.back.domain.game.dto.CardTargetReqDto;
 import com.back.domain.game.dto.CreateGameReqDto;
+import com.back.domain.game.dto.DefenseReqDto;
 import com.back.domain.game.dto.GameRoomDto;
 import com.back.domain.game.dto.GameStateSnapshotDto;
 import com.back.domain.game.dto.JoinGameReqDto;
@@ -126,6 +129,45 @@ public class GameController {
                                                     @Valid @RequestBody BranchSelectReqDto req) {
         RollResultDto result = gameService.selectBranch(gameId, rq.getActor(), req);
         return ApiResponse.success("200", "분기점을 선택했습니다.", result);
+    }
+
+    /**
+     * POST /api/v1/games/{gameId}/card/target
+     * Current player picks the opponent for an OPPONENT-targeted attack card.
+     * Only valid in CARD_TARGET_SELECT state for the current player.
+     */
+    @Operation(summary = "공격 카드 대상 지정")
+    @PostMapping("/{gameId}/card/target")
+    public ApiResponse<RollResultDto> selectCardTarget(@PathVariable Integer gameId,
+                                                       @Valid @RequestBody CardTargetReqDto req) {
+        RollResultDto result = gameService.selectCardTarget(gameId, rq.getActor(), req);
+        return ApiResponse.success("200", "카드 대상을 지정했습니다.", result);
+    }
+
+    /**
+     * POST /api/v1/games/{gameId}/card/defense
+     * Targeted player decides whether to spend a defense card. Only valid in
+     * CARD_DEFENSE state for the targeted player.
+     */
+    @Operation(summary = "방어 카드 사용 여부 선택")
+    @PostMapping("/{gameId}/card/defense")
+    public ApiResponse<RollResultDto> resolveDefense(@PathVariable Integer gameId,
+                                                     @Valid @RequestBody DefenseReqDto req) {
+        RollResultDto result = gameService.resolveDefense(gameId, rq.getActor(), req);
+        return ApiResponse.success("200", "방어 여부를 처리했습니다.", result);
+    }
+
+    /**
+     * POST /api/v1/games/{gameId}/bus
+     * Current player selects which bus stop to teleport to. Only valid in
+     * BUS_SELECT state for the current player.
+     */
+    @Operation(summary = "두리버스 도착 정류장 선택")
+    @PostMapping("/{gameId}/bus")
+    public ApiResponse<RollResultDto> selectBusDestination(@PathVariable Integer gameId,
+                                                           @Valid @RequestBody BusRideReqDto req) {
+        RollResultDto result = gameService.selectBusDestination(gameId, rq.getActor(), req);
+        return ApiResponse.success("200", "정류장을 선택했습니다.", result);
     }
 
     /**

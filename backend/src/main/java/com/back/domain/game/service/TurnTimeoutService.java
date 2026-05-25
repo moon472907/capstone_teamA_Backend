@@ -25,6 +25,9 @@ public class TurnTimeoutService {
             try {
                 gameService.autoRollIfTimeout(game.getId());
                 gameService.autoSelectBranchIfTimeout(game.getId());
+                gameService.autoSelectCardTargetIfTimeout(game.getId());
+                gameService.autoResolveDefenseIfTimeout(game.getId());
+                gameService.autoSelectBusIfTimeout(game.getId());
             } catch (Exception e) {
                 log.error("Timeout check failed for game {}", game.getId(), e);
             }

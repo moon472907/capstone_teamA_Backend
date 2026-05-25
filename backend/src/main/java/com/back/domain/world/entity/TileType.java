@@ -4,5 +4,9 @@ public enum TileType {
     NORMAL,
     RANDOM_REWARD,
     TRAP,
-    TELEPORT
+    TELEPORT,
+    CARD,
+    STAR,
+    BUS,
+    MINIGAME
 }
