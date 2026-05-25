@@ -64,8 +64,14 @@ public class SecurityConfig {
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(frontUrl));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
+        // allowCredentials(true) 와 함께 쓰려면 와일드카드 대신 패턴 사용
+        configuration.setAllowedOriginPatterns(List.of(
+                frontUrl,
+                "https://capstone-team-a-frontend.vercel.app",
+                "https://*.vercel.app",   // Vercel 프리뷰 배포
+                "http://localhost:*"      // 로컬 개발
+        ));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowCredentials(true);
         configuration.setAllowedHeaders(List.of("*"));
 
