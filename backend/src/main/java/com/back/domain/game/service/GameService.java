@@ -11,6 +11,7 @@ import com.back.domain.game.dto.BusRideReqDto;
 import com.back.domain.game.dto.CardTargetReqDto;
 import com.back.domain.game.dto.CreateGameReqDto;
 import com.back.domain.game.dto.DefenseReqDto;
+import com.back.domain.game.dto.GameDetailDto;
 import com.back.domain.game.dto.GameRoomDto;
 import com.back.domain.game.dto.GameStateSnapshotDto;
 import com.back.domain.game.dto.JoinGameReqDto;
@@ -88,6 +89,13 @@ public class GameService {
                 .stream()
                 .map(GameRoomDto::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public GameDetailDto getGameDetail(Integer gameId) {
+        Game game = findGame(gameId);
+        List<Player> players = playerRepository.findByGameId(gameId);
+        return GameDetailDto.from(game, players);
     }
 
     // ─────────────────────────────────────────────
@@ -210,12 +218,8 @@ public class GameService {
             throw new CustomException(ErrorCode.PLAYER_ALREADY_IN_GAME);
         }
 
-        GameCharacter character = resolveCharacter(req.characterKey());
-        boolean characterTaken = playerRepository.findByGameId(gameId).stream()
-                .anyMatch(p -> req.characterKey().equals(p.getCharacterKey()));
-        if (characterTaken) {
-            throw new CustomException(ErrorCode.CHARACTER_ALREADY_TAKEN);
-        }
+        // 선호 캐릭터가 비어 있거나 이미 사용 중이면 사용 가능한 캐릭터를 자동 배정
+        GameCharacter character = resolveJoinCharacter(gameId, req.characterKey());
 
         World world = game.getWorld();
         Player player = joinGameInternal(game, world, member, req.nickname(), character.getCharacterKey());
@@ -1207,6 +1211,26 @@ public class GameService {
     private GameCharacter resolveCharacter(String characterKey) {
         return characterRepository.findByCharacterKey(characterKey)
                 .orElseThrow(() -> new CustomException(ErrorCode.CHARACTER_NOT_FOUND));
+    }
+
+    /**
+     * 입장 시 캐릭터 결정: 선호 캐릭터가 유효하고 비어 있으면 그대로,
+     * 아니면(없거나 이미 사용 중) 사용 가능한 첫 캐릭터를 자동 배정한다.
+     */
+    private GameCharacter resolveJoinCharacter(Integer gameId, String preferredKey) {
+        java.util.Set<String> taken = playerRepository.findByGameId(gameId).stream()
+                .map(Player::getCharacterKey)
+                .collect(java.util.stream.Collectors.toSet());
+
+        if (preferredKey != null && !preferredKey.isBlank() && !taken.contains(preferredKey)) {
+            GameCharacter preferred = characterRepository.findByCharacterKey(preferredKey).orElse(null);
+            if (preferred != null) return preferred;
+        }
+
+        return characterRepository.findAll().stream()
+                .filter(c -> !taken.contains(c.getCharacterKey()))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ErrorCode.GAME_FULL));
     }
 
     private World resolveBoard(Integer boardId) {

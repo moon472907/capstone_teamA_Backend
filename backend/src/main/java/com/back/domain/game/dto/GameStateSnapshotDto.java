@@ -32,6 +32,7 @@ public class GameStateSnapshotDto {
     @AllArgsConstructor
     public static class PlayerSnapshotDto {
         private Integer playerId;
+        private Integer memberId;   // 프론트가 본인 playerId를 식별하는 데 사용
         private String nickname;
         private String characterKey;
         private Integer tileId;
@@ -50,6 +51,7 @@ public class GameStateSnapshotDto {
         List<PlayerSnapshotDto> playerDtos = session.getPlayers().stream()
                 .map(p -> PlayerSnapshotDto.builder()
                         .playerId(p.getPlayerId())
+                        .memberId(p.getMemberId())
                         .nickname(p.getNickname())
                         .characterKey(p.getCharacterKey())
                         .tileId(p.getTileId())

@@ -5,6 +5,7 @@ import com.back.domain.game.dto.BusRideReqDto;
 import com.back.domain.game.dto.CardTargetReqDto;
 import com.back.domain.game.dto.CreateGameReqDto;
 import com.back.domain.game.dto.DefenseReqDto;
+import com.back.domain.game.dto.GameDetailDto;
 import com.back.domain.game.dto.GameRoomDto;
 import com.back.domain.game.dto.GameStateSnapshotDto;
 import com.back.domain.game.dto.JoinGameReqDto;
@@ -46,6 +47,16 @@ public class GameController {
     @GetMapping
     public ApiResponse<List<GameRoomDto>> listWaitingGames() {
         return ApiResponse.success("200", "대기 중인 방 목록입니다.", gameService.listWaitingGames());
+    }
+
+    /**
+     * GET /api/v1/games/{gameId}
+     * 방 상세(현재 로스터). 로비에서 실시간 슬롯/레디 구성에 사용.
+     */
+    @Operation(summary = "방 상세 조회 (로스터)")
+    @GetMapping("/{gameId}")
+    public ApiResponse<GameDetailDto> getGameDetail(@PathVariable Integer gameId) {
+        return ApiResponse.success("200", "방 상세입니다.", gameService.getGameDetail(gameId));
     }
 
     /**
