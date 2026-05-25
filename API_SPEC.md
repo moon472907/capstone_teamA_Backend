@@ -2,7 +2,7 @@
 
 > 프론트엔드 연동 기준 문서  
 > Base URL: `http://localhost:8080` (개발) / `https://api.everyknu.com` (운영)  
-> 최종 업데이트: 2026-05-18
+> 최종 업데이트: 2026-05-25 (스타 기반 점수 + 이벤트 카드/두리버스/스타/미니게임 추가)
 
 ---
 
@@ -59,9 +59,13 @@ const client = new Client({
 | 400 | GAME-400-05 | 4명이 모두 참여하지 않음 |
 | 400 | GAME-400-07 | 모든 플레이어가 레디하지 않음 |
 | 400 | GAME-400-08 | 선택할 수 없는 분기점 |
+| 400 | GAME-400-09 | 지정할 수 없는 카드 대상 |
+| 400 | GAME-400-10 | 이동할 수 없는 정류장 |
+| 400 | GAME-400-11 | 보유한 방어 카드가 없음 |
 | 401 | AUTH-401 | 로그인 필요 |
 | 403 | GAME-403-01 | 본인 턴이 아님 |
 | 403 | GAME-403-02 | 방장이 아님 |
+| 403 | GAME-403-03 | 방어 대상 플레이어가 아님 |
 | 404 | GAME-404 | 게임 없음 |
 | 404 | CHAR-404 | 존재하지 않는 캐릭터 |
 | 409 | GAME-409-01 | 이미 해당 게임에 참가 중 |
@@ -448,9 +452,93 @@ POST /api/v1/games/{gameId}/branch
 | 선택 불가 노드 | 400 | GAME-400-08 |
 | 본인 턴 아님 | 403 | GAME-403-01 |
 
+> ⚠️ **noteId 매핑**: 모든 이동 관련 응답/이벤트는 `nodeNumber`(1~53)를 보냅니다.
+> 프론트는 `"node" + nodeNumber`로 매핑하고, 분기/버스 선택 요청에도 `nodeNumber`를 그대로 보냅니다.
+> (`toTileId`/`tileId`는 서버 내부 DB id이며 프론트는 사용하지 않습니다.)
+
 ---
 
-### 4-9. 게임 상태 조회 (재접속용)
+### 4-9. 공격 카드 대상 지정
+
+```
+POST /api/v1/games/{gameId}/card/target
+```
+
+> 로그인 필요. `CARD_TARGET_SELECT` 상태 + 본인 턴(카드를 뽑은 플레이어)에만 호출.
+> 상대 지정 공격 카드(`police`/`drinking`/`skipper`)를 뽑았을 때만 발생합니다.
+
+**Request Body**
+```json
+{ "targetPlayerId": 3 }
+```
+
+**Response** `200` — 대상이 방어 카드 보유 시 `nextState`가 `CARD_DEFENSE`, 아니면 즉시 적용 후 `TURN_START`/`GAME_END`.
+
+**오류**
+| 상황 | HTTP | 코드 |
+|------|------|------|
+| CARD_TARGET_SELECT 상태 아님 | 400 | GAME-400-06 |
+| 본인 턴 아님 | 403 | GAME-403-01 |
+| 대상이 자기 자신/존재하지 않음 | 400 | GAME-400-09 |
+
+> 20초 내 미선택 시 서버가 랜덤 상대를 자동 지정합니다.
+
+---
+
+### 4-10. 방어 카드 사용 여부 선택
+
+```
+POST /api/v1/games/{gameId}/card/defense
+```
+
+> 로그인 필요. `CARD_DEFENSE` 상태 + **피격 대상 본인**만 호출. (현재 턴 플레이어가 아니어도 호출)
+
+**Request Body**
+```json
+{ "useDefense": true }
+```
+
+- `true`: 방어 카드 1장 소모, 스타 차감 무효화
+- `false`: 방어 안 함, 스타 차감 적용
+
+**오류**
+| 상황 | HTTP | 코드 |
+|------|------|------|
+| CARD_DEFENSE 상태 아님 | 400 | GAME-400-06 |
+| 방어 대상이 아님 | 403 | GAME-403-03 |
+| 방어 카드 없음(`useDefense:true`인데 보유 0) | 400 | GAME-400-11 |
+
+> 20초 내 미선택 시 서버가 **방어 미사용**(카드 보존, 차감 적용)으로 자동 처리합니다.
+
+---
+
+### 4-11. 두리버스 도착 정류장 선택
+
+```
+POST /api/v1/games/{gameId}/bus
+```
+
+> 로그인 필요. `BUS_SELECT` 상태 + 본인 턴에만 호출. 버스 칸 도착 시 발생합니다.
+
+**Request Body**
+```json
+{ "destinationTileId": 22 }
+```
+
+> `destinationTileId`는 도착 정류장의 `nodeNumber`. `BUS_RIDE_REQUIRED`의 `busOptions` 중 하나.
+
+**오류**
+| 상황 | HTTP | 코드 |
+|------|------|------|
+| BUS_SELECT 상태 아님 | 400 | GAME-400-06 |
+| 본인 턴 아님 | 403 | GAME-403-01 |
+| 이동 불가 정류장 | 400 | GAME-400-10 |
+
+> 20초 내 미선택 시 서버가 랜덤 정류장으로 자동 이동합니다.
+
+---
+
+### 4-12. 게임 상태 조회 (재접속용)
 
 ```
 GET /api/v1/games/{gameId}/state
@@ -470,12 +558,14 @@ GET /api/v1/games/{gameId}/state
     "currentPlayerIndex": 1,
     "currentPlayerNickname": "플레이어2",
     "players": [
-      { "playerId": 2, "nickname": "홍길동",   "characterKey": "gomduri", "tileId": 14, "coins": 19, "gpa": 0, "connected": true },
-      { "playerId": 3, "nickname": "플레이어2", "characterKey": "narae",   "tileId": 10, "coins": 10, "gpa": 0, "connected": false }
+      { "playerId": 2, "nickname": "홍길동",   "characterKey": "gomduri", "tileId": 14, "tileNumber": 5,  "stars": 4, "defenseCards": 1, "coins": 10, "gpa": 0, "connected": true },
+      { "playerId": 3, "nickname": "플레이어2", "characterKey": "narae",   "tileId": 10, "tileNumber": 1,  "stars": 2, "defenseCards": 0, "coins": 10, "gpa": 0, "connected": false }
     ]
   }
 }
 ```
+
+> **플레이어 필드**: `stars`=점수(승패 기준), `defenseCards`=보유 방어 카드 수, `tileNumber`=현재 칸(`"node"+tileNumber`로 매핑). `coins`/`gpa`는 현재 미사용(코인 잔재, gpa는 보류).
 
 ---
 
@@ -594,41 +684,88 @@ client.activate();
 ---
 
 #### PLAYER_MOVED
-> 트리거: `POST /roll` 처리 중 (2번째)
+> 트리거: 이동 처리 중. **`nodeNumber`(1~53)로 말을 이동하세요.**
 ```json
 {
   "type": "PLAYER_MOVED",
-  "payload": { "playerId": 2, "fromTileId": 10, "toTileId": 14, "tileIndex": 4 }
+  "payload": { "playerId": 2, "fromTileId": 10, "toTileId": 14, "tileIndex": 4, "nodeNumber": 5 }
 }
 ```
 
 ---
 
 #### BRANCH_REQUIRED
-> 트리거: 분기점 도달 시 (`/roll` 또는 `/branch` 처리 중)
+> 트리거: 분기점 도달 시 (`/roll` 또는 `/branch` 처리 중). `branchOptions`는 **nodeNumber** 배열.
 ```json
 {
   "type": "BRANCH_REQUIRED",
-  "payload": { "playerId": 2, "branchOptions": [14, 20], "timeoutSeconds": 20 }
+  "payload": { "playerId": 2, "branchOptions": [15, 17], "timeoutSeconds": 20 }
 }
 ```
 
-> 현재 턴 플레이어만 `POST /branch`를 호출합니다.  
+> 현재 턴 플레이어만 `POST /branch`(body `selectedNodeId` = nodeNumber)를 호출합니다.  
 > 20초 타임아웃 시 서버가 자동으로 랜덤 선택합니다.
 
 ---
 
 #### TILE_TRIGGERED
-> 트리거: `POST /roll` 또는 `/branch` 처리 중 (이동 완료 후)
+> 트리거: 이동/카드/버스 처리 중. **점수는 `stars`**(`starsChange`/`totalStars`).
 ```json
-// RANDOM_REWARD
-{ "type": "TILE_TRIGGERED", "payload": { "playerId": 2, "tileType": "RANDOM_REWARD", "coinsChange": 9, "totalCoins": 19, "description": "행운 칸! +9 코인을 획득했습니다." } }
+// STAR (스타 칸)
+{ "type": "TILE_TRIGGERED", "payload": { "playerId": 2, "tileType": "STAR", "starsChange": 1, "totalStars": 5, "description": "⭐ 스타 칸! 스타 +1" } }
 
-// TRAP
-{ "type": "TILE_TRIGGERED", "payload": { "playerId": 2, "tileType": "TRAP", "coinsChange": -5, "totalCoins": 5, "description": "함정 칸! -5 코인을 잃었습니다." } }
+// MINIGAME (v1 임시: 랜덤 등수)
+{ "type": "TILE_TRIGGERED", "payload": { "playerId": 2, "tileType": "MINIGAME", "starsChange": 3, "totalStars": 8, "description": "🎮 미니게임 1등! 스타 +3" } }
 
-// TELEPORT
-{ "type": "TILE_TRIGGERED", "payload": { "playerId": 2, "tileType": "TELEPORT", "coinsChange": 0, "totalCoins": 10, "description": "텔레포트!", "teleportTileId": 22 } }
+// CARD (장학금/자기차감 즉시 적용 — 카드 메타 포함)
+{ "type": "TILE_TRIGGERED", "payload": { "playerId": 2, "tileType": "CARD", "cardKey": "top", "cardType": "SCHOLARSHIP", "title": "성적우수 장학금", "starsChange": 3, "totalStars": 8, "defenseCards": 0, "skipNextTurn": false, "description": "..." } }
+
+// CARD (공격 적용 결과 — 방어 여부 포함)
+{ "type": "TILE_TRIGGERED", "payload": { "playerId": 3, "tileType": "CARD", "cardKey": "skipper", "cardType": "ATTACK", "blocked": false, "starsChange": -3, "totalStars": 1, "defenseCards": 0, "description": "출튀한 사람 — 플레이어2님 스타 -3" } }
+
+// BUS (두리버스 이동 완료)
+{ "type": "TILE_TRIGGERED", "payload": { "playerId": 2, "tileType": "BUS", "teleportTileId": 31, "nodeNumber": 22, "starsChange": 0, "totalStars": 5, "description": "🚌 두리버스로 정류장을 이동했습니다." } }
+```
+
+---
+
+#### CARD_DRAWN
+> 트리거: 카드 칸 도착 시 (전체에게 뽑힌 카드 공개)
+```json
+{ "type": "CARD_DRAWN", "payload": { "playerId": 2, "nickname": "홍길동", "cardKey": "skipper", "cardType": "ATTACK", "title": "출튀한 사람", "description": "..." } }
+```
+
+---
+
+#### CARD_TARGET_REQUIRED
+> 트리거: 상대 지정 공격 카드를 뽑았을 때. **카드 뽑은 본인**이 `POST /card/target` 호출.
+```json
+{ "type": "CARD_TARGET_REQUIRED", "payload": { "playerId": 2, "cardKey": "skipper", "title": "출튀한 사람", "targetOptions": [3, 4, 5], "timeoutSeconds": 20 } }
+```
+> `targetOptions`는 지정 가능한 상대 **playerId** 목록 (nodeNumber 아님).
+
+---
+
+#### DEFENSE_PROMPT
+> 트리거: 지정된 대상이 방어 카드 보유 시. **피격 대상 본인**이 `POST /card/defense` 호출.
+```json
+{ "type": "DEFENSE_PROMPT", "payload": { "targetPlayerId": 3, "attackerPlayerId": 2, "cardKey": "skipper", "title": "출튀한 사람", "starsChange": -3, "defenseCards": 1, "timeoutSeconds": 20 } }
+```
+
+---
+
+#### BUS_RIDE_REQUIRED
+> 트리거: 버스 칸 도착 시. **현재 플레이어**가 `POST /bus` 호출. `busOptions`는 **nodeNumber** 목록.
+```json
+{ "type": "BUS_RIDE_REQUIRED", "payload": { "playerId": 2, "busOptions": [22, 31, 36], "timeoutSeconds": 20 } }
+```
+
+---
+
+#### TURN_SKIPPED
+> 트리거: "그렇게 과CC를..." 카드로 다음 턴을 건너뛸 때
+```json
+{ "type": "TURN_SKIPPED", "payload": { "playerId": 3, "nickname": "플레이어2" } }
 ```
 
 ---
@@ -640,12 +777,15 @@ client.activate();
   "type": "GAME_ENDED",
   "payload": {
     "results": [
-      { "playerId": 3, "nickname": "플레이어2", "coins": 42, "rank": 1 },
-      { "playerId": 2, "nickname": "홍길동",   "coins": 35, "rank": 2 }
+      { "playerId": 3, "nickname": "플레이어2", "stars": 12, "coins": 10, "rank": 1 },
+      { "playerId": 5, "nickname": "플레이어3", "stars": 12, "coins": 10, "rank": 1 },
+      { "playerId": 2, "nickname": "홍길동",   "stars": 9,  "coins": 10, "rank": 3 }
     ]
   }
 }
 ```
+
+> **순위 = `stars` 내림차순. 동점은 공동 순위**(위 예시: 1등 2명 → 다음은 3등). `coins`는 표시용 잔재.
 
 ---
 
@@ -672,24 +812,28 @@ client.activate();
 ```
 현재 턴 플레이어
   │
-  ├─ POST /roll
-  │    ├─ WS: DICE_ROLLED
-  │    ├─ WS: PLAYER_MOVED
-  │    │
-  │    ├─ [분기점 없음]
-  │    │    ├─ WS: TILE_TRIGGERED
-  │    │    └─ WS: TURN_CHANGED (또는 GAME_ENDED)
-  │    │
-  │    └─ [분기점 있음] → WS: BRANCH_REQUIRED
-  │         │
-  │         ├─ POST /branch (20초 이내, 아니면 서버 자동 선택)
-  │         │    ├─ [또 분기점] → WS: BRANCH_REQUIRED (반복)
-  │         │    └─ [완료]
-  │         │         ├─ WS: TILE_TRIGGERED
-  │         │         └─ WS: TURN_CHANGED (또는 GAME_ENDED)
-  │         │
-  │         └─ [20초 타임아웃] → 서버 랜덤 선택 후 위와 동일
+  ├─ POST /roll → WS: DICE_ROLLED → WS: PLAYER_MOVED
+  │
+  ├─ [분기점] → WS: BRANCH_REQUIRED → POST /branch (반복 가능)
+  │
+  └─ 도착 칸 종류별 처리:
+       ├─ NORMAL                : 효과 없음
+       ├─ STAR                  : 스타 +1 → WS: TILE_TRIGGERED
+       ├─ MINIGAME              : 랜덤 등수 → 스타 지급 → WS: TILE_TRIGGERED
+       ├─ BUS  → WS: BUS_RIDE_REQUIRED → POST /bus → 순간이동
+       └─ CARD → WS: CARD_DRAWN
+                 ├─ 장학금/자기차감/스킵 : 즉시 적용 → WS: TILE_TRIGGERED
+                 └─ 상대 지정 공격 → WS: CARD_TARGET_REQUIRED → POST /card/target
+                          ├─ 대상 방어카드 보유 → WS: DEFENSE_PROMPT → POST /card/defense
+                          └─ 적용 → WS: TILE_TRIGGERED
+  │
+  └─ WS: TURN_CHANGED (스킵 대상은 TURN_SKIPPED 후 자동 넘김) 또는 GAME_ENDED
 ```
+
+### 점수/승리 조건
+
+- **점수 = 스타 개수.** 8라운드 종료 후 스타가 가장 많은 플레이어가 승리. **동점은 공동 순위.**
+- 코인(`coins`)/학점(`gpa`)은 현재 미사용 (코인은 잔재, gpa는 보류).
 
 ### 타임아웃
 
@@ -697,6 +841,9 @@ client.activate();
 |------|------|------|
 | 턴 타임아웃 | 30초 | 서버가 자동으로 주사위 굴림 |
 | 분기점 타임아웃 | 20초 | 서버가 랜덤으로 경로 선택 |
+| 카드 대상 지정 | 20초 | 서버가 랜덤 상대 자동 지정 |
+| 방어 선택 | 20초 | 방어 미사용(차감 적용)으로 자동 처리 |
+| 두리버스 선택 | 20초 | 서버가 랜덤 정류장 자동 이동 |
 
 ### 재접속
 
@@ -708,9 +855,51 @@ client.activate();
 
 ---
 
-## 7. 미결 항목
+## 7. 타일 & 이벤트 카드 메커닉 (2026-05-25 확정)
 
-| 항목 | 내용 |
+### 7-1. 보드 타일 종류 (53노드, `map_data.json` 기준)
+
+| 타일 | 노드 번호 | 효과 |
+|------|-----------|------|
+| `CARD` (이벤트 카드) | 3, 9, 13, 34, 44, 47, 48, 49 | 카드 1장 뽑아 효과 적용 (아래 7-2) |
+| `STAR` | 4, 11, 19, 23, 28, 30, 42, 52 | 스타 +1 |
+| `BUS` (두리버스) | 15, 22, 31, 36 | 다른 정류장으로 순간이동 (선택) |
+| `MINIGAME` | 6, 21, 26, 39, 45, 46, 50, 53 | **v1 임시**: 랜덤 등수(1~4) → 스타 +3/+2/+1/0. 실제 미니게임 추후 |
+| `NORMAL`/start | 나머지 | 효과 없음 |
+
+> 스타는 0 미만으로 내려가지 않음.
+
+### 7-2. 이벤트 카드 덱 (총 30장)
+
+| 분류 | 카드 (키) | 장수 | 대상 | 스타 |
+|------|-----------|:---:|------|:---:|
+| 공격 | 출튀한 사람 (`skipper`) | 1 | 상대 지정 | **−3** |
+| 공격 | 캠퍼스 폴리스에 적발! (`police`) | 3 | 상대 지정 | −2 |
+| 공격 | 회식의 저주 (`drinking`) | 2 | 상대 지정 | −2 |
+| 공격 | 수강신청 대 실패 (`course_fail`) | 2 | 자신 | −2 |
+| 공격 | 팀프로젝트 무임승차 빌런 (`freeloader`) | 2 | 자신 | −1 |
+| 공격 | 그렇게 과CC를... (`breakup`) | 2 | 자신 | 0 + **다음 턴 스킵** |
+| 방어 | 백령 곰두리의 수호 (`guardian`) | 8 | 보관(무제한) | 상대 지정 공격 1회 무효 |
+| 장학 | 성적우수 장학금 (`top`) | 2 | 자신 | +3 |
+| 장학 | 캡스톤 디자인 A+ (`capstone`) | 2 | 자신 | +3 |
+| 장학 | KNU미래글로벌인재 장학금 (`global`) | 2 | 자신 | +2 |
+| 장학 | 국가유공자 및 자녀장학금 (`veteran`) | 2 | 자신 | +2 |
+| 장학 | 학과사랑 근로장학금 (`work`) | 2 | 자신 | +1 |
+
+**규칙**
+- 매 뽑기는 위 장수로 가중된 무한 덱에서 독립 추출(소진/셔플 없음).
+- **상대 지정 공격**: 카드 뽑은 사람이 상대 1명 선택 → 대상이 방어 카드 보유 시 사용 여부 선택.
+- **자기 차감 공격**: 즉시 본인 스타 차감 (방어 불가).
+- **방어 카드**: 무제한 보유, 상대 지정 공격을 받을 때 1장 소모해 무효화. 자기 차감/스킵은 방어 불가.
+- **`breakup`**: 스타 변화 없이 다음 본인 턴 1회 스킵 (`TURN_SKIPPED` 브로드캐스트).
+
+---
+
+## 8. 미결 / 보류 항목
+
+| 항목 | 상태 |
 |------|------|
-| **학점(gpa) 누적 로직** | 현재 `gpa` 필드는 항상 0. 타일 이벤트/미니게임 상세 기획 후 구현 필요 |
-| **타일 ID ↔ 노드 이름 변환** | 백엔드 `tileId`(정수)를 프론트 Phaser의 노드 이름(`"node14"`)으로 변환하는 로직 프론트에서 처리 필요 (`"node" + tileIndex`로 단순 변환 가능한지 확인 필요) |
+| **학점(gpa) 시스템** | **보류**. `gpa` 항상 0. 추후 기획. |
+| **실제 미니게임** | 보류. 현재는 랜덤 등수 플레이스홀더. |
+| **타일 ID ↔ 노드 이름 변환** | ✅ 해결. 서버가 모든 이벤트/응답에 `nodeNumber`(1~53) 포함, 프론트는 `"node"+nodeNumber`로 매핑. 분기/버스 선택 요청도 nodeNumber. |
+| **dev DB 재시드** | 기존 `db_dev.mv.db`에 구버전 46노드 보드가 남아 있으면 새 보드가 시드되지 않음(`worldRepository.count()==0`일 때만 시드). **로컬에서 `db_dev.mv.db` 삭제 후 재기동 필요.** |

@@ -16,6 +16,7 @@ public class RollResultDto {
     private int diceValue;
     private int fromTileId;
     private int toTileId;
+    private Integer toNodeNumber;  // 프론트 매핑용: "node{toNodeNumber}" (1~53)
     private int tileIndex;
     private String tileType;
     private int coinsChange;

@@ -41,12 +41,19 @@ public class BaseInitData {
         return args -> self.initAllData();
     }
 
+    /**
+     * 보드 정의 버전. 보드 레이아웃/타일이 바뀌면 이 이름을 올린다.
+     * 운영(MySQL, ddl-auto: update)에서도 이 이름의 보드가 없으면 재배포 시 새로 시드되고,
+     * 옛 보드 row는 보존되어 종료된 게임의 참조가 깨지지 않는다.
+     */
+    private static final String BOARD_MAP_NAME = "강대마블 캠퍼스 보드 v2";
+
     @Transactional
     public void initAllData() {
         if (characterRepository.count() == 0) {
             initCharacters();
         }
-        if (worldRepository.count() == 0) {
+        if (!worldRepository.existsByMapName(BOARD_MAP_NAME)) {
             initDefaultBoard();
         }
     }
@@ -80,7 +87,7 @@ public class BaseInitData {
         final int NODE_COUNT = 53;
 
         World world = World.builder()
-                .mapName("강대마블 캠퍼스 보드")
+                .mapName(BOARD_MAP_NAME)
                 .nodes(new ArrayList<>())
                 .build();
         worldRepository.save(world);

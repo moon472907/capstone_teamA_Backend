@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Builder
@@ -34,6 +35,7 @@ public class GameStateSnapshotDto {
         private String nickname;
         private String characterKey;
         private Integer tileId;
+        private Integer tileNumber;  // 프론트 매핑용: "node{tileNumber}" (1~53)
         private int coins;
         private int stars;
         private int defenseCards;
@@ -41,13 +43,19 @@ public class GameStateSnapshotDto {
         private boolean connected;
     }
 
-    public static GameStateSnapshotDto from(GameSession session) {
+    /**
+     * @param tileIdToNumber DB Node id → nodeNumber(1~53) 매핑. null이면 tileId를 그대로 사용.
+     */
+    public static GameStateSnapshotDto from(GameSession session, Map<Integer, Integer> tileIdToNumber) {
         List<PlayerSnapshotDto> playerDtos = session.getPlayers().stream()
                 .map(p -> PlayerSnapshotDto.builder()
                         .playerId(p.getPlayerId())
                         .nickname(p.getNickname())
                         .characterKey(p.getCharacterKey())
                         .tileId(p.getTileId())
+                        .tileNumber(tileIdToNumber == null
+                                ? p.getTileId()
+                                : tileIdToNumber.getOrDefault(p.getTileId(), p.getTileId()))
                         .coins(p.getCoins())
                         .stars(p.getStars())
                         .defenseCards(p.getDefenseCards())

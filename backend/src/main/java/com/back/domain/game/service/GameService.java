@@ -302,7 +302,7 @@ public class GameService {
         game.setState(GameState.IN_PROGRESS);
         gameRepository.save(game);
 
-        GameStateSnapshotDto snapshot = GameStateSnapshotDto.from(session);
+        GameStateSnapshotDto snapshot = GameStateSnapshotDto.from(session, tileIdToNumberMap(session.getBoardId()));
         broadcastToGame(gameId, GameMessage.of(MessageType.GAME_STARTED, gameId, snapshot));
         broadcastTurnStart(session);
 
@@ -360,20 +360,22 @@ public class GameService {
             broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_MOVED, gameId, Map.of(
                     "playerId", currentPlayer.getPlayerId(),
                     "fromTileId", fromTileId,
-                    "toTileId", traversal.currentNodeId())));
+                    "toTileId", traversal.currentNodeId(),
+                    "nodeNumber", traversal.currentNodeNumber())));
 
             broadcastToGame(gameId, GameMessage.of(MessageType.BRANCH_REQUIRED, gameId, Map.of(
                     "playerId", currentPlayer.getPlayerId(),
-                    "branchOptions", traversal.branchNodeIds(),
+                    "branchOptions", traversal.branchNodeNumbers(),
                     "timeoutSeconds", BRANCH_TIMEOUT_SECONDS)));
 
             return RollResultDto.builder()
                     .diceValue(diceValue)
                     .fromTileId(fromTileId)
                     .toTileId(traversal.currentNodeId())
+                    .toNodeNumber(traversal.currentNodeNumber())
                     .nextState(GameState.BRANCH_SELECT)
                     .gameEnded(false)
-                    .branchOptions(traversal.branchNodeIds())
+                    .branchOptions(traversal.branchNodeNumbers())
                     .build();
         }
 
@@ -393,7 +395,7 @@ public class GameService {
                 .ifPresent(p -> p.setConnected(true));
 
         redisGameStateService.saveSession(session);
-        return GameStateSnapshotDto.from(session);
+        return GameStateSnapshotDto.from(session, tileIdToNumberMap(session.getBoardId()));
     }
 
     // ─────────────────────────────────────────────
@@ -411,14 +413,16 @@ public class GameService {
             requireState(session, GameState.BRANCH_SELECT);
             requireCurrentPlayer(session, member);
 
-            if (!session.getPendingBranchNodeIds().contains(req.selectedNodeId())) {
+            // 프론트는 nodeNumber(1~53)를 보냄 → 내부 DB id로 변환
+            Integer selectedNodeId = numberToId(session.getBoardId(), req.selectedNodeId());
+            if (!session.getPendingBranchNodeIds().contains(selectedNodeId)) {
                 throw new CustomException(ErrorCode.INVALID_BRANCH_SELECTION);
             }
 
             PlayerSession currentPlayer = session.getCurrentPlayer();
             int fromTileId = currentPlayer.getTileId();
 
-            TraversalResult traversal = traverseGraph(req.selectedNodeId(), session.getPendingRemainingSteps());
+            TraversalResult traversal = traverseGraph(selectedNodeId, session.getPendingRemainingSteps());
 
             if (traversal.isBranchRequired()) {
                 currentPlayer.setTileId(traversal.currentNodeId());
@@ -430,19 +434,21 @@ public class GameService {
                 broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_MOVED, gameId, Map.of(
                         "playerId", currentPlayer.getPlayerId(),
                         "fromTileId", fromTileId,
-                        "toTileId", traversal.currentNodeId())));
+                        "toTileId", traversal.currentNodeId(),
+                        "nodeNumber", traversal.currentNodeNumber())));
 
                 broadcastToGame(gameId, GameMessage.of(MessageType.BRANCH_REQUIRED, gameId, Map.of(
                         "playerId", currentPlayer.getPlayerId(),
-                        "branchOptions", traversal.branchNodeIds(),
+                        "branchOptions", traversal.branchNodeNumbers(),
                         "timeoutSeconds", BRANCH_TIMEOUT_SECONDS)));
 
                 return RollResultDto.builder()
                         .fromTileId(fromTileId)
                         .toTileId(traversal.currentNodeId())
+                        .toNodeNumber(traversal.currentNodeNumber())
                         .nextState(GameState.BRANCH_SELECT)
                         .gameEnded(false)
-                        .branchOptions(traversal.branchNodeIds())
+                        .branchOptions(traversal.branchNodeNumbers())
                         .build();
             }
 
@@ -511,7 +517,8 @@ public class GameService {
                 "playerId", currentPlayer.getPlayerId(),
                 "fromTileId", fromTileId,
                 "toTileId", destination.getId(),
-                "tileIndex", destination.getTileIndex())));
+                "tileIndex", destination.getTileIndex(),
+                "nodeNumber", destination.getTileIndex() + 1)));
 
         return resolveDestinationTile(session, gameId, currentPlayer, fromTileId, diceValue, destination);
     }
@@ -547,6 +554,7 @@ public class GameService {
                 .diceValue(diceValue)
                 .fromTileId(fromTileId)
                 .toTileId(currentPlayer.getTileId())
+                .toNodeNumber(destination.getTileIndex() + 1)
                 .tileIndex(destination.getTileIndex())
                 .tileType(type.name())
                 .coinsChange(eventResult.getCoinsChange())
@@ -605,6 +613,7 @@ public class GameService {
                     .diceValue(diceValue)
                     .fromTileId(fromTileId)
                     .toTileId(player.getTileId())
+                    .toNodeNumber(destination.getTileIndex() + 1)
                     .tileIndex(destination.getTileIndex())
                     .tileType(TileType.CARD.name())
                     .cardKey(card.key())
@@ -627,6 +636,7 @@ public class GameService {
                 .diceValue(diceValue)
                 .fromTileId(fromTileId)
                 .toTileId(player.getTileId())
+                .toNodeNumber(destination.getTileIndex() + 1)
                 .tileIndex(destination.getTileIndex())
                 .tileType(TileType.CARD.name())
                 .starsChange(result.getStarsChange())
@@ -795,6 +805,7 @@ public class GameService {
                     .diceValue(diceValue)
                     .fromTileId(fromTileId)
                     .toTileId(player.getTileId())
+                    .toNodeNumber(destination.getTileIndex() + 1)
                     .tileIndex(destination.getTileIndex())
                     .tileType(TileType.BUS.name())
                     .tileEventDescription("두리버스 정류장이지만 이동할 곳이 없습니다.")
@@ -809,18 +820,20 @@ public class GameService {
         session.setBusTimeoutSeconds(BUS_TIMEOUT_SECONDS);
         redisGameStateService.saveSession(session);
 
+        List<Integer> stopNumbers = idsToNumbers(session.getBoardId(), stops);
         broadcastToGame(gameId, GameMessage.of(MessageType.BUS_RIDE_REQUIRED, gameId, Map.of(
                 "playerId", player.getPlayerId(),
-                "busOptions", stops,
+                "busOptions", stopNumbers,
                 "timeoutSeconds", BUS_TIMEOUT_SECONDS)));
 
         return RollResultDto.builder()
                 .diceValue(diceValue)
                 .fromTileId(fromTileId)
                 .toTileId(player.getTileId())
+                .toNodeNumber(destination.getTileIndex() + 1)
                 .tileIndex(destination.getTileIndex())
                 .tileType(TileType.BUS.name())
-                .busOptions(stops)
+                .busOptions(stopNumbers)
                 .nextState(GameState.BUS_SELECT)
                 .gameEnded(false)
                 .build();
@@ -838,24 +851,28 @@ public class GameService {
             requireState(session, GameState.BUS_SELECT);
             requireCurrentPlayer(session, member);
 
+            // 프론트는 nodeNumber를 보냄 → 내부 DB id로 변환 후 검증
+            Integer destNodeId = numberToId(session.getBoardId(), req.destinationTileId());
             List<Integer> stops = session.getPendingBusStops();
-            if (stops == null || !stops.contains(req.destinationTileId())) {
+            if (stops == null || !stops.contains(destNodeId)) {
                 throw new CustomException(ErrorCode.INVALID_BUS_DESTINATION);
             }
 
             PlayerSession player = session.getCurrentPlayer();
             int fromTileId = player.getTileId();
-            player.setTileId(req.destinationTileId());
+            player.setTileId(destNodeId);
 
             broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_MOVED, gameId, Map.of(
                     "playerId", player.getPlayerId(),
                     "fromTileId", fromTileId,
-                    "toTileId", req.destinationTileId())));
+                    "toTileId", destNodeId,
+                    "nodeNumber", req.destinationTileId())));
 
             Map<String, Object> payload = new HashMap<>();
             payload.put("playerId", player.getPlayerId());
             payload.put("tileType", TileType.BUS.name());
-            payload.put("teleportTileId", req.destinationTileId());
+            payload.put("teleportTileId", destNodeId);
+            payload.put("nodeNumber", req.destinationTileId());
             payload.put("starsChange", 0);
             payload.put("totalStars", player.getStars());
             payload.put("description", "🚌 두리버스로 정류장을 이동했습니다.");
@@ -866,6 +883,7 @@ public class GameService {
 
             return RollResultDto.builder()
                     .toTileId(player.getTileId())
+                    .toNodeNumber(req.destinationTileId())
                     .tileType(TileType.BUS.name())
                     .tileEventDescription("🚌 두리버스로 정류장을 이동했습니다.")
                     .nextState(session.getState())
@@ -986,9 +1004,10 @@ public class GameService {
         List<Integer> stops = session.getPendingBusStops();
         if (stops == null || stops.isEmpty()) return;
         PlayerSession current = session.getCurrentPlayer();
-        Integer randomStop = stops.get(random.nextInt(stops.size()));
+        Integer randomStopId = stops.get(random.nextInt(stops.size()));
+        Integer randomStopNumber = idToNumber(randomStopId);
         try {
-            selectBusDestination(gameId, new Member(current.getMemberId(), ""), new BusRideReqDto(randomStop));
+            selectBusDestination(gameId, new Member(current.getMemberId(), ""), new BusRideReqDto(randomStopNumber));
         } catch (Exception e) {
             log.error("Auto bus-select failed: gameId={}", gameId, e);
         }
@@ -1009,10 +1028,7 @@ public class GameService {
 
             if (nextNodes.size() > 1) {
                 // Branch point — stop and return options
-                List<Integer> branchNodeIds = nextNodes.stream()
-                        .map(Node::getId)
-                        .toList();
-                return TraversalResult.branch(current.getId(), branchNodeIds, steps - i - 1);
+                return TraversalResult.branch(current, nextNodes, steps - i - 1);
             }
 
             Node next = nextNodes.get(0);
@@ -1021,19 +1037,48 @@ public class GameService {
         return TraversalResult.completed(current);
     }
 
-    private record TraversalResult(Node destination, Integer currentNodeId,
-                                   List<Integer> branchNodeIds, int remainingSteps) {
+    private record TraversalResult(Node destination, Integer currentNodeId, Integer currentNodeNumber,
+                                   List<Integer> branchNodeIds, List<Integer> branchNodeNumbers,
+                                   int remainingSteps) {
         static TraversalResult completed(Node destination) {
-            return new TraversalResult(destination, null, null, 0);
+            return new TraversalResult(destination, null, null, null, null, 0);
         }
 
-        static TraversalResult branch(Integer currentNodeId, List<Integer> options, int remaining) {
-            return new TraversalResult(null, currentNodeId, options, remaining);
+        static TraversalResult branch(Node currentNode, List<Node> options, int remaining) {
+            List<Integer> ids = options.stream().map(Node::getId).toList();
+            List<Integer> numbers = options.stream().map(n -> n.getTileIndex() + 1).toList();
+            return new TraversalResult(null, currentNode.getId(), currentNode.getTileIndex() + 1,
+                    ids, numbers, remaining);
         }
 
         boolean isBranchRequired() {
             return branchNodeIds != null;
         }
+    }
+
+    // ─────────────────────────────────────────────
+    //  nodeNumber(1-based, 프론트 매핑) ↔ DB id 변환
+    // ─────────────────────────────────────────────
+
+    private int idToNumber(Integer nodeId) {
+        return nodeRepository.findById(nodeId).map(n -> n.getTileIndex() + 1).orElse(-1);
+    }
+
+    private Integer numberToId(Integer boardId, Integer nodeNumber) {
+        return nodeRepository.findByWorldId(boardId).stream()
+                .filter(n -> n.getTileIndex() == nodeNumber - 1)
+                .map(Node::getId)
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_BRANCH_SELECTION));
+    }
+
+    private List<Integer> idsToNumbers(Integer boardId, List<Integer> ids) {
+        return ids.stream().map(tileIdToNumberMap(boardId)::get).toList();
+    }
+
+    private Map<Integer, Integer> tileIdToNumberMap(Integer boardId) {
+        return nodeRepository.findByWorldId(boardId).stream()
+                .collect(java.util.stream.Collectors.toMap(Node::getId, n -> n.getTileIndex() + 1));
     }
 
     private void applyTileEffect(PlayerSession player, TileEventResult result) {
@@ -1169,8 +1214,8 @@ public class GameService {
             return worldRepository.findById(boardId)
                     .orElseThrow(() -> new CustomException(ErrorCode.BOARD_NOT_FOUND));
         }
-        return worldRepository.findAll().stream()
-                .findFirst()
+        // 기본 보드 = 가장 최근에 시드된 보드 (최신 버전). 옛 보드는 보존되므로 findFirst가 아닌 최신 선택.
+        return worldRepository.findTopByOrderByIdDesc()
                 .orElseThrow(() -> new CustomException(ErrorCode.BOARD_NOT_FOUND,
                         "기본 보드가 없습니다. 먼저 보드를 초기화해주세요."));
     }
