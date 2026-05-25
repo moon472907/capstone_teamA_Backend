@@ -67,9 +67,11 @@ public class SecurityConfig {
         // allowCredentials(true) 와 함께 쓰려면 와일드카드 대신 패턴 사용
         configuration.setAllowedOriginPatterns(List.of(
                 frontUrl,
+                "https://everyknu.cloud",
+                "https://*.everyknu.cloud",   // www, game, www.game 등 모든 서브도메인
                 "https://capstone-team-a-frontend.vercel.app",
-                "https://*.vercel.app",   // Vercel 프리뷰 배포
-                "http://localhost:*"      // 로컬 개발
+                "https://*.vercel.app",       // Vercel 프리뷰 배포
+                "http://localhost:*"          // 로컬 개발
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowCredentials(true);
