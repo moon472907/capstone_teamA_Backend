@@ -15,6 +15,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,8 +36,10 @@ public class Node extends BaseEntity {
     @Column(nullable = false)
     private int tileIndex;
 
+    // MySQL 네이티브 ENUM 대신 VARCHAR로 저장 — enum 값 추가 시 스키마 변경 없이 안전
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 32)
     private TileType tileType;
 
     /** Optional JSON string for type-specific configuration. */
