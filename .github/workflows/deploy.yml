@@ -72,3 +72,5 @@ jobs:
             cd ~/app
             docker compose pull app
             docker compose up -d
+            # app 컨테이너가 새 IP로 재생성되므로 nginx가 upstream을 다시 잡도록 재시작
+            docker compose restart nginx
