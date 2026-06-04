@@ -14,7 +14,7 @@ public final class CardCatalog {
     private CardCatalog() {}
 
     public static final List<EventCard> ALL = List.of(
-            // ── 공격 카드 (12장) ─────────────────────────────────────
+            // ── 공격 카드 (7장) ─────────────────────────────────────
             new EventCard("police", CardType.ATTACK, CardTarget.OPPONENT,
                     "캠퍼스 폴리스에 적발!",
                     "개인형 이동장치 안전 수칙 미이행으로 단속에 딱 걸렸습니다.",
@@ -27,24 +27,12 @@ public final class CardCatalog {
                     "수강신청 대 실패",
                     "수강신청날 늦게 일어난 당신, 무한한 우주 공간에 갇혔습니다.",
                     -2, false, 2),
-            new EventCard("drinking", CardType.ATTACK, CardTarget.OPPONENT,
-                    "회식의 저주",
-                    "시험 끝난 기념으로 밤새 달리다가 다음 날 1교시 전공 수업을 못 갔습니다.",
-                    -2, false, 2),
-            new EventCard("skipper", CardType.ATTACK, CardTarget.OPPONENT,
-                    "출튀한 사람",
-                    "수업시간에 출튀한 사람을 발견하여 교수님에게 말씀드렸습니다.",
-                    -3, false, 1),
-            new EventCard("breakup", CardType.ATTACK, CardTarget.SELF,
-                    "그렇게 과CC를...",
-                    "과CC를 하다가 헤어진 당신, 무인도로 가서 쉬십시오. (다음 턴 스킵)",
-                    0, true, 2),
 
             // ── 방어 카드 (8장) ──────────────────────────────────────
             new EventCard("guardian", CardType.DEFENSE, CardTarget.NONE,
                     "백령 곰두리의 수호",
                     "강원대학교의 마스코트 곰두리가 당신을 보호합니다! 상대의 공격을 1회 방어합니다.",
-                    0, false, 8),
+                    0, false, 3),
 
             // ── 장학금 카드 (10장) ───────────────────────────────────
             new EventCard("top", CardType.SCHOLARSHIP, CardTarget.SELF,
@@ -62,7 +50,7 @@ public final class CardCatalog {
             new EventCard("veteran", CardType.SCHOLARSHIP, CardTarget.SELF,
                     "국가유공자 및 자녀장학금",
                     "국가를 위해 헌신하신 숭고한 뜻을 이어받습니다!",
-                    2, false, 2),
+                    2, false, 2,),
             new EventCard("capstone", CardType.SCHOLARSHIP, CardTarget.SELF,
                     "캡스톤 디자인 A+",
                     "더 이상 이 학교에서 가르칠 게 없다! 떠나도 좋다는 인정을 받았습니다.",
