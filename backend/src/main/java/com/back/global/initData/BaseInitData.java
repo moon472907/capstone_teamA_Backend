@@ -46,7 +46,7 @@ public class BaseInitData {
      * 운영(MySQL, ddl-auto: update)에서도 이 이름의 보드가 없으면 재배포 시 새로 시드되고,
      * 옛 보드 row는 보존되어 종료된 게임의 참조가 깨지지 않는다.
      */
-    private static final String BOARD_MAP_NAME = "강대마블 캠퍼스 보드 v2";
+    private static final String BOARD_MAP_NAME = "강대마블 캠퍼스 보드 v3";
 
     @Transactional
     public void initAllData() {
@@ -130,8 +130,8 @@ public class BaseInitData {
         edges[14] = new int[]{15, 41};
         edges[15] = new int[]{16};
         edges[16] = new int[]{17, 45};
-        edges[17] = new int[]{46};
-        edges[18] = new int[]{19, 47};
+        edges[17] = new int[]{18};
+        edges[18] = new int[]{19, 46, 47};
         edges[19] = new int[]{20};
         edges[20] = new int[]{21};
         edges[21] = new int[]{22};
@@ -148,7 +148,7 @@ public class BaseInitData {
         edges[32] = new int[]{33};
         edges[33] = new int[]{34};
         edges[34] = new int[]{35};
-        edges[35] = new int[]{53, 36};
+        edges[35] = new int[]{36};
         edges[36] = new int[]{37};
         edges[37] = new int[]{42, 38};
         edges[38] = new int[]{39, 37};
@@ -156,17 +156,17 @@ public class BaseInitData {
         edges[40] = new int[]{11, 39};
         edges[41] = new int[]{14};
         edges[42] = new int[]{43};
-        edges[43] = new int[]{44};
-        edges[44] = new int[]{45};
+        edges[43] = new int[]{44, 45};
+        edges[44] = new int[]{43};   // 막다른 칸: 들어오면 43으로 되돌아 나간다
         edges[45] = new int[]{16};
-        edges[46] = new int[]{18, 48};
+        edges[46] = new int[]{48};
         edges[47] = new int[]{23};
         edges[48] = new int[]{30};
         edges[49] = new int[]{50};
         edges[50] = new int[]{51, 49};
         edges[51] = new int[]{52};
         edges[52] = new int[]{1};
-        edges[53] = new int[]{50};
+        edges[53] = new int[]{35};
 
         for (int num = 1; num <= NODE_COUNT; num++) {
             int[] targets = edges[num];
