@@ -350,7 +350,7 @@ public class GameService {
 
         // ── 2. Move ──────────────────────────────
         session.setState(GameState.MOVE);
-        TraversalResult traversal = traverseGraph(fromTileId, diceValue);
+        TraversalResult traversal = traverseGraph(fromTileId, currentPlayer.getPrevTileId(), diceValue);
 
         if (traversal.isBranchRequired()) {
             currentPlayer.setTileId(traversal.currentNodeId());
@@ -385,7 +385,7 @@ public class GameService {
                     .build();
         }
 
-        return completeTurn(session, gameId, currentPlayer, fromTileId, diceValue, traversal.destination(), traversal.pathNumbers());
+        return completeTurn(session, gameId, currentPlayer, fromTileId, diceValue, traversal.destination(), traversal.cameFromNodeId(), traversal.pathNumbers());
     }
 
     // ─────────────────────────────────────────────
@@ -428,7 +428,8 @@ public class GameService {
             PlayerSession currentPlayer = session.getCurrentPlayer();
             int fromTileId = currentPlayer.getTileId();
 
-            TraversalResult traversal = traverseGraph(selectedNodeId, session.getPendingRemainingSteps());
+            // 분기 노드(현재 칸)에서 선택한 칸으로 한 hop 이동한 셈이므로, 이어지는 이동의 '왔던 길'은 분기 노드다.
+            TraversalResult traversal = traverseGraph(selectedNodeId, fromTileId, session.getPendingRemainingSteps());
 
             // 선택한 칸으로 이동하는 것 자체가 첫 hop이므로 경로 맨 앞에 추가
             List<Integer> animPath = new ArrayList<>();
@@ -465,7 +466,7 @@ public class GameService {
                         .build();
             }
 
-            return completeTurn(session, gameId, currentPlayer, fromTileId, 0, traversal.destination(), animPath);
+            return completeTurn(session, gameId, currentPlayer, fromTileId, 0, traversal.destination(), traversal.cameFromNodeId(), animPath);
         } finally {
             redisLockService.unlock(gameId, lockValue);
         }
@@ -523,8 +524,11 @@ public class GameService {
 
     private RollResultDto completeTurn(GameSession session, Integer gameId,
                                        PlayerSession currentPlayer, int fromTileId,
-                                       int diceValue, Node destination, List<Integer> path) {
+                                       int diceValue, Node destination, Integer cameFromNodeId,
+                                       List<Integer> path) {
         currentPlayer.setTileId(destination.getId());
+        // 다음 턴의 즉시 U턴 금지를 위해 '직전 칸'을 기록 (도착 칸 바로 앞 칸)
+        currentPlayer.setPrevTileId(cameFromNodeId);
 
         logMovePath(gameId, currentPlayer, session.getRound(), path);
         broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_MOVED, gameId, Map.of(
@@ -876,6 +880,7 @@ public class GameService {
             PlayerSession player = session.getCurrentPlayer();
             int fromTileId = player.getTileId();
             player.setTileId(destNodeId);
+            player.setPrevTileId(null); // 버스 점프는 인접 이동이 아니므로 U턴 제약 해제
 
             broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_MOVED, gameId, Map.of(
                     "playerId", player.getPlayerId(),
@@ -1030,45 +1035,73 @@ public class GameService {
 
     /**
      * Traverses the board graph step by step.
-     * Stops at the first branch point and returns options + remaining steps.
-     * If no branch is encountered, returns the final destination.
+     * 양방향 이동을 허용하되, 직전 칸(왔던 길)으로의 즉시 U턴은 막는다.
+     * 갈림길(되돌아갈 길을 뺀 선택지가 2개 이상)을 만나면 멈추고 옵션과 남은 걸음을 돌려준다.
+     * 갈림길이 없으면 최종 도착 칸을 돌려준다.
+     *
+     * @param cameFromNodeId 직전에 있던 칸의 id(이번 걸음에서 되돌아갈 수 없는 칸). 시작 시 null 가능.
      */
-    private TraversalResult traverseGraph(Integer startNodeId, int steps) {
+    private TraversalResult traverseGraph(Integer startNodeId, Integer cameFromNodeId, int steps) {
         Node current = nodeRepository.findByIdWithEdges(startNodeId)
                 .orElseThrow(() -> new CustomException(ErrorCode.BOARD_NOT_FOUND));
 
         // 시작 칸(현재 위치)을 제외하고 실제로 밟은 칸의 nodeNumber를 순서대로 기록.
-        // 프론트는 이 경로를 그대로 hop 애니메이션하여 역방향 이동(왔다갔다)을 방지한다.
+        // 프론트는 이 경로를 그대로 hop 애니메이션하여 역방향 왕복(왔다갔다)을 방지한다.
         List<Integer> path = new ArrayList<>();
+        Integer prevId = cameFromNodeId;
 
         for (int i = 0; i < steps; i++) {
-            List<Node> nextNodes = current.getNextNodes();
-            if (nextNodes.isEmpty()) break;
+            List<Node> neighbors = neighborsOf(current);
+            if (neighbors.isEmpty()) break;
 
-            if (nextNodes.size() > 1) {
-                // Branch point — stop and return options
-                return TraversalResult.branch(current, nextNodes, steps - i - 1, path);
+            // 왔던 길(직전 칸)은 후보에서 제외한다. 단, 막다른 칸이면 어쩔 수 없이 되돌아간다.
+            final Integer from = prevId;
+            List<Node> options = neighbors.stream()
+                    .filter(n -> !n.getId().equals(from))
+                    .toList();
+            if (options.isEmpty()) options = neighbors;
+
+            if (options.size() > 1) {
+                // 갈림길 — 멈추고 선택지를 돌려준다
+                return TraversalResult.branch(current, options, prevId, steps - i - 1, path);
             }
 
-            Node next = nextNodes.get(0);
+            Node next = options.get(0);
+            prevId = current.getId();
             current = nodeRepository.findByIdWithEdges(next.getId()).orElse(next);
             path.add(current.getTileIndex() + 1);
         }
-        return TraversalResult.completed(current, path);
+        return TraversalResult.completed(current, prevId, path);
+    }
+
+    /**
+     * 해당 칸의 이웃 칸 목록(정방향 + 역방향). id 기준으로 중복 제거한다.
+     * 나가는 간선(정방향)을 먼저, 들어오는 간선(역방향)을 뒤에 둔다 — 갈림길 버튼 순서 안정성 확보.
+     */
+    private List<Node> neighborsOf(Node node) {
+        java.util.LinkedHashMap<Integer, Node> distinct = new java.util.LinkedHashMap<>();
+        for (Node n : node.getNextNodes()) {
+            distinct.putIfAbsent(n.getId(), n);
+        }
+        for (Node n : nodeRepository.findIncomingNeighborNodes(node.getId())) {
+            distinct.putIfAbsent(n.getId(), n);
+        }
+        return new ArrayList<>(distinct.values());
     }
 
     private record TraversalResult(Node destination, Integer currentNodeId, Integer currentNodeNumber,
                                    List<Integer> branchNodeIds, List<Integer> branchNodeNumbers,
-                                   int remainingSteps, List<Integer> pathNumbers) {
-        static TraversalResult completed(Node destination, List<Integer> pathNumbers) {
-            return new TraversalResult(destination, null, null, null, null, 0, pathNumbers);
+                                   int remainingSteps, List<Integer> pathNumbers, Integer cameFromNodeId) {
+        static TraversalResult completed(Node destination, Integer cameFromNodeId, List<Integer> pathNumbers) {
+            return new TraversalResult(destination, null, null, null, null, 0, pathNumbers, cameFromNodeId);
         }
 
-        static TraversalResult branch(Node currentNode, List<Node> options, int remaining, List<Integer> pathNumbers) {
+        static TraversalResult branch(Node currentNode, List<Node> options, Integer cameFromNodeId,
+                                      int remaining, List<Integer> pathNumbers) {
             List<Integer> ids = options.stream().map(Node::getId).toList();
             List<Integer> numbers = options.stream().map(n -> n.getTileIndex() + 1).toList();
             return new TraversalResult(null, currentNode.getId(), currentNode.getTileIndex() + 1,
-                    ids, numbers, remaining, pathNumbers);
+                    ids, numbers, remaining, pathNumbers, cameFromNodeId);
         }
 
         boolean isBranchRequired() {
@@ -1108,6 +1141,7 @@ public class GameService {
 
         if (result.getTeleportTileId() != null) {
             player.setTileId(result.getTeleportTileId());
+            player.setPrevTileId(null); // 워프 점프는 인접 이동이 아니므로 U턴 제약 해제
         }
     }
 
