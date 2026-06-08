@@ -50,7 +50,7 @@ public final class CardCatalog {
             new EventCard("veteran", CardType.SCHOLARSHIP, CardTarget.SELF,
                     "국가유공자 및 자녀장학금",
                     "국가를 위해 헌신하신 숭고한 뜻을 이어받습니다!",
-                    2, false, 2,),
+                    2, false, 2),
             new EventCard("capstone", CardType.SCHOLARSHIP, CardTarget.SELF,
                     "캡스톤 디자인 A+",
                     "더 이상 이 학교에서 가르칠 게 없다! 떠나도 좋다는 인정을 받았습니다.",

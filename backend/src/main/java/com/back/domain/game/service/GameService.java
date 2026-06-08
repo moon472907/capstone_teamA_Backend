@@ -365,7 +365,8 @@ public class GameService {
                     "playerId", currentPlayer.getPlayerId(),
                     "fromTileId", fromTileId,
                     "toTileId", traversal.currentNodeId(),
-                    "nodeNumber", traversal.currentNodeNumber())));
+                    "nodeNumber", traversal.currentNodeNumber(),
+                    "path", traversal.pathNumbers())));
 
             broadcastToGame(gameId, GameMessage.of(MessageType.BRANCH_REQUIRED, gameId, Map.of(
                     "playerId", currentPlayer.getPlayerId(),
@@ -383,7 +384,7 @@ public class GameService {
                     .build();
         }
 
-        return completeTurn(session, gameId, currentPlayer, fromTileId, diceValue, traversal.destination());
+        return completeTurn(session, gameId, currentPlayer, fromTileId, diceValue, traversal.destination(), traversal.pathNumbers());
     }
 
     // ─────────────────────────────────────────────
@@ -428,6 +429,11 @@ public class GameService {
 
             TraversalResult traversal = traverseGraph(selectedNodeId, session.getPendingRemainingSteps());
 
+            // 선택한 칸으로 이동하는 것 자체가 첫 hop이므로 경로 맨 앞에 추가
+            List<Integer> animPath = new ArrayList<>();
+            animPath.add(req.selectedNodeId());
+            animPath.addAll(traversal.pathNumbers());
+
             if (traversal.isBranchRequired()) {
                 currentPlayer.setTileId(traversal.currentNodeId());
                 session.setPendingBranchNodeIds(traversal.branchNodeIds());
@@ -439,7 +445,8 @@ public class GameService {
                         "playerId", currentPlayer.getPlayerId(),
                         "fromTileId", fromTileId,
                         "toTileId", traversal.currentNodeId(),
-                        "nodeNumber", traversal.currentNodeNumber())));
+                        "nodeNumber", traversal.currentNodeNumber(),
+                        "path", animPath)));
 
                 broadcastToGame(gameId, GameMessage.of(MessageType.BRANCH_REQUIRED, gameId, Map.of(
                         "playerId", currentPlayer.getPlayerId(),
@@ -456,7 +463,7 @@ public class GameService {
                         .build();
             }
 
-            return completeTurn(session, gameId, currentPlayer, fromTileId, 0, traversal.destination());
+            return completeTurn(session, gameId, currentPlayer, fromTileId, 0, traversal.destination(), animPath);
         } finally {
             redisLockService.unlock(gameId, lockValue);
         }
@@ -514,7 +521,7 @@ public class GameService {
 
     private RollResultDto completeTurn(GameSession session, Integer gameId,
                                        PlayerSession currentPlayer, int fromTileId,
-                                       int diceValue, Node destination) {
+                                       int diceValue, Node destination, List<Integer> path) {
         currentPlayer.setTileId(destination.getId());
 
         broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_MOVED, gameId, Map.of(
@@ -522,7 +529,8 @@ public class GameService {
                 "fromTileId", fromTileId,
                 "toTileId", destination.getId(),
                 "tileIndex", destination.getTileIndex(),
-                "nodeNumber", destination.getTileIndex() + 1)));
+                "nodeNumber", destination.getTileIndex() + 1,
+                "path", path)));
 
         return resolveDestinationTile(session, gameId, currentPlayer, fromTileId, diceValue, destination);
     }
@@ -1026,33 +1034,38 @@ public class GameService {
         Node current = nodeRepository.findByIdWithEdges(startNodeId)
                 .orElseThrow(() -> new CustomException(ErrorCode.BOARD_NOT_FOUND));
 
+        // 시작 칸(현재 위치)을 제외하고 실제로 밟은 칸의 nodeNumber를 순서대로 기록.
+        // 프론트는 이 경로를 그대로 hop 애니메이션하여 역방향 이동(왔다갔다)을 방지한다.
+        List<Integer> path = new ArrayList<>();
+
         for (int i = 0; i < steps; i++) {
             List<Node> nextNodes = current.getNextNodes();
             if (nextNodes.isEmpty()) break;
 
             if (nextNodes.size() > 1) {
                 // Branch point — stop and return options
-                return TraversalResult.branch(current, nextNodes, steps - i - 1);
+                return TraversalResult.branch(current, nextNodes, steps - i - 1, path);
             }
 
             Node next = nextNodes.get(0);
             current = nodeRepository.findByIdWithEdges(next.getId()).orElse(next);
+            path.add(current.getTileIndex() + 1);
         }
-        return TraversalResult.completed(current);
+        return TraversalResult.completed(current, path);
     }
 
     private record TraversalResult(Node destination, Integer currentNodeId, Integer currentNodeNumber,
                                    List<Integer> branchNodeIds, List<Integer> branchNodeNumbers,
-                                   int remainingSteps) {
-        static TraversalResult completed(Node destination) {
-            return new TraversalResult(destination, null, null, null, null, 0);
+                                   int remainingSteps, List<Integer> pathNumbers) {
+        static TraversalResult completed(Node destination, List<Integer> pathNumbers) {
+            return new TraversalResult(destination, null, null, null, null, 0, pathNumbers);
         }
 
-        static TraversalResult branch(Node currentNode, List<Node> options, int remaining) {
+        static TraversalResult branch(Node currentNode, List<Node> options, int remaining, List<Integer> pathNumbers) {
             List<Integer> ids = options.stream().map(Node::getId).toList();
             List<Integer> numbers = options.stream().map(n -> n.getTileIndex() + 1).toList();
             return new TraversalResult(null, currentNode.getId(), currentNode.getTileIndex() + 1,
-                    ids, numbers, remaining);
+                    ids, numbers, remaining, pathNumbers);
         }
 
         boolean isBranchRequired() {
