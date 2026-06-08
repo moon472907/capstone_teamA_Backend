@@ -361,6 +361,7 @@ public class GameService {
             session.setBranchTimeoutSeconds(BRANCH_TIMEOUT_SECONDS);
             redisGameStateService.saveSession(session);
 
+            logMovePath(gameId, currentPlayer, session.getRound(), traversal.pathNumbers());
             broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_MOVED, gameId, Map.of(
                     "playerId", currentPlayer.getPlayerId(),
                     "fromTileId", fromTileId,
@@ -441,6 +442,7 @@ public class GameService {
                 session.setBranchSelectStartTime(System.currentTimeMillis());
                 redisGameStateService.saveSession(session);
 
+                logMovePath(gameId, currentPlayer, session.getRound(), animPath);
                 broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_MOVED, gameId, Map.of(
                         "playerId", currentPlayer.getPlayerId(),
                         "fromTileId", fromTileId,
@@ -524,6 +526,7 @@ public class GameService {
                                        int diceValue, Node destination, List<Integer> path) {
         currentPlayer.setTileId(destination.getId());
 
+        logMovePath(gameId, currentPlayer, session.getRound(), path);
         broadcastToGame(gameId, GameMessage.of(MessageType.PLAYER_MOVED, gameId, Map.of(
                 "playerId", currentPlayer.getPlayerId(),
                 "fromTileId", fromTileId,
@@ -1197,6 +1200,21 @@ public class GameService {
         log.info("Game ended: id={}, winner={}", gameId, ranked.isEmpty() ? "none" : ranked.get(0).getNickname());
     }
 
+    /**
+     * 플레이어가 이번 액션에서 실제로 밟은 칸을 한 칸씩 로그로 남긴다.
+     * path는 traverseGraph가 기록한 nodeNumber(1~53) 순서 목록.
+     * 분기점에서 멈춰 이동이 없으면(빈 경로) 아무것도 남기지 않는다.
+     */
+    private void logMovePath(Integer gameId, PlayerSession player, int round, List<Integer> path) {
+        if (path == null || path.isEmpty()) return;
+        log.info("[MOVE] gameId={} round={} player={}({}) 총 {}칸 이동: {}",
+                gameId, round, player.getNickname(), player.getPlayerId(), path.size(), path);
+        for (int i = 0; i < path.size(); i++) {
+            log.info("[MOVE]   gameId={} player={} {}/{}번째 칸 → node{}",
+                    gameId, player.getNickname(), i + 1, path.size(), path.get(i));
+        }
+    }
+
     private void broadcastTurnStart(GameSession session) {
         PlayerSession current = session.getCurrentPlayer();
         broadcastToGame(session.getGameId(), GameMessage.of(MessageType.TURN_CHANGED, session.getGameId(),
@@ -1208,6 +1226,9 @@ public class GameService {
     }
 
     private void broadcastToGame(Integer gameId, GameMessage<?> message) {
+        // 게임에서 발생하는 모든 이벤트(주사위/이동/분기/카드/버스/턴/종료 등)는
+        // 이 메서드를 통해 브로드캐스트되므로, 여기서 한 곳에 로그를 남긴다.
+        log.info("[GAME-EVENT] gameId={} type={} payload={}", gameId, message.getType(), message.getPayload());
         messagingTemplate.convertAndSend("/topic/game/" + gameId, message);
     }
 
